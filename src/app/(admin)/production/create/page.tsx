@@ -94,6 +94,13 @@ export default function WashServiceForm({
     if (!formData.plateNumber?.trim()) {
       newErrors.plateNumber = "Biển số xe là bắt buộc";
     }
+    if (
+      !formData.plateNumber ||
+      formData.plateNumber.trim().length === 0 ||
+      formData.plateNumber.trim().length > 10
+    ) {
+      newErrors.plateNumber = "Biển số xe không hợp lệ";
+    }
     if (!formData.customerName?.trim()) {
       newErrors.customerName = "Tên khách hàng là bắt buộc";
     }
