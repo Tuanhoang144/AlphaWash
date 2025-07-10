@@ -93,37 +93,38 @@ export default function WashServiceTable() {
   const [currentView, setCurrentView] = useState<"list" | "view" | "edit" | "create">("list")
   const [selectedRecord, setSelectedRecord] = useState<WashRecord>()
 
+  // Đưa fetchData ra ngoài để có thể gọi lại
+  const fetchData = async () => {
+    try {
+      const result: Production[] = await getAllProduction();
+      console.log("Fetched production data:", result);
+      const mappedData: WashRecord[] = result.map((item, idx) => ({
+        id: item.id,
+        stt: (idx + 1).toString(),
+        date: item.date ?? "",
+        timeIn: item.timeIn ?? "",
+        timeOut: item.timeOut ?? "",
+        plateNumber: item.plateNumber ?? "",
+        customerName: item.customerName ?? "",
+        sdt: item.sdt ?? "",
+        carCompany: item.carCompany ?? "",
+        vehicleLine: item.vehicleLine ?? "",
+        service: item.service ?? "",
+        carSize: item.carSize as "S" | "M" | "L",
+        status: item.status ?? "",
+        employee: Array.isArray(item.employees)
+          ? item.employees
+          : item.employees
+          ? [item.employees]
+          : [],
+      }));
+      setData(mappedData);
+    } catch (error) {
+      console.error("Lỗi khi gọi API production:", error);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result: Production[] = await getAllProduction();
-        console.log("Fetched production data:", result);
-        
-        const mappedData: WashRecord[] = result.map((item, idx) => ({
-          id: item.id,
-          stt: (idx + 1).toString(),
-          date: item.date ?? "",
-          timeIn: item.timeIn ?? "",
-          timeOut: item.timeOut ?? "",
-          plateNumber: item.plateNumber ?? "",
-          customerName: item.customerName ?? "",
-          sdt: item.sdt ?? "",
-          carCompany: item.carCompany ?? "",
-          vehicleLine: item.vehicleLine ?? "",
-          service: item.service ?? "",
-          carSize: item.carSize as "S" | "M" | "L",
-          status: item.status ?? "",
-          employee: Array.isArray(item.employees)
-            ? item.employees
-            : item.employees
-            ? [item.employees]
-            : [],
-        }));
-        setData(mappedData);
-      } catch (error) {
-        console.error("Lỗi khi gọi API production:", error);
-      }
-    };
     fetchData();
   }, [getAllProduction]);
 
@@ -252,6 +253,28 @@ export default function WashServiceTable() {
     return (
       <WashServiceForm
         mode="create"
+        onSave={() => {
+          setCurrentView("list");
+          fetchData();
+        }}
+        onCancel={() => setCurrentView("list")}
+      />
+    );
+  }
+
+  if (currentView === "edit" && selectedRecord) {
+    const productionRecord: Production = {
+      ...selectedRecord,
+      employees: selectedRecord.employee, 
+    };
+    return (
+      <WashServiceForm
+        mode="edit"
+        record={productionRecord}
+        onSave={() => {
+          setCurrentView("list");
+          fetchData();
+        }}
         onCancel={() => setCurrentView("list")}
       />
     );
@@ -509,14 +532,14 @@ export default function WashServiceTable() {
                                   <Eye className="mr-2 h-4 w-4" />
                                   Xem chi tiết
                                 </DropdownMenuItem>
-                                <DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => { setSelectedRecord(record); setCurrentView("edit"); }}>
                                   <Edit className="mr-2 h-4 w-4" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
+                                {/* <DropdownMenuItem className="text-destructive">
                                   <Trash2 className="mr-2 h-4 w-4" />
                                   Xóa
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

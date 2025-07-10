@@ -127,7 +127,7 @@ export default function WashServiceView({
           </Breadcrumb>
         </div>
       </header>
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="max-w-4xl mx-auto w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
@@ -198,7 +198,7 @@ export default function WashServiceView({
                     <label className="text-sm font-medium text-muted-foreground">
                       Biển số xe
                     </label>
-                    <div className="font-mono font-bold text-lg bg-muted px-4 py-2 rounded-md border inline-block">
+                    <div className="font-mono font-bold text-lg bg-muted ml-2 px-4 py-2 rounded-md border inline-block">
                       {record.plateNumber}
                     </div>
                   </div>

@@ -120,24 +120,36 @@ export default function WashServiceForm({
   };
 
   const router = useRouter();
-  const { createProduction } = useProductionManager();
+  const { createProduction, updateProduction } = useProductionManager();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (validateForm()) {
       try {
-        const result = await createProduction(formData); // gọi API
-        addToast({
-          title: "Tạo phiếu rửa xe thành công",
-          description: "Phiếu rửa xe đã được tạo thành công.",
-          color: "success",
-        });
-        onSave?.(result);
-        router.push("/production/bang-thong-ke");
+        let result;
+        if (mode === "create") {
+          result = await createProduction(formData); // gọi API tạo mới
+          addToast({
+            title: "Tạo phiếu rửa xe thành công",
+            description: "Phiếu rửa xe đã được tạo thành công.",
+            color: "success",
+          });
+          onSave?.(result);
+          router.push("/production/bang-thong-ke");
+        } else if (mode === "edit" && record?.id) {
+          result = await updateProduction(record.id, formData); // gọi API cập nhật
+          addToast({
+            title: "Cập nhật phiếu rửa xe thành công",
+            description: "Phiếu rửa xe đã được cập nhật.",
+            color: "success",
+          });
+          onSave?.(result);
+          router.push("/production/bang-thong-ke");
+        }
       } catch (error) {
-        console.error("Lỗi khi tạo production:", error);
+        console.error("Lỗi khi lưu production:", error);
         addToast({
-          title: "Tạo phiếu thất bại",
+          title: mode === "create" ? "Tạo phiếu thất bại" : "Cập nhật thất bại",
           description: "Vui lòng thử lại.",
           color: "danger",
         });
@@ -624,18 +636,6 @@ export default function WashServiceForm({
                 </CardContent>
               </Card>
 
-              {mode === "edit" && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Mã phiếu</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="font-mono font-bold text-lg bg-muted px-3 py-2 rounded-md border">
-                      {record?.stt}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
 
