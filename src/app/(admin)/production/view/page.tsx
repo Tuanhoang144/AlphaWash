@@ -53,8 +53,6 @@ interface WashRecord {
   status: string;
   paymentStatus?: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận";
   employee: string[];
-  paymentStatus?: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận";
-  employee: string[];
 }
 
 interface PaymentInfo {
