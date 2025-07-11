@@ -33,6 +33,10 @@ import {
   Phone,
   X,
   Clock,
+  QrCode,
+  RefreshCw,
+  CreditCard,
+  CheckCircle,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -47,7 +51,19 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Production } from "@/types/Production";
 import { useRouter } from "next/navigation";
 import { useProductionManager } from "@/services/production-manager";
-import { addToast } from "@heroui/react";
+import { addToast, VisuallyHidden } from "@heroui/react";
+import {
+  Dialog,
+  DialogContent,
+  DialogOverlay,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface WashServiceFormProps {
   record?: Production | null;
@@ -55,7 +71,13 @@ interface WashServiceFormProps {
   onSave?: (data: Partial<Production>) => void;
   onCancel?: () => void;
 }
-
+interface PaymentInfo {
+  amount: number;
+  bankName: string;
+  accountNumber: string;
+  accountName: string;
+  transferInfo: string;
+}
 export default function WashServiceForm({
   record,
   mode,
@@ -75,7 +97,8 @@ export default function WashServiceForm({
     service: record?.service || "",
     carSize: record?.carSize || "M",
     status: record?.status || "Chờ xử lý",
-    employees: record?.employees || [], // Changed from employee
+    statusPayment: record?.statusPayment || "Chờ thanh toán",
+    employees: record?.employees || [],
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -94,11 +117,7 @@ export default function WashServiceForm({
     if (!formData.plateNumber?.trim()) {
       newErrors.plateNumber = "Biển số xe là bắt buộc";
     }
-    if (
-      !formData.plateNumber ||
-      formData.plateNumber.trim().length === 0 ||
-      formData.plateNumber.trim().length > 10
-    ) {
+    if (formData.plateNumber && formData.plateNumber.trim().length > 10) {
       newErrors.plateNumber = "Biển số xe không hợp lệ";
     }
     if (!formData.customerName?.trim()) {
@@ -135,7 +154,11 @@ export default function WashServiceForm({
       try {
         let result;
         if (mode === "create") {
-          result = await createProduction(formData); // gọi API tạo mới
+          const formDataWithPayment = {
+            ...formData,
+            statusPayment: formData.statusPayment || "Chờ thanh toán",
+          };
+          result = await createProduction(formDataWithPayment); // gọi API tạo mới
           addToast({
             title: "Tạo phiếu rửa xe thành công",
             description: "Phiếu rửa xe đã được tạo thành công.",
@@ -144,7 +167,11 @@ export default function WashServiceForm({
           onSave?.(result);
           router.push("/production/bang-thong-ke");
         } else if (mode === "edit" && record?.id) {
-          result = await updateProduction(record.id, formData); // gọi API cập nhật
+          const formDataWithPayment = {
+            ...formData,
+            statusPayment: paymentStatus || "Chờ thanh toán",
+          };
+          result = await updateProduction(record.id, formDataWithPayment); // gọi API cập nhật
           addToast({
             title: "Cập nhật phiếu rửa xe thành công",
             description: "Phiếu rửa xe đã được cập nhật.",
@@ -205,6 +232,121 @@ export default function WashServiceForm({
     }));
   };
 
+  // Get service price based on service type and car size
+  const getServicePrice = (
+    service: string,
+    carSize: "S" | "M" | "L"
+  ): number => {
+    const serviceName = service?.toLowerCase() || "";
+
+    if (serviceName.includes("quick") || serviceName.includes("nhanh")) {
+      switch (carSize) {
+        case "S":
+          return 150000;
+        case "M":
+          return 150000;
+        case "L":
+          return 170000;
+        default:
+          return 150000;
+      }
+    } else if (
+      serviceName.includes("standard") ||
+      serviceName.includes("tiêu chuẩn")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 250000;
+        case "M":
+          return 300000;
+        case "L":
+          return 350000;
+        default:
+          return 250000;
+      }
+    } else if (
+      serviceName.includes("deep") ||
+      serviceName.includes("chuyên sâu")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 850000;
+        case "M":
+          return 950000;
+        case "L":
+          return 1050000;
+        default:
+          return 850000;
+      }
+    }
+
+    // Default fallback
+    return 150000;
+  };
+
+  // Generate QR payment URL
+  const generateQRUrl = (paymentInfo: PaymentInfo): string => {
+    const { amount, accountNumber, accountName, transferInfo, bankName } = paymentInfo;
+    return `https://img.vietqr.io/image/${bankName}-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(
+      transferInfo
+    )}&accountName=${encodeURIComponent(accountName)}`;
+  };
+
+  // Get payment status color
+  const getPaymentStatusColor = (
+    status: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận"
+  ) => {
+    switch (status) {
+      case "Đã xác nhận":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Đã thanh toán":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "Chờ thanh toán":
+      default:
+        return "bg-amber-50 text-amber-700 border-amber-200";
+    }
+  };
+
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<
+    "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận"
+  >(
+    (record?.statusPayment as
+      | "Chờ thanh toán"
+      | "Đã thanh toán"
+      | "Đã xác nhận") || "Chờ thanh toán"
+  );
+
+  const servicePrice =
+    mode === "edit" && record
+      ? getServicePrice(record.service, record.carSize)
+      : getServicePrice(
+          formData.service || "",
+          formData.carSize as "S" | "M" | "L"
+        );
+
+  const paymentConfig = {
+    bankName: process.env.NEXT_PUBLIC_NAMEBANK || "TPBANK",
+    accountNumber: process.env.NEXT_PUBLIC_ACCOUNTNUMBER || "0384605830",
+    accountName: process.env.NEXT_PUBLIC_ACCOUNTNAME || "CONG TY RUA XE",
+  };
+
+  const paymentInfo: PaymentInfo = {
+    amount: servicePrice,
+    bankName: paymentConfig.bankName,
+    accountNumber: paymentConfig.accountNumber,
+    accountName: paymentConfig.accountName,
+    transferInfo: `Thanh toan phieu ${record?.stt ?? ""} - ${
+      record?.plateNumber ?? ""
+    }`,
+  };
+
+  const handlePaymentStatusChange = (
+    newStatus: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận"
+  ) => {
+    setPaymentStatus(newStatus);
+  };
+
   return (
     <SidebarInset>
       <header className="sticky z-10 top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
@@ -218,16 +360,22 @@ export default function WashServiceForm({
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbPage className="hidden md:block">
-              <BreadcrumbLink href="#">Tạo mới phiếu rửa xe</BreadcrumbLink>
-            </BreadcrumbPage>
+            {mode === "edit" && record ? (
+              <BreadcrumbPage className="hidden md:block">
+                <BreadcrumbLink href="#">Chỉnh sửa phiếu rửa xe</BreadcrumbLink>
+              </BreadcrumbPage>
+            ) : (
+              <BreadcrumbPage className="hidden md:block">
+                <BreadcrumbLink href="#">Tạo mới phiếu rửa xe</BreadcrumbLink>
+              </BreadcrumbPage>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
       </header>
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-4">
             {onCancel && (
               <Button variant="outline" size="sm" onClick={onCancel}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -537,6 +685,124 @@ export default function WashServiceForm({
 
             {/* Side Panel */}
             <div className="space-y-6">
+              {mode === "edit" && record && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Trạng thái thanh toán</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground">
+                        Giá dịch vụ
+                      </label>
+                      <p className="text-2xl font-bold text-green-600">
+                        {servicePrice.toLocaleString("vi-VN")}đ
+                      </p>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium text-muted-foreground sm:mr-2">
+                        Trạng thái thanh toán
+                      </label>
+                      <Badge
+                        variant="outline"
+                        className={`text-sm font-medium mt-1 ${getPaymentStatusColor(
+                          paymentStatus
+                        )}`}
+                      >
+                        {paymentStatus}
+                      </Badge>
+                    </div>
+
+                    <div className="space-y-2 mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setShowQRDialog(true)}
+                      >
+                        <QrCode className="h-4 w-4 mr-2" />
+                        Hiển thị QR thanh toán
+                      </Button>
+
+                      {/* {paymentStatus !== "Đã xác nhận" && ( */}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="default" className="w-full">
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Cập nhật trạng thái
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="w-full">
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handlePaymentStatusChange("Chờ thanh toán")
+                            }
+                          >
+                            <Clock className="h-4 w-4 mr-2" />
+                            Chờ thanh toán
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handlePaymentStatusChange("Đã thanh toán")
+                            }
+                          >
+                            <CreditCard className="h-4 w-4 mr-2" />
+                            Đã thanh toán
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              handlePaymentStatusChange("Đã xác nhận")
+                            }
+                          >
+                            <CheckCircle className="h-4 w-4 mr-2" />
+                            Đã xác nhận
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                      {/* )} */}
+                    </div>
+
+                    <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+                      <DialogOverlay />
+                      <DialogContent className="w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto p-0">
+                        <DialogTitle asChild>
+                          <VisuallyHidden>
+                            Quét mã QR để thanh toán
+                          </VisuallyHidden>
+                        </DialogTitle>
+                        <div className="p-4 border rounded-lg bg-white">
+                          <div className="text-center space-y-3">
+                            <p className="text-sm font-medium">
+                              Quét mã QR để thanh toán
+                            </p>
+                            <div className="flex justify-center">
+                              <img
+                                src={
+                                  generateQRUrl(paymentInfo) ||
+                                  "/placeholder.svg"
+                                }
+                                alt="QR Code thanh toán"
+                                className="border rounded"
+                                style={{ maxHeight: "400px" }}
+                              />
+                            </div>
+                            <div className="text-xs text-muted-foreground space-y-1">
+                              <p>
+                                Số tiền:{" "}
+                                <span className="font-semibold">
+                                  {servicePrice.toLocaleString("vi-VN")}đ
+                                </span>
+                              </p>
+                              <p>Nội dung: {paymentInfo.transferInfo}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </CardContent>
+                </Card>
+              )}
               {/* Status and Date */}
               <Card>
                 <CardHeader>
@@ -642,7 +908,6 @@ export default function WashServiceForm({
                   </div>
                 </CardContent>
               </Card>
-
             </div>
           </div>
 
