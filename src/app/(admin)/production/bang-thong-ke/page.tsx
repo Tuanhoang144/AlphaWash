@@ -80,6 +80,7 @@ interface WashRecord {
   service: string;
   carSize: "S" | "M" | "L";
   status: string;
+  statusPayment: string;
   employee: string[]; // Changed from string to string[]
 }
 
@@ -90,8 +91,10 @@ export default function WashServiceTable() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const { getAllProduction } = useProductionManager();
   const router = useRouter();
-  const [currentView, setCurrentView] = useState<"list" | "view" | "edit" | "create">("list")
-  const [selectedRecord, setSelectedRecord] = useState<WashRecord>()
+  const [currentView, setCurrentView] = useState<
+    "list" | "view" | "edit" | "create"
+  >("list");
+  const [selectedRecord, setSelectedRecord] = useState<WashRecord>();
 
   // Đưa fetchData ra ngoài để có thể gọi lại
   const fetchData = async () => {
@@ -112,6 +115,7 @@ export default function WashServiceTable() {
         service: item.service ?? "",
         carSize: item.carSize as "S" | "M" | "L",
         status: item.status ?? "",
+        statusPayment: item.statusPayment ?? "",
         employee: Array.isArray(item.employees)
           ? item.employees
           : item.employees
@@ -207,6 +211,19 @@ export default function WashServiceTable() {
     }
   };
 
+  const getStatusPaymentColor = (status: string) => {
+    switch (status) {
+      case "Đã xác nhận":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Đã thanh toán":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "Chờ thanh toán":
+        return "bg-amber-50 text-amber-700 border-amber-200";
+      default:
+        return "bg-gray-50 text-gray-700 border-gray-200";
+    }
+  };
+
   // Get car size color and label
   const getCarSizeInfo = (size: "S" | "M" | "L") => {
     switch (size) {
@@ -265,7 +282,7 @@ export default function WashServiceTable() {
   if (currentView === "edit" && selectedRecord) {
     const productionRecord: Production = {
       ...selectedRecord,
-      employees: selectedRecord.employee, 
+      employees: selectedRecord.employee,
     };
     return (
       <WashServiceForm
@@ -317,7 +334,13 @@ export default function WashServiceTable() {
               <Filter className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Lọc</span>
             </Button>
-            <Button size="sm" className="h-9" onClick={() => { setCurrentView("create"); }}>
+            <Button
+              size="sm"
+              className="h-9"
+              onClick={() => {
+                setCurrentView("create");
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               <span className="hidden sm:inline">Thêm mới</span>
             </Button>
@@ -344,12 +367,12 @@ export default function WashServiceTable() {
         </div>
       </div>
 
-      <div className="flex-1 space-y-4 p-4 md:p-6">
+      <div className="flex-1 space-y-4 p-4 md:p-3.5">
         {/* Main Table Card */}
         <Card>
           <CardContent>
-            <div className="rounded-lg border">
-              <Table>
+            <div className="rounded-lg border overflow-x-auto">
+              <Table className="min-w-[900px]">
                 <TableHeader>
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-[60px] font-semibold">
@@ -507,14 +530,36 @@ export default function WashServiceTable() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={`font-medium transition-colors ${getStatusColor(
-                                record.status
-                              )}`}
-                            >
-                              {record.status}
-                            </Badge>
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  Dịch vụ
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={`font-medium transition-colors ${getStatusColor(
+                                    record.status
+                                  )}`}
+                                  title="Trạng thái dịch vụ"
+                                >
+                                  {record.status}
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                                  Thanh toán
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={`font-medium transition-colors ${getStatusPaymentColor(
+                                    record.statusPayment
+                                  )}`}
+                                  title="Trạng thái thanh toán"
+                                >
+                                  {record.statusPayment}
+                                </Badge>
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -528,11 +573,21 @@ export default function WashServiceTable() {
                                 align="end"
                                 className="w-[160px]"
                               >
-                                <DropdownMenuItem onClick={() => { setSelectedRecord(record); setCurrentView("view"); }}>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedRecord(record);
+                                    setCurrentView("view");
+                                  }}
+                                >
                                   <Eye className="mr-2 h-4 w-4" />
                                   Xem chi tiết
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { setSelectedRecord(record); setCurrentView("edit"); }}>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    setSelectedRecord(record);
+                                    setCurrentView("edit");
+                                  }}
+                                >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Chỉnh sửa
                                 </DropdownMenuItem>

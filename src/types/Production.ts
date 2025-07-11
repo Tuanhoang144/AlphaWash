@@ -12,5 +12,6 @@ export type Production = {
   service: string
   carSize: "S" | "M" | "L"
   status: string
+  statusPayment: string
   employees: string[] 
 };

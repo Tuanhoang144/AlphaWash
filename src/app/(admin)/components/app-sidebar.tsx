@@ -123,13 +123,13 @@ const data = {
   ],
   navSecondary: [
     {
-      title: "Support",
-      url: "#",
+      title: "Hỗ trợ",
+      url: "https://www.facebook.com/profile.php?id=61570636340340",
       icon: LifeBuoy,
     },
     {
-      title: "Feedback",
-      url: "#",
+      title: "Phản hồi",
+      url: "mailto:alphawashhcm@gmail.com",
       icon: Send,
     },
   ],
@@ -164,8 +164,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <Command className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Acme Inc</span>
-                  <span className="truncate text-xs">Enterprise</span>
+                  <span className="truncate font-medium">Alpha Wash</span>
+                  <span className="truncate text-xs">Chăm xe đẹp đến từng centimet</span>
                 </div>
               </a>
             </SidebarMenuButton>

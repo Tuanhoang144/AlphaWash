@@ -13,6 +13,10 @@ import {
   Edit,
   ArrowLeft,
   Wrench,
+  QrCode,
+  RefreshCw,
+  CheckCircle,
+  CreditCard,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -23,6 +27,15 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { Dialog, DialogContent, DialogOverlay, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 
 interface WashRecord {
   id: number;
@@ -38,7 +51,15 @@ interface WashRecord {
   service: string;
   carSize: "S" | "M" | "L";
   status: string;
-  employee: string[]; 
+  paymentStatus?: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận";
+  employee: string[];
+}
+
+interface PaymentInfo {
+  amount: number;
+  accountNumber: string;
+  accountName: string;
+  transferInfo: string;
 }
 
 interface WashServiceViewProps {
@@ -105,6 +126,99 @@ export default function WashServiceView({
 
   const carSizeInfo = getCarSizeInfo(record.carSize);
 
+  // Get service price based on service type and car size
+  const getServicePrice = (
+    service: string,
+    carSize: "S" | "M" | "L"
+  ): number => {
+    const serviceName = service.toLowerCase();
+
+    if (serviceName.includes("quick") || serviceName.includes("nhanh")) {
+      switch (carSize) {
+        case "S":
+          return 150000;
+        case "M":
+          return 150000;
+        case "L":
+          return 170000;
+        default:
+          return 150000;
+      }
+    } else if (
+      serviceName.includes("standard") ||
+      serviceName.includes("tiêu chuẩn")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 250000;
+        case "M":
+          return 300000;
+        case "L":
+          return 350000;
+        default:
+          return 250000;
+      }
+    } else if (
+      serviceName.includes("deep") ||
+      serviceName.includes("chuyên sâu")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 850000;
+        case "M":
+          return 950000;
+        case "L":
+          return 1050000;
+        default:
+          return 850000;
+      }
+    }
+
+    // Default fallback
+    return 150000;
+  };
+
+  // Generate QR payment URL
+  const generateQRUrl = (paymentInfo: PaymentInfo): string => {
+    const { amount, accountNumber, accountName, transferInfo } = paymentInfo;
+    return `https://img.vietqr.io/image/tpbank-${accountNumber}-compact2.jpg?amount=${amount}&addInfo=${encodeURIComponent(
+      transferInfo
+    )}&accountName=${encodeURIComponent(accountName)}`;
+  };
+
+  // Get payment status color
+  const getPaymentStatusColor = (status: "Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận") => {
+    switch (status) {
+      case "Đã xác nhận":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "Đã thanh toán":
+        return "bg-blue-50 text-blue-700 border-blue-200";
+      case "Chờ thanh toán":
+      default:
+        return "bg-amber-50 text-amber-700 border-amber-200";
+    }
+  };
+
+  const [showQRDialog, setShowQRDialog] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState<"Chờ thanh toán" | "Đã thanh toán" | "Đã xác nhận">(
+    record.paymentStatus || "Chờ thanh toán"
+  );
+
+  const servicePrice = getServicePrice(record.service, record.carSize);
+  // Define paymentConfig or use hardcoded values
+  const paymentConfig = {
+    accountNumber: "0123456789",
+    accountName: "CONG TY RUA XE"
+  };
+
+  const paymentInfo: PaymentInfo = {
+    amount: servicePrice,
+    accountNumber: paymentConfig.accountNumber,
+    accountName: paymentConfig.accountName,
+    transferInfo: `Thanh toan phieu ${record.stt} - ${record.plateNumber}`
+  };
+
+
   return (
     <SidebarInset>
       <header className="sticky z-10 top-0 flex h-16 shrink-0 items-center gap-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4">
@@ -130,7 +244,7 @@ export default function WashServiceView({
       <div className="max-w-4xl mx-auto w-full p-6 space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col items-start gap-4">
             {onBack && (
               <Button variant="outline" size="sm" onClick={onBack}>
                 <ArrowLeft className="h-4 w-4 mr-2" />
@@ -263,7 +377,6 @@ export default function WashServiceView({
                       Nhân viên phụ trách ({record.employee.length} người)
                     </label>
                   </div>
-
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {record.employee.map((employee, index) => (
                       <div
@@ -292,17 +405,74 @@ export default function WashServiceView({
             {/* Status Card */}
             <Card>
               <CardHeader>
-                <CardTitle>Trạng thái</CardTitle>
+                <CardTitle>Trạng thái thanh toán</CardTitle>
               </CardHeader>
               <CardContent>
-                <Badge
-                  variant="outline"
-                  className={`text-lg font-medium px-4 py-2 ${getStatusColor(
-                    record.status
-                  )}`}
-                >
-                  {record.status}
-                </Badge>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">
+                    Giá dịch vụ
+                  </label>
+                  <p className="text-2xl font-bold text-green-600">
+                    {servicePrice.toLocaleString("vi-VN")}đ
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground sm:mr-2">
+                    Trạng thái thanh toán
+                  </label>
+                  <Badge
+                    variant="outline"
+                    className={`text-sm font-medium mt-1 ${getPaymentStatusColor(
+                      paymentStatus
+                    )}`}
+                  >
+                    {paymentStatus}
+                  </Badge>
+                </div>
+
+                <div className="space-y-2 mt-4">
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowQRDialog(true)}
+                  >
+                    <QrCode className="h-4 w-4 mr-2" />
+                    Hiển thị QR thanh toán
+                  </Button>
+                </div> 
+
+                {/* QR Code Dialog */}
+                <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+                  <DialogOverlay />
+                  <DialogContent className="w-full max-w-xs sm:max-w-md md:max-w-lg mx-auto p-0">
+                    <DialogTitle asChild>
+                      <VisuallyHidden>Quét mã QR để thanh toán</VisuallyHidden>
+                    </DialogTitle>
+                    <div className="p-4 border rounded-lg bg-white">
+                      <div className="text-center space-y-3">
+                        <p className="text-sm font-medium">Quét mã QR để thanh toán</p>
+                        <div className="flex justify-center">
+                          <img
+                            src={generateQRUrl(paymentInfo) || "/placeholder.svg"}
+                            alt="QR Code thanh toán"
+                            className="border rounded"
+                            style={{ maxHeight: "400px" }}
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground space-y-1">
+                          <p>
+                            Số tiền:{" "}
+                            <span className="font-semibold">
+                              {servicePrice.toLocaleString("vi-VN")}đ
+                            </span>
+                          </p>
+                          <p>Nội dung: {paymentInfo.transferInfo}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </CardContent>
             </Card>
 
@@ -311,7 +481,7 @@ export default function WashServiceView({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Clock className="h-5 w-5" />
-                  Thời gian
+                  Thời gian & trạng thái
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -342,6 +512,20 @@ export default function WashServiceView({
                       <p className="font-semibold text-lg">{record.timeOut}</p>
                     </div>
                   )}
+                </div>
+                <Separator />
+                <div className="flex flex-col items-start gap-2">
+                  <label className="text-sm text-muted-foreground">
+                    Trạng thái xe
+                  </label>
+                  <Badge
+                    variant="outline"
+                    className={`text-xs font-medium px-4 py-2 ${getStatusColor(
+                      record.status
+                    )}`}
+                  >
+                    {record.status}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
