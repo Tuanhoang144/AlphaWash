@@ -81,6 +81,7 @@ interface WashRecord {
   carSize: "S" | "M" | "L";
   status: string;
   statusPayment: string;
+  voucher: string;
   employee: string[]; // Changed from string to string[]
 }
 
@@ -116,6 +117,7 @@ export default function WashServiceTable() {
         carSize: item.carSize as "S" | "M" | "L",
         status: item.status ?? "",
         statusPayment: item.statusPayment ?? "",
+        voucher: item.voucher ?? "",
         employee: Array.isArray(item.employees)
           ? item.employees
           : item.employees
@@ -158,6 +160,7 @@ export default function WashServiceTable() {
 
   // Reset to first page when search term changes
   const handleSearch = (term: string) => {
+    console.log(term)
     setSearchTerm(term);
     setCurrentPage(1);
   };

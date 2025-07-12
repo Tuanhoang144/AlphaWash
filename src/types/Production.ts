@@ -13,5 +13,6 @@ export type Production = {
   carSize: "S" | "M" | "L"
   status: string
   statusPayment: string
-  employees: string[] 
+  employees: string[]
+  voucher: string
 };

@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,6 +64,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { DROPDOWN_CAR_SIZE } from "@/constant";
 
 interface WashServiceFormProps {
   record?: Production | null;
@@ -99,12 +100,113 @@ export default function WashServiceForm({
     status: record?.status || "Chờ xử lý",
     statusPayment: record?.statusPayment || "Chờ thanh toán",
     employees: record?.employees || [],
+    voucher: record?.voucher || "",
   });
 
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const getServicePrice = (
+    service: string,
+    carSize: "S" | "M" | "L"
+  ): number => {
+    const serviceName = service?.toLowerCase() || "";
+
+    if (serviceName.includes("quick") || serviceName.includes("nhanh")) {
+      switch (carSize) {
+        case "S":
+          return 150000;
+        case "M":
+          return 150000;
+        case "L":
+          return 170000;
+        default:
+          return 150000;
+      }
+    } else if (
+      serviceName.includes("standard") ||
+      serviceName.includes("tiêu chuẩn")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 250000;
+        case "M":
+          return 300000;
+        case "L":
+          return 350000;
+        default:
+          return 250000;
+      }
+    } else if (
+      serviceName.includes("deep") ||
+      serviceName.includes("chuyên sâu")
+    ) {
+      switch (carSize) {
+        case "S":
+          return 850000;
+        case "M":
+          return 950000;
+        case "L":
+          return 1050000;
+        default:
+          return 850000;
+      }
+    }
+
+    // Default fallback
+    return 150000;
+  };
+  const servicePrice =
+    mode === "edit" && record
+      ? getServicePrice(record.service, record.carSize)
+      : getServicePrice(
+          formData.service || "",
+          formData.carSize as "S" | "M" | "L"
+        );
+  const [servicePriceState,setServicePriceState] = useState<number>(servicePrice);
   const handleInputChange = (field: keyof Production, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    if(field === 'service') {
+     // call API set Value
+    // gửi value call 
+    }
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleInputChangeCarSize = (field: keyof Production, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if(field === 'carSize') {
+      // nhận size set value vào carsize
+      const valueSize = 150000 as number;
+      if(value === DROPDOWN_CAR_SIZE.SIZE_S) {
+        // handle size S
+        console.log('asfasfd');
+        setServicePriceState(valueSize)
+      }else if(value === DROPDOWN_CAR_SIZE.SIZE_M) {
+        // handle size M
+        console.log('M');
+        setServicePriceState(200000)
+      }else if(value === DROPDOWN_CAR_SIZE.SIZE_L) {
+        // handle size L
+        console.log('L');
+        setServicePriceState(250000)
+      }
+    }
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleInputChangeVoucher = (field: keyof Production, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    if(field === 'voucher') {
+      // lấy form value total 
+      const total = 150000;
+      setServicePriceState(total - (total * Number(value) / 100));
+    }
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -200,7 +302,7 @@ export default function WashServiceForm({
   const statusOptions = ["Chờ xử lý", "Đang xử lý", "Hoàn thành"];
 
   const serviceOptions = [
-    "Rửa Nhanh | Quick Wash",
+     "Rửa Nhanh | Quick Wash",
     "Rửa Tiêu Chuẩn | Standard Wash",
     "Rửa Chuyên Sâu | Deep Wash",
   ];
@@ -233,56 +335,7 @@ export default function WashServiceForm({
   };
 
   // Get service price based on service type and car size
-  const getServicePrice = (
-    service: string,
-    carSize: "S" | "M" | "L"
-  ): number => {
-    const serviceName = service?.toLowerCase() || "";
-
-    if (serviceName.includes("quick") || serviceName.includes("nhanh")) {
-      switch (carSize) {
-        case "S":
-          return 150000;
-        case "M":
-          return 150000;
-        case "L":
-          return 170000;
-        default:
-          return 150000;
-      }
-    } else if (
-      serviceName.includes("standard") ||
-      serviceName.includes("tiêu chuẩn")
-    ) {
-      switch (carSize) {
-        case "S":
-          return 250000;
-        case "M":
-          return 300000;
-        case "L":
-          return 350000;
-        default:
-          return 250000;
-      }
-    } else if (
-      serviceName.includes("deep") ||
-      serviceName.includes("chuyên sâu")
-    ) {
-      switch (carSize) {
-        case "S":
-          return 850000;
-        case "M":
-          return 950000;
-        case "L":
-          return 1050000;
-        default:
-          return 850000;
-      }
-    }
-
-    // Default fallback
-    return 150000;
-  };
+  
 
   // Generate QR payment URL
   const generateQRUrl = (paymentInfo: PaymentInfo): string => {
@@ -317,13 +370,7 @@ export default function WashServiceForm({
       | "Đã xác nhận") || "Chờ thanh toán"
   );
 
-  const servicePrice =
-    mode === "edit" && record
-      ? getServicePrice(record.service, record.carSize)
-      : getServicePrice(
-          formData.service || "",
-          formData.carSize as "S" | "M" | "L"
-        );
+
 
   const paymentConfig = {
     bankName: process.env.NEXT_PUBLIC_NAMEBANK || "TPBANK",
@@ -332,7 +379,7 @@ export default function WashServiceForm({
   };
 
   const paymentInfo: PaymentInfo = {
-    amount: servicePrice,
+    amount: servicePriceState,
     bankName: paymentConfig.bankName,
     accountNumber: paymentConfig.accountNumber,
     accountName: paymentConfig.accountName,
@@ -497,39 +544,31 @@ export default function WashServiceForm({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label>
-                        Kích thước xe <span className="text-red-500">*</span>
+                      <Label htmlFor="service">
+                        Dịch vụ <span className="text-red-500">*</span>
                       </Label>
-                      <RadioGroup
-                        value={formData.carSize}
+                      <Select
+                        value={formData.service}
                         onValueChange={(value) =>
-                          handleInputChange("carSize", value)
+                          handleInputChange("service", value)
                         }
-                        className="flex gap-4"
                       >
-                        {carSizeOptions.map((option) => (
-                          <div
-                            key={option.value}
-                            className="flex items-center space-x-2"
-                          >
-                            <RadioGroupItem
-                              value={option.value}
-                              id={option.value}
-                            />
-                            <Label
-                              htmlFor={option.value}
-                              className="cursor-pointer"
-                            >
-                              <div>
-                                <div className="font-medium">
-                                  {option.value}
-                                </div>
-                                {/* <div className="text-xs text-muted-foreground">{option.description}</div> */}
-                              </div>
-                            </Label>
-                          </div>
-                        ))}
-                      </RadioGroup>
+                        <SelectTrigger
+                          className={errors.service ? "border-red-500" : ""}
+                        >
+                          <SelectValue placeholder="Chọn dịch vụ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {serviceOptions.map((service) => (
+                            <SelectItem key={service} value={service}>
+                              {service}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      {errors.service && (
+                        <p className="text-sm text-red-500">{errors.service}</p>
+                      )}
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="carCompany">
@@ -569,6 +608,63 @@ export default function WashServiceForm({
                         </p>
                       )}
                     </div>
+                    <div className="space-y-2">
+                      <Label>
+                        Kích thước xe <span className="text-red-500">*</span>
+                      </Label>
+                      <RadioGroup
+                        value={formData.carSize}
+                        onValueChange={(value) =>
+                          handleInputChangeCarSize("carSize", value)
+                        }
+                        className="flex gap-4"
+                      >
+                        {carSizeOptions.map((option) => (
+                          <div
+                            key={option.value}
+                            className="flex items-center space-x-2"
+                          >
+                            <RadioGroupItem
+                              value={option.value}
+                              id={option.value}
+                            />
+                            <Label
+                              htmlFor={option.value}
+                              className="cursor-pointer"
+                            >
+                              <div>
+                                <div className="font-medium">
+                                  {option.value}
+                                </div>
+                                {/* <div className="text-xs text-muted-foreground">{option.description}</div> */}
+                              </div>
+                            </Label>
+                          </div>
+                        ))}
+                      </RadioGroup>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="voucher">
+                        Giảm giá <span className="text-red-500">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="voucher"
+                          value={formData.voucher || ""}
+                          onChange={(e) =>
+                            handleInputChangeVoucher("voucher", e.target.value)
+                          }
+                          placeholder="0901234567"
+                          className={`pl-10 ${
+                            errors.sdt ? "border-red-500" : ""
+                          }`}
+                        />
+                      </div>
+                      {errors.sdt && (
+                        <p className="text-sm text-red-500">{errors.sdt}</p>
+                      )}
+                    </div>
+                    
                   </div>
                 </CardContent>
               </Card>
@@ -586,33 +682,7 @@ export default function WashServiceForm({
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="service">
-                        Dịch vụ <span className="text-red-500">*</span>
-                      </Label>
-                      <Select
-                        value={formData.service}
-                        onValueChange={(value) =>
-                          handleInputChange("service", value)
-                        }
-                      >
-                        <SelectTrigger
-                          className={errors.service ? "border-red-500" : ""}
-                        >
-                          <SelectValue placeholder="Chọn dịch vụ" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {serviceOptions.map((service) => (
-                            <SelectItem key={service} value={service}>
-                              {service}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {errors.service && (
-                        <p className="text-sm text-red-500">{errors.service}</p>
-                      )}
-                    </div>
+                   
                     <div className="space-y-2">
                       <Label>
                         Nhân viên phụ trách{" "}
@@ -696,7 +766,7 @@ export default function WashServiceForm({
                         Giá dịch vụ
                       </label>
                       <p className="text-2xl font-bold text-green-600">
-                        {servicePrice.toLocaleString("vi-VN")}đ
+                        {servicePriceState.toLocaleString("vi-VN")}đ
                       </p>
                     </div>
 
