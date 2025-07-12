@@ -1,72 +1,21 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow, 
-} from "@/components/ui/table";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   Search,
-  Eye,
-  Edit,
-  Trash2,
-  Phone,
-  Car,
-  Filter,
-  Plus,
-  MoreHorizontal,
-  Calendar,
-  Clock,
-  User,
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
 } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Production } from "@/types/Production";
 import { useProductionManager } from "@/services/production-manager";
 import { useRouter } from "next/dist/client/components/navigation";
 import WashServiceView from "../view/page";
 import WashServiceForm from "../create/page";
 import { mappedData, WashRecord } from "./utils";
-import Header from "./header";
+
 import WorkshopTable from "./WorkshopTable";
+import Header from "./header";
 
 export default function WashServiceTable() {
   const [data, setData] = useState<WashRecord[]>([]);
