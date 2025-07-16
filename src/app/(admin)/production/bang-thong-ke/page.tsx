@@ -3,9 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 
-import {
-  Search,
-} from "lucide-react";
+import { Search } from "lucide-react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Production } from "@/types/Production";
 import { useProductionManager } from "@/services/production-manager";
@@ -16,33 +14,34 @@ import { mappedData, WashRecord } from "./utils";
 
 import WorkshopTable from "./WorkshopTable";
 import Header from "./header";
+import { OrderDTO } from "@/types/OrderResponse";
+import { useOrderManager } from "@/services/useOrderManager";
 
 export default function WashServiceTable() {
-  const [data, setData] = useState<WashRecord[]>([]);
+  const [data, setData] = useState<OrderDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const { getAllProduction } = useProductionManager();
+  const { getAllOrders } = useOrderManager();
   const router = useRouter();
   const [currentView, setCurrentView] = useState<
     "list" | "view" | "edit" | "create"
   >("list");
-  const [selectedRecord, setSelectedRecord] = useState<WashRecord>();
+  const [selectedRecord, setSelectedRecord] = useState<OrderDTO>();
 
   // Đưa fetchData ra ngoài để có thể gọi lại
-    const fetchData = async () => {
-      try {
-        const result: Production[] = await getAllProduction();
-        const data = mappedData(result);
-        setData(data);  
-      } catch (error) {
-        console.error("Lỗi khi gọi API production:", error);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const result: OrderDTO[] = await getAllOrders();
+      setData(result);
+    } catch (error) {
+      console.error("Lỗi khi gọi API production:", error);
+    }
+  };
 
   useEffect(() => {
     fetchData();
-  }, [getAllProduction]);
+  }, [getAllOrders]);
 
   // Filter data based on search terms
   const filteredData = useMemo(() => {
@@ -51,12 +50,23 @@ export default function WashServiceTable() {
     }
     return data.filter(
       (record) =>
-        record.plateNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.carCompany.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.service.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.employee.some((emp) =>
-          emp.toLowerCase().includes(searchTerm.toLowerCase())
+        record.orderDetails[0]?.vehicle.licensePlate
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        record.customer.customerName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        record.orderDetails[0]?.vehicle.brandName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        record.orderDetails[0]?.vehicle.modelName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        record.orderDetails[0]?.service.serviceName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        record.orderDetails[0]?.employee.some((emp) =>
+          emp.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
   }, [data, searchTerm]);
@@ -70,7 +80,7 @@ export default function WashServiceTable() {
 
   // Reset to first page when search term changes
   const handleSearch = (term: string) => {
-    console.log(term)
+    console.log(term);
     setSearchTerm(term);
     setCurrentPage(1);
   };
@@ -169,15 +179,15 @@ export default function WashServiceTable() {
     }
   };
 
-  if (currentView === "view" && selectedRecord) {
-    return (
-      <WashServiceView
-        record={selectedRecord}
-        onEdit={() => setCurrentView("edit")}
-        onBack={() => setCurrentView("list")}
-      />
-    );
-  }
+  // if (currentView === "view" && selectedRecord) {
+  //   return (
+  //     <WashServiceView
+  //       record={selectedRecord}
+  //       onEdit={() => setCurrentView("edit")}
+  //       onBack={() => setCurrentView("list")}
+  //     />
+  //   );
+  // }
 
   if (currentView === "create") {
     return (
@@ -192,23 +202,23 @@ export default function WashServiceTable() {
     );
   }
 
-  if (currentView === "edit" && selectedRecord) {
-    const productionRecord: Production = {
-      ...selectedRecord,
-      employees: selectedRecord.employee,
-    };
-    return (
-      <WashServiceForm
-        mode="edit"
-        record={productionRecord}
-        onSave={() => {
-          setCurrentView("list");
-          fetchData();
-        }}
-        onCancel={() => setCurrentView("list")}
-      />
-    );
-  }
+  // if (currentView === "edit" && selectedRecord) {
+  //   const productionRecord: Production = {
+  //     ...selectedRecord,
+  //     employees: selectedRecord.employee,
+  //   };
+  //   return (
+  //     <WashServiceForm
+  //       mode="edit"
+  //       record={productionRecord}
+  //       onSave={() => {
+  //         setCurrentView("list");
+  //         fetchData();
+  //       }}
+  //       onCancel={() => setCurrentView("list")}
+  //     />
+  //   );
+  // }
 
   return (
     <SidebarInset>

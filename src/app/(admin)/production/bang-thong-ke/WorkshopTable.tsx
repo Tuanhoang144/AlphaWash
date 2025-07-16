@@ -32,30 +32,30 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Size } from "@/types/Size";
+import { OrderDTO } from "@/types/OrderResponse";
 
-interface RecordType {
-  id: number;
-  stt: string;
-  date: string;
-  timeIn: string;
-  timeOut: string;  
-  plateNumber: string;
-  customerName: string;
-  sdt: string;
-  carCompany: string;
-  vehicleLine: string;
-  service: string;
-  carSize: "S" | "M" | "L";
-  status: string;
-  statusPayment: string;
-  voucher: string;
-  employee: string[];
-}
-
-type CarSizeType = "S" | "M" | "L";
+// interface RecordType {
+//   id: number;
+//   stt: string;
+//   date: string;
+//   timeIn: string;
+//   timeOut: string;  
+//   plateNumber: string;
+//   customerName: string;
+//   sdt: string;
+//   carCompany: string;
+//   vehicleLine: string;
+//   service: string;
+//   carSize: "S" | "M" | "L";
+//   status: string;
+//   statusPayment: string;
+//   voucher: string;
+//   employee: string[];
+// }
 
 interface WorkshopTableProps {
-  data: RecordType[];
+  data: OrderDTO[];
   itemsPerPage: number;
   totalPages: number;
   currentPage: number;
@@ -66,14 +66,14 @@ interface WorkshopTableProps {
   goToLastPage: () => void;
   goToPage: (page: number) => void;
   getPageNumbers: () => number[];
-  getCarSizeInfo: (size:  CarSizeType) => {
+  getCarSizeInfo: (size:  Size) => {
     label: string;
     color: string;
     description: string;
   };
   getStatusColor: (status: string) => string;
   getStatusPaymentColor: (status: string) => string;
-  setSelectedRecord: (record: RecordType) => void;
+  setSelectedRecord: (record: OrderDTO) => void;
   setCurrentView: (view: "list" | "view" | "edit" | "create") => void;
 }
 
@@ -157,54 +157,57 @@ const WorkshopTable: React.FC<WorkshopTableProps> = ({
                   </TableRow>
                 ) : (
                   data.map((record) => {
-                    const carSizeInfo = getCarSizeInfo(record?.carSize as CarSizeType);
+                    const carSizeInfo = getCarSizeInfo(record?.orderDetails[0]?.vehicle.size as Size);
                     return (
                       <TableRow
                         key={record.id}
                         className="hover:bg-muted/50 transition-colors"
                       >
-                        <TableCell className="font-medium">{record.stt}</TableCell>
-                        <TableCell>{record.date}</TableCell>
+                        <TableCell className="font-medium">
+                          {/* {record.stt} */}
+                          1
+                        </TableCell>
+                        <TableCell>{record.orderDate}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
                               <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
                                 Vào
                               </span>
-                              <span className="font-medium">{record.timeIn}</span>
+                              <span className="font-medium">{record.checkIn}</span>
                             </div>
-                            {record.timeOut && (
+                            {record.checkOut && (
                               <div className="flex items-center gap-2 text-sm">
                                 <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
                                   Ra
                                 </span>
-                                <span className="font-medium">{record.timeOut}</span>
+                                <span className="font-medium">{record.checkOut}</span>
                               </div>
                             )}
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="font-mono font-bold text-sm bg-muted px-3 py-1.5 rounded-md border">
-                            {record.plateNumber}
+                            {record.orderDetails[0]?.vehicle.licensePlate || "Chưa có"}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{record.customerName}</div>
+                          <div className="font-medium">{record.customer.customerName}</div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Phone className="h-3 w-3" />
-                            <span className="font-mono">{record.sdt}</span>
+                            <span className="font-mono">{record.customer.phone}</span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <div className="space-y-2">
                             <div>
                               <div className="font-medium text-sm">
-                                {record.carCompany}
+                                {record.orderDetails[0]?.vehicle.brandName || "Chưa có"}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                {record.vehicleLine}
+                                {record.orderDetails[0]?.vehicle.modelName || "Chưa có"}
                               </div>
                             </div>
                             <Badge
@@ -212,13 +215,13 @@ const WorkshopTable: React.FC<WorkshopTableProps> = ({
                               className={`text-xs font-medium ${carSizeInfo.color}`}
                               title={carSizeInfo.description}
                             >
-                              {record.carSize} - {carSizeInfo.label}
+                              {record.orderDetails[0]?.vehicle.size || "Chưa có"} - {carSizeInfo.label}
                             </Badge>
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <div className="text-sm max-w-[120px] line-clamp-2" title={record.service}>
-                            {record.service}
+                          <div className="text-sm max-w-[120px] line-clamp-2" title={record.orderDetails[0]?.service.serviceName || "Chưa có"}>
+                            {record.orderDetails[0]?.service.serviceName || "Chưa có"}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -228,11 +231,11 @@ const WorkshopTable: React.FC<WorkshopTableProps> = ({
                             </div>
                             <div className="space-y-1">
                               <div className="font-medium text-sm">
-                                {record.employee[0]}
+                                {record.orderDetails[0]?.employee[0]?.employeeName || "Chưa có"}
                               </div>
-                              {record.employee.length > 1 && (
+                              {record.orderDetails[0]?.employee.length > 1 && (
                                 <div className="text-xs text-muted-foreground">
-                                  +{record.employee.length - 1} người khác
+                                  +{record.orderDetails[0]?.employee.length - 1} người khác
                                 </div>
                               )}
                             </div>
@@ -246,9 +249,9 @@ const WorkshopTable: React.FC<WorkshopTableProps> = ({
                               </span>
                               <Badge
                                 variant="outline"
-                                className={`font-medium ${getStatusColor(record.status)}`}
+                                className={`font-medium ${getStatusColor(record.paymentStatus)}`}
                               >
-                                {record.status}
+                                {record.paymentStatus}
                               </Badge>
                             </div>
                             <div className="flex items-center gap-2">
@@ -258,10 +261,10 @@ const WorkshopTable: React.FC<WorkshopTableProps> = ({
                               <Badge
                                 variant="outline"
                                 className={`font-medium ${getStatusPaymentColor(
-                                  record.statusPayment
+                                  record.orderDetails[0]?.status || "Đợi thi công"
                                 )}`}
                               >
-                                {record.statusPayment}
+                                {record.orderDetails[0]?.status || "Đợi thi công"}
                               </Badge>
                             </div>
                           </div>
