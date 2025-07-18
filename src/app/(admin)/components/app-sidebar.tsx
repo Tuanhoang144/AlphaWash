@@ -5,6 +5,7 @@ import {
   BookOpen,
   Bot,
   Command,
+  FileSpreadsheet,
   Frame,
   LifeBuoy,
   Map,
@@ -12,6 +13,7 @@ import {
   Send,
   Settings2,
   SquareTerminal,
+  Users,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -57,8 +59,8 @@ const data = {
     },
     {
       title: "Bảng theo dõi",
-      url: "/production/bang-thong-ke",
-      icon: Bot,
+      url: "/order/table",
+      icon: FileSpreadsheet ,
       // items: [
       //   {
       //     title: "Genesis",
@@ -76,8 +78,8 @@ const data = {
     },
     {
       title: "Quản lý Nhân Viên",
-      url: "/production/employee",
-      icon: SquareTerminal,
+      url: "/employee",
+      icon: Users,
       isActive: true,
     },
     // {

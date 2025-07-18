@@ -3,12 +3,13 @@
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useApiService from "@/config/useApi";
+import { mapFullOrderToRequest } from "@/utils/mapper";
+import { OrderDTO } from "@/app/(admin)/order/create/types/invoice";
 
 export function useOrderManager() {
   const { callApi, loading, setIsLoading } = useApiService();
   const router = useRouter();
 
-  // GET: Fetch all orders
   const getAllOrders = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -21,8 +22,39 @@ export function useOrderManager() {
     }
   }, [callApi, setIsLoading]);
 
+    const getOrderById = useCallback(async (id: string) => {
+    if (!id) return null;
+    setIsLoading(true);
+    try {
+      const response = await callApi("get", `orders/${id}`);
+      return response?.data;
+    } catch (error: any) {
+      console.error("Lỗi khi gọi API getOrderById:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [callApi, setIsLoading]);
+
+  const createOrder = useCallback(async (orderData: OrderDTO) => {
+    setIsLoading(true);
+    try {
+      //Map
+      const orderRequest = mapFullOrderToRequest(orderData);
+      const response = await callApi("post", "orders/create-order", orderRequest);
+      return response?.data;
+    } catch (error) {
+      console.error("Lỗi tạo đơn hàng:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [callApi, setIsLoading]);
+
   return {
     getAllOrders,
+    getOrderById,
+    createOrder,
     loading,
   };
 }

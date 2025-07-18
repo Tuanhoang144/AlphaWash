@@ -16,18 +16,21 @@ export interface VehicleDTO {
 
 export interface ServiceCatalogDTO {
   id: number;
+  code: string;
   price: number;
   size: string;
 }
 
 export interface ServiceDTO {
   id: number;
+  code: string;
   serviceName: string;
+  serviceTypeCode: string;
   serviceCatalog: ServiceCatalogDTO;
 }
 
 export interface OrderDetailDTO {
-  employee: EmployeeDTO[];
+  employees: EmployeeDTO[];
   vehicle: VehicleDTO;
   service: ServiceDTO;
   status: string;
@@ -45,6 +48,8 @@ export interface OrderDTO {
   orderDate: string;
   checkIn: string;
   checkOut: string;
+  tip: number;
+  paymentType: string;
   paymentStatus: string;
   vat: number;
   discount: number;
