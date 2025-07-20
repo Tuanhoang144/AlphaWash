@@ -12,8 +12,10 @@ import { Separator } from "@/components/ui/separator";
 import { Car, Users, Clock, FileText, Plus, Minus } from "lucide-react";
 import type { OrderDetail } from "../types/invoice";
 import { Button } from "@/components/ui/button";
+import { tool } from "@/utils/tool";
 
 interface InvoiceSummaryProps {
+  statusPayment: string; // Thêm prop mới để nhận trạng thái thanh toán
   orderDetails: OrderDetail[];
   totalPrice: number;
 }
@@ -21,8 +23,10 @@ interface InvoiceSummaryProps {
 export default function InvoiceSummary({
   orderDetails,
   totalPrice,
+  statusPayment
 }: InvoiceSummaryProps) {
-  const [isOpen, setIsOpen] = useState(true); // Default to open
+  const [isOpen, setIsOpen] = useState(true);
+  const { getStatusPaymentColor, getStatusPaymentLabel } = tool();
 
   const totalServices = orderDetails.length;
   const totalEmployees = orderDetails.reduce(
@@ -50,24 +54,25 @@ export default function InvoiceSummary({
           </CollapsibleTrigger>
         </CardHeader>
         <CollapsibleContent>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-6">
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
+              <div className="rounded-xl bg-blue-50 p-4 text-center shadow-sm">
+                <div className="flex justify-center items-center gap-2 text-blue-600 mb-1">
                   <Car className="h-4 w-4" />
                   <span className="text-sm font-medium">Dịch vụ</span>
                 </div>
-                <div className="text-xl font-bold text-blue-700">
+                <div className="text-2xl font-bold text-blue-800">
                   {totalServices}
                 </div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded-lg">
-                <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
+
+              <div className="rounded-xl bg-green-50 p-4 text-center shadow-sm">
+                <div className="flex justify-center items-center gap-2 text-green-600 mb-1">
                   <Users className="h-4 w-4" />
                   <span className="text-sm font-medium">Nhân viên</span>
                 </div>
-                <div className="text-xl font-bold text-green-700">
+                <div className="text-2xl font-bold text-green-800">
                   {totalEmployees}
                 </div>
               </div>
@@ -76,40 +81,49 @@ export default function InvoiceSummary({
             <Separator />
 
             {/* Service Details */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Chi tiết dịch vụ:</h4>
+            <div className="space-y-4">
+              <h4 className="text-sm font-semibold text-gray-700">
+                Chi tiết dịch vụ
+              </h4>
               {orderDetails.map((detail, index) => (
-                <div key={index} className="border rounded-lg p-3 space-y-2">
+                <div
+                  key={index}
+                  className="border border-gray-200 rounded-xl p-4 space-y-3 shadow-sm bg-white"
+                >
+                  {/* Header: Biển số + kích thước + trạng thái */}
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Car className="h-3 w-3" />
-                      <span className="text-sm font-medium">
+                    <div className="flex items-center gap-2 text-sm text-gray-700">
+                      <Car className="h-4 w-4 text-gray-500" />
+                      <span className="font-medium">
                         {detail.vehicle.licensePlate}
                       </span>
                       <Badge variant="outline" className="text-xs">
                         {detail.vehicle.size}
                       </Badge>
                     </div>
-                    <Badge
-                      variant={
-                        detail.status === "Hoàn thành" ? "default" : "secondary"
-                      }
-                      className="text-xs"
+                    <div
+                      className={`text-xs px-2 py-1 rounded-full border ${getStatusPaymentColor(
+                        statusPayment
+                      )}`}
                     >
-                      {detail.status}
-                    </Badge>
-                  </div>
-
-                  <div className="text-sm text-gray-600">
-                    <div>{detail.service.serviceName}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="h-3 w-3" />
-                      <span className="text-xs">{detail.service.duration}</span>
+                      {getStatusPaymentLabel(statusPayment)}
                     </div>
                   </div>
 
+                  {/* Dịch vụ & thời gian */}
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <div className="font-medium">
+                      {detail.service.serviceName}
+                    </div>
+                    {/* <div className="flex items-center gap-1 text-xs">
+                      <Clock className="h-3 w-3" />
+                      {detail.service.duration}
+                    </div> */}
+                  </div>
+
+                  {/* Nhân viên thực hiện */}
                   {detail.employees.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1 pt-1">
                       {detail.employees.map((employee) => (
                         <Badge
                           key={employee.id}
@@ -122,9 +136,12 @@ export default function InvoiceSummary({
                     </div>
                   )}
 
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-sm">Giá:</span>
-                    <span className="font-medium text-green-600">
+                  {/* Giá */}
+                  <div className="flex justify-between items-center border-t pt-3">
+                    <span className="text-sm font-medium text-gray-700">
+                      Giá:
+                    </span>
+                    <span className="text-base font-semibold text-green-600">
                       {detail.serviceCatalog?.price != null
                         ? detail.serviceCatalog.price.toLocaleString("vi-VN") +
                           "đ"
@@ -135,15 +152,17 @@ export default function InvoiceSummary({
               ))}
             </div>
 
-            <Separator />
 
-            {/* Total */}
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-sm text-green-600 mb-1">Tổng tiền</div>
+            {/* Tổng tiền
+            <Separator />
+            <div className="bg-green-50 p-4 rounded-xl text-center shadow-sm">
+              <div className="text-sm text-green-600 font-medium mb-1">
+                Tổng tiền
+              </div>
               <div className="text-2xl font-bold text-green-700">
                 {totalPrice.toLocaleString("vi-VN")} VNĐ
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </CollapsibleContent>
       </Card>

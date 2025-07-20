@@ -12,7 +12,7 @@ export function mapRawApiToOrderDTO(data: any): OrderDTO {
   const rawDetail = data.orderDetails[0];
 
   const customer: Customer = {
-    customerId: data.customer?.id || "",
+    customerId: data.customer?.id || null,
     customerName: data.customer?.customerName || "Khách lẻ",
     phone: data.customer?.phone || "",
     vehicles: [], // optional
@@ -34,9 +34,7 @@ export function mapRawApiToOrderDTO(data: any): OrderDTO {
 
   const employees: Employee[] = (rawDetail.employees || []).map((e: any) => ({
     id: e.id.toString(),
-    name: e.employeeName,
-    position: "", // không có trong payload gốc
-    isAvailable: true, // giả định luôn sẵn sàng
+    name: e.name || "Không rõ",
   }));
 
   const serviceCatalog: ServiceCatalog = {
@@ -61,7 +59,7 @@ export function mapRawApiToOrderDTO(data: any): OrderDTO {
     service,
     serviceCatalog,
     status: rawDetail.status,
-    note: rawDetail.note !== "null" ? rawDetail.note : null,
+    note: rawDetail.note !== null ? rawDetail.note : null,
   };
 
   const order: OrderDTO = {
@@ -74,7 +72,7 @@ export function mapRawApiToOrderDTO(data: any): OrderDTO {
     vat: data.vat,
     discount: data.discount,
     totalPrice: data.totalPrice,
-    note: data.note !== "null" ? data.note : null,
+    note: data.note !== null ? data.note : null,
     customer,
     orderDetails: [orderDetail],
   };

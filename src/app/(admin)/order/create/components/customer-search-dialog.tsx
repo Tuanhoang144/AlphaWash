@@ -39,6 +39,7 @@ export default function CustomerSearchDialog({
 
   // Create customer state
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({
+    customerId: "",
     customerName: "",
     phone: "",
   });
@@ -101,7 +102,7 @@ export default function CustomerSearchDialog({
       resetDialog();
       alert("Khách hàng đã được tạo thành công!");
     } catch (error) {
-      console.error("❌ Lỗi khi tạo khách hàng:", error);
+      console.error("Lỗi khi tạo khách hàng:", error);
       alert("Có lỗi xảy ra khi tạo khách hàng");
     } finally {
       setIsCreating(false);
@@ -112,6 +113,7 @@ export default function CustomerSearchDialog({
     setSearchTerm("");
     setSearchResults([]);
     setNewCustomer({
+      customerId: "",
       customerName: "",
       phone: "",
     });

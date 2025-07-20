@@ -39,7 +39,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Size } from "@/types/Size";
 import { OrderDTO } from "@/types/OrderResponse";
-import { tool } from "../utils/tool";
+import { tool } from "../../../../../utils/tool";
 import { useRouter } from "next/navigation";
 
 interface OrderTableProps {
@@ -150,9 +150,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         key={record.id}
                         className="hover:bg-muted/50 transition-colors"
                       >
-                        <TableCell>
-                          {formatDate(record.orderDate)}
-                        </TableCell>
+                        <TableCell>{formatDate(record.orderDate)}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
@@ -236,12 +234,13 @@ const OrderTable: React.FC<OrderTableProps> = ({
                             </div>
                             <div className="space-y-1">
                               <div className="font-medium text-sm">
-                                {record.orderDetails[0]?.employees[0]
-                                  ?.employeeName || "Chưa có"}
+                                {record.orderDetails[0]?.employees[0]?.name ||
+                                  "Chưa có"}
                               </div>
                               {record.orderDetails[0]?.employees.length > 1 && (
                                 <div className="text-xs text-muted-foreground">
-                                  +{record.orderDetails[0]?.employees.length - 1}{" "}
+                                  +
+                                  {record.orderDetails[0]?.employees.length - 1}{" "}
                                   người khác
                                 </div>
                               )}
@@ -272,11 +271,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               <Badge
                                 variant="outline"
                                 className={`font-medium ${getStatusPaymentColor(
-                                  record.orderDetails[0]?.status || "PENDING"
+                                  record.paymentStatus || "PENDING"
                                 )}`}
                               >
                                 {getStatusPaymentLabel(
-                                  record.orderDetails[0]?.status || "PENDING"
+                                  record.paymentStatus || "PENDING"
                                 )}
                               </Badge>
                             </div>
@@ -293,11 +292,19 @@ const OrderTable: React.FC<OrderTableProps> = ({
                               align="end"
                               className="w-[160px]"
                             >
-                              <DropdownMenuItem onClick={() => { router.push(`/order/${record.id}`) }}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  router.push(`/order/${record.id}`);
+                                }}
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 Xem chi tiết
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => { router.push(`/order/${record.id}/edit`) }}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  router.push(`/order/${record.id}/edit`);
+                                }}
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 Chỉnh sửa
                               </DropdownMenuItem>
@@ -313,7 +320,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
           </div>
 
           {/* Pagination */}
-          {totalPages > 1 && (
+          {data.length > 1 && (
             <div className="flex items-center justify-between space-x-2 py-4">
               <div className="flex items-center gap-2">
                 <span className="text-sm text-muted-foreground">Hiển thị</span>

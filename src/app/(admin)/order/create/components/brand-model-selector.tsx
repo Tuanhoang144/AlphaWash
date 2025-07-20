@@ -67,6 +67,7 @@ export default function BrandModelSelector({
     try {
       const modelsData = await getModelsByBrandCode(brandCode);
       setModels(modelsData);
+      return modelsData;
     } catch (error) {
       console.error("Error loading models:", error);
     } finally {
@@ -82,17 +83,27 @@ export default function BrandModelSelector({
     });
   };
 
-  const selectExistingVehicle = (existingVehicle: Vehicle) => {
-    onVehicleChange(existingVehicle);
-    // Set selected brand based on existing vehicle
-    const brand = brands.find((b) => b.id === existingVehicle.brandId);
+  const selectExistingVehicle = async (existingVehicle: Vehicle) => {
+    const loadedModels = await loadModels(existingVehicle.brandCode); 
+    const model = loadedModels.find(
+      (m: Model) => m.code === existingVehicle.modelCode
+    );
+
+    const enrichedVehicle = {
+      ...existingVehicle,
+      size: existingVehicle.size || model?.size || "",
+    };
+
+    onVehicleChange(enrichedVehicle);
+
+    const brand = brands.find((b) => b.code === existingVehicle.brandCode);
     if (brand) {
       setSelectedBrand(brand);
     }
   };
 
-  const handleBrandSelect = (brandId: number) => {
-    const brand = brands.find((b) => b.id === brandId);
+  const handleBrandSelect = (brandCode: string) => {
+    const brand = brands.find((b) => b.code === brandCode);
     if (brand) {
       setSelectedBrand(brand);
 
@@ -113,20 +124,21 @@ export default function BrandModelSelector({
     }
   };
 
-  const handleModelSelect = (modelId: number) => {
-  const model = models.find((m) => m.id === modelId);
-  if (model) {
-    const nextVehicle = {
-      ...vehicle,
-      modelId: model.id,
-      modelCode: model.code || "",
-      modelName: model.modelName || "",
-      size: model.size || "M",
-    };
+  const handleModelSelect = (modelCode: string) => {
+    const model = models.find((m) => m.code === modelCode);
 
-    onVehicleChange(nextVehicle);
-  }
-};
+    if (model) {
+      const nextVehicle = {
+        ...vehicle,
+        modelId: model.id,
+        modelCode: model.code || "",
+        modelName: model.modelName || "",
+        size: model.size || "M",
+      };
+
+      onVehicleChange(nextVehicle);
+    }
+  };
 
   const filterBrandOption = (input: string, option: any) => {
     return (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
@@ -157,7 +169,7 @@ export default function BrandModelSelector({
                 onClick={() => selectExistingVehicle(existingVehicle)}
               >
                 {existingVehicle.licensePlate} - {existingVehicle.brandName}{" "}
-                {existingVehicle.modelName} ({existingVehicle.size})
+                {existingVehicle.modelName}
               </Badge>
             ))}
           </div>
@@ -181,14 +193,14 @@ export default function BrandModelSelector({
             placeholder={loadingBrands ? "Đang tải..." : "Chọn hãng xe"}
             optionFilterProp="label"
             filterOption={filterBrandOption}
-            value={vehicle.brandId || undefined}
+            value={vehicle.brandCode || undefined}
             onChange={handleBrandSelect}
             loading={loadingBrands}
             style={{ width: "100%" }}
             size="large"
           >
             {brands.map((brand) => (
-              <Option key={brand.id} value={brand.id} label={brand.brandName}>
+              <Option key={brand.id} value={brand.code} label={brand.brandName}>
                 {brand.brandName}
               </Option>
             ))}
@@ -210,7 +222,7 @@ export default function BrandModelSelector({
             }
             optionFilterProp="label"
             filterOption={filterModelOption}
-            value={vehicle.modelId || undefined}
+            value={vehicle.modelCode || undefined}
             onChange={handleModelSelect}
             disabled={!selectedBrand || loadingModels}
             loading={loadingModels}
@@ -218,7 +230,7 @@ export default function BrandModelSelector({
             size="large"
           >
             {models.map((model) => (
-              <Option key={model.id} value={model.id} label={model.modelName}>
+              <Option key={model.id} value={model.code} label={model.modelName}>
                 <div className="flex justify-between items-center">
                   <span>{model.modelName}</span>
                   <Badge variant="outline" className="ml-2 text-xs">

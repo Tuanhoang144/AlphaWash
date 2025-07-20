@@ -12,13 +12,16 @@ import { Separator } from "@/components/ui/separator";
 import { Car, Users, Clock, FileText, Plus, Minus } from "lucide-react";
 import type { OrderDetail } from "../types/invoice";
 import { Button } from "@/components/ui/button";
+import { tool } from "@/utils/tool";
 
 interface InvoiceSummaryProps {
   orderDetails: OrderDetail[];
   totalPrice: number;
+  statusPayment: string;
 }
 
 export default function InvoiceSummary({
+  statusPayment,
   orderDetails,
   totalPrice,
 }: InvoiceSummaryProps) {
@@ -29,6 +32,7 @@ export default function InvoiceSummary({
     (sum, detail) => sum + detail.employees.length,
     0
   );
+  const { getStatusVehicleColor, getStatusVehicleLabel } = tool();
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
@@ -76,74 +80,75 @@ export default function InvoiceSummary({
             <Separator />
 
             {/* Service Details */}
-            <div className="space-y-3">
-              <h4 className="font-medium text-sm">Chi tiết dịch vụ:</h4>
-              {orderDetails.map((detail, index) => (
-                <div key={index} className="border rounded-lg p-3 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Car className="h-3 w-3" />
-                      <span className="text-sm font-medium">
-                        {detail.vehicle.licensePlate}
+            {orderDetails && orderDetails.length > 0 && (
+              <div className="space-y-3">
+                <h4 className="font-medium text-sm">Chi tiết dịch vụ:</h4>
+                {orderDetails.map((detail, index) => (
+                  <div key={index} className="border rounded-lg p-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Car className="h-3 w-3" />
+                        <span className="text-sm font-medium">
+                          {detail.vehicle?.licensePlate || "Không rõ biển số"}
+                        </span>
+                        {detail.vehicle?.size && (
+                          <Badge variant="outline" className="text-xs">
+                            {detail.vehicle.size}
+                          </Badge>
+                        )}
+                      </div>
+                      <div
+                        className={`text-xs px-2 py-1 rounded-full border ${getStatusVehicleColor(
+                          statusPayment
+                        )}`}
+                      >
+                        {getStatusVehicleLabel(statusPayment)}
+                      </div>
+                    </div>
+
+                    <div className="text-sm text-gray-600">
+                      <div>
+                        {detail.service?.serviceName || "Không rõ dịch vụ"}
+                      </div>
+                    </div>
+
+                    {detail.employees?.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {detail.employees.map((employee) => (
+                          <Badge
+                            key={employee.id}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {employee.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex justify-between items-center pt-2 border-t">
+                      <span className="text-sm">Giá:</span>
+                      <span className="font-medium text-green-600">
+                        {detail.serviceCatalog?.price != null
+                          ? detail.serviceCatalog.price.toLocaleString(
+                              "vi-VN"
+                            ) + "đ"
+                          : "N/A"}
                       </span>
-                      <Badge variant="outline" className="text-xs">
-                        {detail.vehicle.size}
-                      </Badge>
-                    </div>
-                    <Badge
-                      variant={
-                        detail.status === "Hoàn thành" ? "default" : "secondary"
-                      }
-                      className="text-xs"
-                    >
-                      {detail.status}
-                    </Badge>
-                  </div>
-
-                  <div className="text-sm text-gray-600">
-                    <div>{detail.service.serviceName}</div>
-                    <div className="flex items-center gap-1 mt-1">
-                      <Clock className="h-3 w-3" />
-                      <span className="text-xs">{detail.service.duration}</span>
                     </div>
                   </div>
+                ))}
+              </div>
+            )}
 
-                  {detail.employees.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
-                      {detail.employees.map((employee) => (
-                        <Badge
-                          key={employee.id}
-                          variant="outline"
-                          className="text-xs"
-                        >
-                          {employee.name}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-sm">Giá:</span>
-                    <span className="font-medium text-green-600">
-                      {detail.serviceCatalog?.price != null
-                        ? detail.serviceCatalog.price.toLocaleString("vi-VN") +
-                          "đ"
-                        : "N/A"}
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
+            {/* Total
             <Separator />
-
-            {/* Total */}
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-sm text-green-600 mb-1">Tổng tiền</div>
               <div className="text-2xl font-bold text-green-700">
                 {totalPrice.toLocaleString("vi-VN")} VNĐ
               </div>
-            </div>
+            </div> */}
           </CardContent>
         </CollapsibleContent>
       </Card>

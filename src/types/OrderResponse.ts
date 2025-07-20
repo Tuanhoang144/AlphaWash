@@ -1,6 +1,6 @@
 export interface EmployeeDTO {
   id: number;
-  employeeName: string;
+  name: string;
 }
 
 export interface VehicleDTO {
@@ -41,6 +41,7 @@ export interface CustomerDTO {
   id: string;
   customerName: string;
   phone: string;
+  vehicles?: VehicleDTO[]; 
 }
 
 export interface OrderDTO {

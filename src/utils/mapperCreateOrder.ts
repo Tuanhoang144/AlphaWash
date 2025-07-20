@@ -27,12 +27,13 @@ export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
     checkInTime: order.checkIn,
     checkOutTime: order.checkOut,
     paymentType: order.paymentType,
+    status: detail.status,
     paymentStatus: order.paymentStatus,
     tip: order.tip,
     discount: order.discount,
     vat: order.vat,
     totalPrice: order.totalPrice,
-    note: order.note || "null",
+    note: order.note || null,
     employeeId: detail.employees.map((e) => e.id).join(","), // nhiều ID cách nhau bằng dấu phẩy
   };
 
@@ -49,11 +50,14 @@ export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
     serviceCatalogCode: detail.serviceCatalog?.code,
   };
 
-  const basicCustomer: BasicCustomerRequest = {
-    id: order.customer?.customerId ?? "",
-    name: order.customer?.customerName ?? "Khách lẻ",
-    phone: order.customer?.phone ?? "",
-  };
+  const basicCustomer: BasicCustomerRequest | null = !order.customer?.customerId
+    ? null
+    : {
+        id: order.customer.customerId,
+        name: order.customer.customerName ?? "",
+        phone: order.customer.phone ?? "",
+      };
+
   return {
     information: basicInformation,
     vehicle: basicVehicle,

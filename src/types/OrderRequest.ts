@@ -6,6 +6,7 @@ export interface BasicInformationRequest {
   paymentStatus: string;
   tip: number;
   discount: number;
+  status: string;
   vat: number;
   totalPrice: number;
   employeeId: string;

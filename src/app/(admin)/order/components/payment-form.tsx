@@ -11,8 +11,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CreditCard } from "lucide-react";
+
+import type { Customer } from "../create/types/invoice";
 import QRCodeDisplay from "./qr-code-display";
-import type { Customer } from "../types/invoice";
 
 interface PaymentFormContentProps {
   paymentType: string;
@@ -76,7 +77,7 @@ export default function PaymentFormContent({
             onValueChange={(value) => onPaymentChange("paymentType", value)}
           >
             <SelectTrigger className="w-full">
-              <SelectValue />
+              <SelectValue placeholder="Chọn trạng thái" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="Cash">Tiền mặt</SelectItem>

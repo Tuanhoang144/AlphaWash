@@ -48,46 +48,47 @@ export default function OrderDetailForm({
       newOrderDetails[index] = { ...newOrderDetails[index], [field]: value };
     }
     onOrderDetailsChange(newOrderDetails);
+    console.log("Order Details:", newOrderDetails);
   };
+  
+  // const addOrderDetail = () => {
+  //   const newOrderDetail: OrderDetail = {
+  //     employees: [],
+  //     vehicle: {
+  //       id: "",
+  //       licensePlate: "",
+  //       brandId: 0,
+  //       brandName: "",
+  //       brandCode: "",
+  //       modelId: 0,
+  //       modelCode: "",
+  //       modelName: "",
+  //       size: "M",
+  //       imageUrl: "",
+  //     },
+  //     service: {
+  //       id: 0,
+  //       code: "",
+  //       serviceName: "",
+  //       duration: "",
+  //       note: "",
+  //       serviceTypeCode: "",
+  //     },
+  //     serviceCatalog: {
+  //       id: 0,
+  //       code: "",
+  //       price: 0,
+  //       size: "M",
+  //     },
+  //     status: "Chờ xử lý",
+  //     note: null,
+  //   };
+  //   onOrderDetailsChange([...orderDetails, newOrderDetail]);
+  // };
 
-  const addOrderDetail = () => {
-    const newOrderDetail: OrderDetail = {
-      employees: [],
-      vehicle: {
-        id: "",
-        licensePlate: "",
-        brandId: 0,
-        brandName: "",
-        brandCode: "",
-        modelId: 0,
-        modelCode: "",
-        modelName: "",
-        size: "M",
-        imageUrl: "",
-      },
-      service: {
-        id: 0,
-        code: "",
-        serviceName: "",
-        duration: "",
-        note: "",
-        serviceTypeCode: "",
-      },
-      serviceCatalog: {
-        id: 0,
-        code: "",
-        price: 0,
-        size: "M",
-      },
-      status: "Chờ xử lý",
-      note: null,
-    };
-    onOrderDetailsChange([...orderDetails, newOrderDetail]);
-  };
-
-  const removeOrderDetail = (index: number) => {
-    onOrderDetailsChange(orderDetails.filter((_, i) => i !== index));
-  };
+  // const removeOrderDetail = (index: number) => {
+  //   onOrderDetailsChange(orderDetails.filter((_, i) => i !== index));
+  // };
 
   return (
     <Card>
@@ -146,7 +147,7 @@ export default function OrderDetailForm({
               <div className="space-y-2">
                 <Label>Trạng thái</Label>
                 <Select
-                  value={detail.status}
+                  value={detail.status || ""}
                   onValueChange={(value) =>
                     updateOrderDetail(index, "status", value)
                   }
@@ -155,11 +156,11 @@ export default function OrderDetailForm({
                     <SelectValue placeholder="Chọn trạng thái" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="PENDING">Chờ xử lý</SelectItem>
+                    <SelectItem value="PENDING">Chờ thi công</SelectItem>
                     <SelectItem value="PROCESSING">
-                      Đang thực hiện
+                      Đang thi công
                     </SelectItem>
-                    <SelectItem value="DONE">Hoàn thành</SelectItem>
+                    <SelectItem value="DONE">Thi công xong</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

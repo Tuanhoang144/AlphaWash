@@ -1,4 +1,3 @@
-import { StringDecoder } from "node:string_decoder"
 
 export interface Customer {
   customerId: string

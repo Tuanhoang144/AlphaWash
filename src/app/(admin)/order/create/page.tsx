@@ -7,7 +7,7 @@ import { FileText, CreditCard, QrCode } from "lucide-react"; // Import CreditCar
 import CustomerInfoSection from "./components/customer-info-section";
 import OrderInfoForm from "./components/order-info-form";
 import OrderDetailForm from "./components/order-detail-form";
-import PaymentFormContent from "./components/payment-form"; // Renamed import
+import PaymentFormContent from "../components/payment-form"; // Renamed import
 import InvoiceSummary from "./components/invoice-summary";
 import type { Customer, OrderDTO } from "./types/invoice";
 import {
@@ -42,12 +42,17 @@ export default function CreateInvoiceForm() {
     checkOut: "",
     tip: 0,
     paymentType: "Cash",
-    paymentStatus: "Pending",
+    paymentStatus: "PENDING",
     vat: 0,
     discount: 0,
     totalPrice: 0,
     note: null,
-    customer: undefined,
+    customer: {
+      customerId: "",
+      customerName: "",
+      phone: "",
+      vehicles: [],
+    },
     orderDetails: [
       {
         employees: [],
@@ -77,7 +82,7 @@ export default function CreateInvoiceForm() {
           size: "",
           price: 0,
         },
-        status: "Chờ xử lý",
+        status: "PENDING",
         note: null,
       },
     ],
@@ -109,7 +114,7 @@ export default function CreateInvoiceForm() {
   const { createOrder } = useOrderManager();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData : OrderDTO = {
+    const finalData: OrderDTO = {
       ...formData,
       tip: formData.tip ?? 0,
       totalPrice: calculateTotal(),
@@ -117,7 +122,7 @@ export default function CreateInvoiceForm() {
       checkIn: formData.checkIn as string,
       checkOut: formData.checkOut as string,
       paymentType: formData.paymentType ?? "Cash",
-      paymentStatus: formData.paymentStatus ?? "Pending",
+      paymentStatus: formData.paymentStatus ?? "PENDING",
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
       note: formData.note ?? null, // Ensure note is string or null, never undefined
@@ -126,7 +131,7 @@ export default function CreateInvoiceForm() {
     };
     console.log("Form submitted:", finalData);
     try {
-      const response = await createOrder(finalData); 
+      const response = await createOrder(finalData);
       console.log("✅ Tạo hóa đơn thành công:", response);
       alert("Hóa đơn đã được tạo thành công!");
     } catch (error) {
@@ -200,6 +205,7 @@ export default function CreateInvoiceForm() {
 
                 {/* Invoice Summary */}
                 <InvoiceSummary
+                  statusPayment={formData.paymentStatus || "PENDING"}
                   orderDetails={formData.orderDetails || []}
                   totalPrice={currentTotalPrice}
                 />

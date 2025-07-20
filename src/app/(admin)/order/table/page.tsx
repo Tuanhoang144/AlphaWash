@@ -1,9 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/ui/input";
 
-import { Search } from "lucide-react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/dist/client/components/navigation";
 
@@ -11,20 +9,36 @@ import Header from "./components/header";
 import { OrderDTO } from "@/types/OrderResponse";
 import { useOrderManager } from "@/services/useOrderManager";
 import OrderTable from "./components/order-table";
+import LoadingPage from "../../loading";
+import SearchTable from "./components/sreach";
 
 export default function WashServiceTable() {
   const [data, setData] = useState<OrderDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
-  const { getAllOrders } = useOrderManager();
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const { getAllOrders, loading } = useOrderManager();
+  const [selectedFilter, setSelectedFilter] = useState<
+    "payment" | "time" | null
+  >(null);
   const router = useRouter();
 
   // Đưa fetchData ra ngoài để có thể gọi lại
   const fetchData = async () => {
     try {
       const result: OrderDTO[] = await getAllOrders();
-      setData(result);
+      if (!result[0]?.customer?.id) {
+        return setData(
+          result.map((order) => ({
+            ...order,
+            customer: {
+              ...order.customer,
+              customerName: order.customer.customerName ?? "Khách lẻ",
+              phone: order.customer.phone ?? "",
+            },
+          }))
+        );
+      }
     } catch (error) {
       console.error("Lỗi khi gọi API production:", error);
     }
@@ -32,34 +46,90 @@ export default function WashServiceTable() {
 
   useEffect(() => {
     fetchData();
+    console.log("Fetched data:", data);
   }, [getAllOrders]);
 
   const filteredData = useMemo(() => {
-    if (searchTerm === "") {
-      return data;
+    let result = [...data];
+
+    // Tìm kiếm nếu có
+    if (searchTerm !== "") {
+      result = result.filter(
+        (record) =>
+          record.orderDetails[0]?.vehicle.licensePlate
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          record.customer.customerName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          record.orderDetails[0]?.vehicle.brandName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          record.orderDetails[0]?.vehicle.modelName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          record.orderDetails[0]?.service.serviceName
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase()) ||
+          record.orderDetails[0]?.employees.some((emp) =>
+            emp.name?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+      );
     }
-    return data.filter(
-      (record) =>
-        record.orderDetails[0]?.vehicle.licensePlate
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        record.customer.customerName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        record.orderDetails[0]?.vehicle.brandName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        record.orderDetails[0]?.vehicle.modelName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        record.orderDetails[0]?.service.serviceName
-          .toLowerCase()
-          .includes(searchTerm.toLowerCase()) ||
-        record.orderDetails[0]?.employees.some((emp) =>
-          emp.employeeName?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
-  }, [data, searchTerm]);
+
+    // Lọc/sắp theo bộ lọc đã chọn
+    if (selectedFilter === "payment") {
+      result.sort((a, b) => {
+        console.log("Sorting by payment status");
+
+        const getPriority = (order: OrderDTO) => {
+          const status = order.orderDetails[0]?.status;
+          const paymentStatus = order.paymentStatus ?? "";
+
+          const isDone = status === "DONE";
+          const isUnpaid = ["PENDING", "PROCESSING", "UNPAID"].includes(
+            paymentStatus
+          );
+
+          if (isDone && isUnpaid) return 0;
+          if (!isDone && isUnpaid) return 1;
+          return 2;
+        };
+
+        const priorityA = getPriority(a);
+        const priorityB = getPriority(b);
+
+        if (priorityA !== priorityB) return priorityA - priorityB;
+
+        // nếu cùng priority thì sắp theo thời gian gần nhất
+        const timeA = new Date(a.checkIn).getTime();
+        const timeB = new Date(b.checkIn).getTime();
+        return timeB - timeA;
+      });
+    }
+
+    if (selectedFilter === "time") {
+      const getFullCheckInDate = (record: OrderDTO): Date => {
+        const orderDate = new Date(record.orderDate);
+        const [h, m, s] = record.checkIn.split(":").map(Number);
+        const full = new Date(orderDate);
+        full.setHours(h, m, s, 0);
+        return full;
+      };
+      result.sort((a, b) => {
+        const timeA = getFullCheckInDate(a).getTime();
+        const timeB = getFullCheckInDate(b).getTime();
+        return timeB - timeA;
+      });
+    }
+    console.log("Filtered data:", result);
+
+    return result;
+  }, [data, searchTerm, selectedFilter]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedFilter]);
 
   // Calculate pagination
   const totalItems = filteredData.length;
@@ -110,22 +180,29 @@ export default function WashServiceTable() {
     return pages;
   };
 
+  // Handle navigation to create order page
+  const handleNavigate = () => {
+    setIsNavigating(true);
+    router.push("/order/create");
+  };
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  if (loading || isNavigating) {
+    return <LoadingPage />;
+  }
+
   return (
     <SidebarInset>
-      <Header searchTerm={searchTerm} handleSearch={handleSearch}></Header>
+      <Header></Header>
 
-      {/* Mobile Search Bar - Show below header on mobile */}
-      <div className="sm:hidden border-b bg-background px-4 py-3">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-          <Input
-            placeholder="Tìm kiếm biển số, tên khách hàng, nhân viên..."
-            value={searchTerm}
-            onChange={(e) => handleSearch(e.target.value)}
-            className="pl-10 w-full"
-          />
-        </div>
-      </div>
+      <SearchTable
+        handleNavigate={handleNavigate}
+        isNavigating={isNavigating}
+        searchTerm={searchTerm}
+        handleSearch={handleSearch}
+        selectedFilter={selectedFilter}
+        setSelectedFilter={setSelectedFilter}
+      />
 
       <OrderTable
         data={currentData}

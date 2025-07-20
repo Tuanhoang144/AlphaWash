@@ -3,7 +3,7 @@
 import type React from "react";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import {
   Breadcrumb,
@@ -29,7 +29,8 @@ import CustomerInfoSection from "../../create/components/customer-info-section";
 import OrderDetailForm from "../../create/components/order-detail-form";
 import OrderInfoForm from "../../create/components/order-info-form";
 import InvoiceSummary from "../../create/components/invoice-summary";
-import PaymentFormContent from "../../create/components/payment-form";
+import PaymentFormContent from "../../components/payment-form";
+import { SidebarInset } from "@/components/ui/sidebar";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -39,7 +40,10 @@ export default function EditInvoicePage() {
   // State để giữ dữ liệu form, được khởi tạo từ fetchedOrder
   const [formData, setFormData] = useState<OrderDTO | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [fetchedOrder, setFetchedOrder] = useState<OrderDTO | null>(null);
+  const [fetchedOrder, setFetchedOrder] = useState<any | null>(null);
+
+  const { updateOrder } = useOrderManager();
+  const router = useRouter();
 
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -59,11 +63,19 @@ export default function EditInvoicePage() {
       setFormData({
         ...fetchedOrder,
         // Đảm bảo các đối tượng lồng nhau không phải là null/undefined nếu form mong đợi chúng
-        customer: fetchedOrder.customer || {
-          id: "",
-          customerName: "",
-          phone: "",
-        },
+        customer: fetchedOrder.customer
+          ? {
+              customerId: fetchedOrder.customer.id || "",
+              customerName: fetchedOrder.customer.customerName || "",
+              phone: fetchedOrder.customer.phone || "",
+              vehicles: fetchedOrder.customer.vehicles || [],
+            }
+          : {
+              customerId: "",
+              customerName: "",
+              phone: "",
+              vehicles: [],
+            },
         orderDetails: fetchedOrder.orderDetails || [],
       });
     }
@@ -74,20 +86,22 @@ export default function EditInvoicePage() {
       prev
         ? {
             ...prev,
-            customer: customer || { customerId: "", customerName: "", phone: "" },
+            customer: customer || {
+              customerId: "",
+              customerName: "",
+              phone: "",
+            },
           }
         : null
     );
   };
 
+  console.log("Fetched order data:", fetchedOrder);
+  console.log("Form data state:", formData);
+
   // Hàm chung để cập nhật các trường trực tiếp của OrderDTO
-  const handleOrderInfoChange = (
-    field: string,
-    value: string
-  ) => {
-    setFormData((prev) =>
-      prev ? { ...prev, [field]: value } : null
-    );
+  const handleOrderInfoChange = (field: string, value: string) => {
+    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
   const handleOrderDetailsChange = (orderDetails: OrderDetail[]) => {
@@ -95,10 +109,7 @@ export default function EditInvoicePage() {
   };
 
   // Hàm chung để cập nhật các trường thanh toán của OrderDTO
-  const handlePaymentChange = (
-    field: string,
-    value: string | number
-  ) => {
+  const handlePaymentChange = (field: string, value: string | number) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
@@ -127,10 +138,21 @@ export default function EditInvoicePage() {
       totalPrice: calculateTotal(), // Tính toán lại tổng tiền trước khi gửi
     };
 
+    // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
+    updateOrder(updatedOrder, id)
+      .then((response) => {
+        console.log("Order updated successfully:", response);
+        // Cập nhật formData với dữ liệu mới nếu cần
+        setFormData(response);
+
+        alert("Hóa đơn đã được cập nhật thành công!");
+        router.push(`/order/${id}`);
+      })
+      .catch((error) => {
+        console.error("Error updating order:", error);
+        alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+      });
     console.log("Submitting updated OrderDTO:", updatedOrder);
-    // Tại đây bạn sẽ gửi updatedOrder đến API backend của mình (ví dụ: PUT /api/orders/{id})
-    alert("Hóa đơn đã được cập nhật thành công!");
-    // Tùy chọn: chuyển hướng đến trang xem chi tiết hoặc hiển thị thông báo thành công
   };
 
   if (loading || !formData) {
@@ -156,7 +178,7 @@ export default function EditInvoicePage() {
     formData.orderDetails?.[0]?.vehicle.licensePlate || null;
 
   return (
-    <main>
+    <SidebarInset>
       <header className="sticky z-10 top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
@@ -175,7 +197,7 @@ export default function EditInvoicePage() {
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
               <BreadcrumbPage className="hidden md:block">
-                Chỉnh sửa hóa đơn #{id}
+                Chỉnh sửa hóa đơn
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -186,10 +208,10 @@ export default function EditInvoicePage() {
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Chỉnh Sửa Hóa Đơn #{id}
+              Chỉnh Sửa Hóa Đơn
             </h1>
             <p className="text-gray-600 mt-2">
-              Cập nhật thông tin chi tiết của hóa đơn dịch vụ
+              Cập nhật thông tin chi tiết của hóa đơn
             </p>
           </div>
 
@@ -199,14 +221,14 @@ export default function EditInvoicePage() {
               <div className="lg:col-span-2 space-y-6">
                 <CustomerInfoSection
                   customer={
-                    formData.customer
-                      ? {
+                    !formData.customer.customerId
+                      ? null
+                      : {
                           customerId: formData.customer.customerId || "",
                           customerName: formData.customer.customerName,
                           phone: formData.customer.phone || "",
-                          vehicles: (formData.customer as any).vehicles, // optional, if available
+                          vehicles: (formData.customer as any).vehicles,
                         }
-                      : null
                   }
                   onCustomerChange={handleCustomerChange}
                 />
@@ -226,6 +248,7 @@ export default function EditInvoicePage() {
                   onOrderInfoChange={handleOrderInfoChange}
                 />
                 <InvoiceSummary
+                statusPayment={formData.paymentStatus || ""}
                   orderDetails={formData.orderDetails}
                   totalPrice={currentTotalPrice}
                 />
@@ -303,6 +326,6 @@ export default function EditInvoicePage() {
           </form>
         </div>
       </div>
-    </main>
+    </SidebarInset>
   );
 }

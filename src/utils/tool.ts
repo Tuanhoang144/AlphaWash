@@ -12,23 +12,23 @@ export function tool() {
     }
   };
 
-  const getStatusPaymentLabel = (status: string) => {
+  const getStatusVehicleLabel = (status: string) => {
     switch (status) {
       case "DONE":
         return "Thi công xong";
-      case "PENDING":
+      case "PROCESSING":
         return "Đang thi công";
+      case "PENDING":
+        return "Chờ thi công";
       default:
         return "Chờ thi công";
     }
   };
 
-  const getStatusVehicleLabel = (status: string) => {
+  const getStatusPaymentLabel = (status: string) => {
     switch (status) {
       case "DONE":
         return "Đã thanh toán";
-      case "PROCESSING":
-        return "Đang xử lý";
       case "PENDING":
         return "Chờ thanh toán";
       default:
@@ -86,8 +86,10 @@ export function tool() {
     return `${day}/${month}/${year}`;
   }
 
-  function formatTime(timeStr: string): string {
+  function formatTime(timeStr?: string): string {
+    if (!timeStr || typeof timeStr !== "string") return ":";
     const [h, m] = timeStr.split(":").map(Number);
+    if (isNaN(h) || isNaN(m)) return ":";
     const hour = String(h).padStart(2, "0");
     const minute = String(m).padStart(2, "0");
     return `${hour}:${minute}`;

@@ -26,8 +26,10 @@ import InvoiceSummary from "./components/invoice-summary";
 import CustomerInfoDisplay from "./components/customer-info-display";
 import OrderInfoDisplay from "./components/order-info-display";
 import OrderDetailDisplay from "./components/order-detail-display";
-import PaymentFormContent from "./components/payment-form";
 import { mapRawApiToOrderDTO } from "./utils/mapper";
+import PaymentFormContent from "../components/payment-form";
+import LoadingPage from "../../loading";
+import { useRouter } from "next/navigation";
 
 export default function InvoiceClientPage({
   params,
@@ -35,35 +37,41 @@ export default function InvoiceClientPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const { loading, getOrderById } = useOrderManager();
+  const { getOrderById } = useOrderManager();
+  const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState<any>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   useEffect(() => {
-    // Fetch order data by ID when the component mounts
     const fetchOrderData = async () => {
-      const data = await getOrderById(id);
-      if (!data) {
-        console.error("Order data not found for ID:", id);
-        return;
+      try {
+        setLoading(true);
+        const data = await getOrderById(id);
+        if (!data) {
+          console.error("Order data not found for ID:", id);
+          return;
+        }
+        const mapper = mapRawApiToOrderDTO(data);
+        setOrderData(mapper);
+      } catch (error) {
+        console.error("Lỗi khi tải dữ liệu hóa đơn:", error);
+      } finally {
+        setLoading(false);
       }
-      const mapper = mapRawApiToOrderDTO(data);
-      setOrderData(mapper);
     };
+
     fetchOrderData();
   }, [id, getOrderById]);
 
-  //   if (loading) {
-  //     return (
-  //       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-  //         <div className="text-center p-8 bg-white rounded-lg shadow-md">
-  //           <h1 className="text-2xl font-bold text-blue-600 mb-4">
-  //             Đang tải hóa đơn...
-  //           </h1>
-  //           <p className="text-gray-700">Vui lòng chờ trong giây lát.</p>
-  //         </div>
-  //       </div>
-  //     );
-  //   }
+  const [isNavigating, setIsNavigating] = useState(false);
+  const router = useRouter();
+  const handleNavigate = () => {
+    setIsNavigating(true);
+    router.push(`/order/${id}/edit`);
+  };
+
+  if (loading || isNavigating) {
+    return <LoadingPage />;
+  }
 
   if (!orderData) {
     return (
@@ -124,7 +132,7 @@ export default function InvoiceClientPage({
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">
-              Chi Tiết Hóa Đơn 
+              Chi Tiết Hóa Đơn
             </h1>
             <p className="text-gray-600 mt-2">
               Xem thông tin chi tiết của hóa đơn dịch vụ
@@ -134,7 +142,13 @@ export default function InvoiceClientPage({
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Left Column - Order Details Display */}
             <div className="lg:col-span-2 space-y-6">
-              <CustomerInfoDisplay customer={orderData.customer} />
+              <CustomerInfoDisplay
+                customer={
+                  orderData.customer && orderData.customer.customerId
+                    ? orderData.customer
+                    : null
+                }
+              />
               <OrderDetailDisplay orderDetails={orderData.orderDetails} />
             </div>
 
@@ -146,6 +160,7 @@ export default function InvoiceClientPage({
                 checkOut={orderData.checkOut}
               />
               <InvoiceSummary
+                statusPayment={orderData.paymentStatus}
                 orderDetails={orderData.orderDetails}
                 totalPrice={orderData.totalPrice}
               />
@@ -176,7 +191,7 @@ export default function InvoiceClientPage({
                           Xem Thông Tin Thanh Toán
                         </Button>
                       </DialogTrigger>
-                      <DialogContent className="max-w-6xl p-6 max-h-[90vh] overflow-y-auto">
+                      <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto ">
                         <DialogHeader>
                           <DialogTitle className="flex items-center gap-2">
                             <CreditCard className="h-5 w-5" />
@@ -187,7 +202,7 @@ export default function InvoiceClientPage({
                           </DialogDescription>
                         </DialogHeader>
                         <PaymentFormContent
-                          paymentMethod={orderData.paymentMethod || ""}
+                          paymentType={orderData.paymentMethod || ""}
                           paymentStatus={orderData.paymentStatus || ""}
                           vat={orderData.vat || 0}
                           discount={orderData.discount || 0}
@@ -205,6 +220,7 @@ export default function InvoiceClientPage({
                       type="button"
                       variant="outline"
                       className="w-full bg-transparent"
+                      onClick={() => router.push(`/order/${id}/print`)}
                     >
                       In Hóa Đơn
                     </Button>
@@ -212,6 +228,7 @@ export default function InvoiceClientPage({
                       type="button"
                       variant="outline"
                       className="w-full bg-transparent text-blue-600 hover:text-blue-700"
+                      onClick={handleNavigate}
                     >
                       Chỉnh Sửa Hóa Đơn
                     </Button>
