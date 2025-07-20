@@ -1,6 +1,6 @@
 
 export interface Customer {
-  customerId: string
+  id: string
   customerName: string
   phone: string
   vehicles?: Vehicle[]

@@ -154,7 +154,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
-                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                              <span className="text-xs w-1/3 text-center font-medium bg-muted px-1.5 py-0.5 rounded">
                                 Vào
                               </span>
                               <span className="font-medium">
@@ -163,7 +163,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                             </div>
                             {record.checkOut && (
                               <div className="flex items-center gap-2 text-sm">
-                                <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
+                                <span className="text-xs w-1/3 text-center font-medium bg-muted px-1.5 py-0.5 rounded">
                                   Ra
                                 </span>
                                 <span className="font-medium">

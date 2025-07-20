@@ -1,7 +1,7 @@
 export interface BasicInformationRequest {
   date: string;
-  checkInTime: string;
-  checkOutTime: string;
+  checkinTime: string;
+  checkoutTime: string;
   paymentType: string;
   paymentStatus: string;
   tip: number;

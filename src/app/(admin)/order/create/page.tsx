@@ -29,13 +29,14 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
+import { useRouter } from "next/navigation";
 
 export default function CreateInvoiceForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
     null
   );
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false); // State for payment dialog
-
+  const route = useRouter();
   const [formData, setFormData] = useState<Partial<OrderDTO>>({
     orderDate: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
@@ -48,7 +49,7 @@ export default function CreateInvoiceForm() {
     totalPrice: 0,
     note: null,
     customer: {
-      customerId: "",
+      id: "",
       customerName: "",
       phone: "",
       vehicles: [],
@@ -134,6 +135,8 @@ export default function CreateInvoiceForm() {
       const response = await createOrder(finalData);
       console.log("✅ Tạo hóa đơn thành công:", response);
       alert("Hóa đơn đã được tạo thành công!");
+      route.push("/order/table"); 
+      
     } catch (error) {
       console.error("❌ Lỗi khi tạo hóa đơn:", error);
       alert("Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.");

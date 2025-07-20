@@ -24,8 +24,8 @@ export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
       order.orderDate && order.orderDate.length === 10
         ? `${order.orderDate}T00:00:00`
         : order.orderDate,
-    checkInTime: order.checkIn,
-    checkOutTime: order.checkOut,
+    checkinTime: order.checkIn,
+    checkoutTime: order.checkOut,
     paymentType: order.paymentType,
     status: detail.status,
     paymentStatus: order.paymentStatus,
@@ -50,10 +50,10 @@ export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
     serviceCatalogCode: detail.serviceCatalog?.code,
   };
 
-  const basicCustomer: BasicCustomerRequest | null = !order.customer?.customerId
+  const basicCustomer: BasicCustomerRequest | null = !order.customer?.id
     ? null
     : {
-        id: order.customer.customerId,
+        id: order.customer.id,
         name: order.customer.customerName ?? "",
         phone: order.customer.phone ?? "",
       };

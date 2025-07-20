@@ -23,30 +23,27 @@ export default function WashServiceTable() {
   >(null);
   const router = useRouter();
 
-  // Đưa fetchData ra ngoài để có thể gọi lại
   const fetchData = async () => {
     try {
       const result: OrderDTO[] = await getAllOrders();
-      if (!result[0]?.customer?.id) {
-        return setData(
-          result.map((order) => ({
-            ...order,
-            customer: {
-              ...order.customer,
-              customerName: order.customer.customerName ?? "Khách lẻ",
-              phone: order.customer.phone ?? "",
-            },
-          }))
-        );
-      }
+
+      const transformed = result.map((order) => ({
+        ...order,
+        customer: {
+          ...order.customer,
+          customerName: order.customer?.customerName ?? "Khách lẻ",
+          phone: order.customer?.phone ?? "",
+        },
+      }));
+
+      setData(transformed);
     } catch (error) {
-      console.error("Lỗi khi gọi API production:", error);
+      console.error("Lỗi khi gọi API get all order:", error);
     }
   };
 
   useEffect(() => {
     fetchData();
-    console.log("Fetched data:", data);
   }, [getAllOrders]);
 
   const filteredData = useMemo(() => {
@@ -109,16 +106,19 @@ export default function WashServiceTable() {
     }
 
     if (selectedFilter === "time") {
-      const getFullCheckInDate = (record: OrderDTO): Date => {
+      const getFullCheckInDate = (record: OrderDTO): number => {
+        if (!record.checkIn) return -Infinity;
+
         const orderDate = new Date(record.orderDate);
         const [h, m, s] = record.checkIn.split(":").map(Number);
         const full = new Date(orderDate);
         full.setHours(h, m, s, 0);
-        return full;
+        return full.getTime();
       };
+
       result.sort((a, b) => {
-        const timeA = getFullCheckInDate(a).getTime();
-        const timeB = getFullCheckInDate(b).getTime();
+        const timeA = getFullCheckInDate(a);
+        const timeB = getFullCheckInDate(b);
         return timeB - timeA;
       });
     }
