@@ -5,17 +5,17 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Users, Check } from "lucide-react";
-import type { Employee } from "../types/invoice";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useEmployeeManager } from "@/services/useEmployeeManager";
+import { EmployeeDTO } from "@/types/OrderResponse";
 
 interface EmployeeSelectorProps {
-  selectedEmployees: Employee[];
-  onEmployeesChange: (employees: Employee[]) => void;
+  selectedEmployees: EmployeeDTO[];
+  onEmployeesChange: (employees: EmployeeDTO[]) => void;
 }
 
 export default function EmployeeSelector({
@@ -24,9 +24,9 @@ export default function EmployeeSelector({
 }: EmployeeSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const { getAllEmployees } = useEmployeeManager();
-  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<EmployeeDTO[]>([]);
 
-  const toggleEmployee = (employee: Employee) => {
+  const toggleEmployee = (employee: EmployeeDTO) => {
     const isSelected = selectedEmployees.some((emp) => emp.id === employee.id);
     if (isSelected) {
       onEmployeesChange(

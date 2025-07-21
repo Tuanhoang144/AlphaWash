@@ -1,12 +1,5 @@
-import type {
-  OrderDTO as FullOrderDTO,
-  OrderDetail,
-  Vehicle,
-  Customer,
-  Employee,
-  Service,
-  ServiceCatalog,
-} from "../app/(admin)/order/create/types/invoice";
+import { BasicCustomerRequest, BasicInformationRequest, BasicServiceRequest, BasicVehicleRequest } from "@/types/OrderRequest";
+import { OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
 
 export interface OrderUpdateRequest {
   id: string;
@@ -17,45 +10,13 @@ export interface OrderUpdateRequest {
     customer: BasicCustomerRequest | null;
   };
 }
-export interface BasicInformationRequest {
-  date: string;
-  checkinTime: string;
-  checkoutTime: string;
-  paymentType: string;
-  paymentStatus: string;
-  tip: number;
-  status: string; // Thêm status
-  discount: number;
-  vat: number;
-  totalPrice: number;
-  note: string;
-  employeeId: string; // có thể là "id1,id2"
-}
 
-export interface BasicVehicleRequest {
-  licensePlate: string;
-  brandCode: string;
-  modelCode: string;
-  note?: string;
-}
-
-export interface BasicServiceRequest {
-  serviceTypeCode: string;
-  serviceCode: string;
-  serviceCatalogCode?: string;
-}
-
-export interface BasicCustomerRequest {
-  id: string;
-  name: string;
-  phone: string;
-}
 
 export function mapFullOrderToUpdateRequest(
   id: string,
-  order: FullOrderDTO
+  order: OrderResponseDTO
 ): OrderUpdateRequest {
-  const detail: OrderDetail = order.orderDetails[0]; // chỉ lấy 1 chi tiết
+  const detail: OrderDetailDTO = order.orderDetails[0]; // chỉ lấy 1 chi tiết
   function formatDateToLocalDateTime(input: string): string {
     if (!input) return "";
     const date = new Date(input);
@@ -89,11 +50,11 @@ export function mapFullOrderToUpdateRequest(
       serviceCode: detail.service?.code || "",
       serviceCatalogCode: detail.serviceCatalog?.code || "",
     },
-    customer: !order.customer?.customerId
+    customer: !order.customer?.id
       ? null
       : {
-          id: order.customer.customerId,
-          name: order.customer.customerName ?? "",
+          id: order.customer.id,
+          name: order.customer.name ?? "",
           phone: order.customer.phone ?? "",
         },
   };

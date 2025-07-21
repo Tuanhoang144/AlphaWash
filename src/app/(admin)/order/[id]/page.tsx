@@ -26,10 +26,10 @@ import InvoiceSummary from "./components/invoice-summary";
 import CustomerInfoDisplay from "./components/customer-info-display";
 import OrderInfoDisplay from "./components/order-info-display";
 import OrderDetailDisplay from "./components/order-detail-display";
-import { mapRawApiToOrderDTO } from "./utils/mapper";
 import PaymentFormContent from "../components/payment-form";
 import LoadingPage from "../../loading";
 import { useRouter } from "next/navigation";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 
 export default function InvoiceClientPage({
   params,
@@ -39,7 +39,7 @@ export default function InvoiceClientPage({
   const { id } = use(params);
   const { getOrderById } = useOrderManager();
   const [loading, setLoading] = useState(true);
-  const [orderData, setOrderData] = useState<any>(null);
+  const [orderData, setOrderData] = useState<OrderResponseDTO | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   useEffect(() => {
     const fetchOrderData = async () => {
@@ -50,8 +50,8 @@ export default function InvoiceClientPage({
           console.error("Order data not found for ID:", id);
           return;
         }
-        const mapper = mapRawApiToOrderDTO(data);
-        setOrderData(mapper);
+        // const mapper = mapRawApiToOrderDTO(data);
+        setOrderData(data);
       } catch (error) {
         console.error("Lỗi khi tải dữ liệu hóa đơn:", error);
       } finally {
@@ -144,7 +144,7 @@ export default function InvoiceClientPage({
             <div className="lg:col-span-2 space-y-6">
               <CustomerInfoDisplay
                 customer={
-                  orderData.customer && orderData.customer.customerId
+                  orderData.customer && orderData.customer.id
                     ? orderData.customer
                     : null
                 }
@@ -202,7 +202,7 @@ export default function InvoiceClientPage({
                           </DialogDescription>
                         </DialogHeader>
                         <PaymentFormContent
-                          paymentType={orderData.paymentMethod || ""}
+                          paymentType={orderData.paymentType || ""}
                           paymentStatus={orderData.paymentStatus || ""}
                           vat={orderData.vat || 0}
                           discount={orderData.discount || 0}

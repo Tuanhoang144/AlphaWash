@@ -10,20 +10,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Car, Users, Clock, FileText, Plus, Minus } from "lucide-react";
-import type { OrderDetail } from "../types/invoice";
 import { Button } from "@/components/ui/button";
 import { tool } from "@/utils/tool";
+import { OrderDetailDTO } from "@/types/OrderResponse";
 
 interface InvoiceSummaryProps {
   statusPayment: string; // Thêm prop mới để nhận trạng thái thanh toán
-  orderDetails: OrderDetail[];
+  orderDetails: OrderDetailDTO[];
   totalPrice: number;
 }
 
 export default function InvoiceSummary({
   orderDetails,
   totalPrice,
-  statusPayment
+  statusPayment,
 }: InvoiceSummaryProps) {
   const [isOpen, setIsOpen] = useState(true);
   const { getStatusPaymentColor, getStatusPaymentLabel } = tool();
@@ -142,16 +142,16 @@ export default function InvoiceSummary({
                       Giá:
                     </span>
                     <span className="text-base font-semibold text-green-600">
-                      {detail.serviceCatalog?.price != null
-                        ? detail.serviceCatalog.price.toLocaleString("vi-VN") +
-                          "đ"
+                      {detail.service?.serviceCatalog?.price != null
+                        ? detail.service.serviceCatalog.price.toLocaleString(
+                            "vi-VN"
+                          ) + "đ"
                         : "N/A"}
                     </span>
                   </div>
                 </div>
               ))}
             </div>
-
 
             {/* Tổng tiền
             <Separator />

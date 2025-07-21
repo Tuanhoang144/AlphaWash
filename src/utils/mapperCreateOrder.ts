@@ -1,23 +1,15 @@
-import type {
-  OrderDTO as FullOrderDTO,
-  OrderDetail,
-  Vehicle,
-  Customer,
-  Employee,
-  Service,
-  ServiceCatalog,
-} from "../app/(admin)/order/create/types/invoice";
+import { OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
 
 import type {
-  OrderDTO as OrderRequestDTO,
   BasicInformationRequest,
   BasicVehicleRequest,
   BasicServiceRequest,
   BasicCustomerRequest,
+  OrderRequestDTO,
 } from "@/types/OrderRequest";
 
-export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
-  const detail: OrderDetail = order.orderDetails[0]; // giả sử chỉ có 1 detail
+export function mapFullOrderToRequest(order: OrderResponseDTO): OrderRequestDTO {
+  const detail: OrderDetailDTO = order.orderDetails[0]; // giả sử chỉ có 1 detail
 
   const basicInformation: BasicInformationRequest = {
     date:
@@ -54,7 +46,7 @@ export function mapFullOrderToRequest(order: FullOrderDTO): OrderRequestDTO {
     ? null
     : {
         id: order.customer.id,
-        name: order.customer.customerName ?? "",
+        name: order.customer.name ?? "",
         phone: order.customer.phone ?? "",
       };
 

@@ -32,7 +32,7 @@ export interface BasicCustomerRequest {
     phone?: string;
 }
 
-export interface OrderDTO {
+export interface OrderRequestDTO {
     information: BasicInformationRequest;
     vehicle: BasicVehicleRequest;
     service: BasicServiceRequest;

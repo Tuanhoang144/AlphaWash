@@ -12,12 +12,12 @@ import {
 } from "@/components/ui/collapsible";
 import { User, Edit, Save, X, Plus, Minus } from "lucide-react";
 import CustomerSearchDialog from "./customer-search-dialog";
-import type { Customer } from "../types/invoice";
 import { useCustomerManager } from "@/services/useCustomerManager";
+import { CustomerDTO } from "@/types/OrderResponse";
 
 interface CustomerInfoSectionProps {
-  customer: Customer | null;
-  onCustomerChange: (customer: Customer | null) => void;
+  customer: CustomerDTO | null;
+  onCustomerChange: (customer: CustomerDTO | null) => void;
 }
 
 export default function CustomerInfoSection({
@@ -25,7 +25,7 @@ export default function CustomerInfoSection({
   onCustomerChange,
 }: CustomerInfoSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Partial<Customer>>({});
+  const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerDTO>>({});
   const [isOpen, setIsOpen] = useState(false);
   const { updateCustomer } = useCustomerManager();
 
@@ -35,21 +35,21 @@ export default function CustomerInfoSection({
   };
 
   const handleEditSave = async () => {
-    if (editingCustomer.customerName && editingCustomer.phone) {
-      if (!customer?.customerId) {
+    if (editingCustomer.name && editingCustomer.phone) {
+      if (!customer?.id) {
         alert("Không tìm thấy ID khách hàng");
         return;
       }
 
       try {
-        await updateCustomer(customer.customerId, {
-          customerName: editingCustomer.customerName,
+        await updateCustomer(customer.id, {
+          customerName: editingCustomer.name,
           phone: editingCustomer.phone,
         });
 
         onCustomerChange({
-          customerId: customer.customerId,
-          customerName: editingCustomer.customerName,
+          id: customer.id,
+          name: editingCustomer.name,
           phone: editingCustomer.phone,
           vehicles: customer.vehicles,
         });
@@ -69,7 +69,7 @@ export default function CustomerInfoSection({
     setIsEditing(false);
   };
 
-  const updateEditingCustomer = (field: keyof Customer, value: string) => {
+  const updateEditingCustomer = (field: keyof CustomerDTO, value: string) => {
     setEditingCustomer((prev) => ({
       ...prev,
       [field]: value,
@@ -141,9 +141,9 @@ export default function CustomerInfoSection({
                       <Label>Tên khách hàng *</Label>
                       <Input
                         placeholder="Nhập tên khách hàng"
-                        value={editingCustomer.customerName || ""}
+                        value={editingCustomer.name || ""}
                         onChange={(e) =>
-                          updateEditingCustomer("customerName", e.target.value)
+                          updateEditingCustomer("name", e.target.value)
                         }
                       />
                     </div>
@@ -163,7 +163,7 @@ export default function CustomerInfoSection({
                     <div className="space-y-2">
                       <Label>Tên khách hàng</Label>
                       <div className="p-2 bg-gray-50 rounded-md">
-                        {customer.customerName}
+                        {customer.name}
                       </div>
                     </div>
                     <div className="space-y-2">

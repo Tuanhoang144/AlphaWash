@@ -1,6 +1,6 @@
 export type Customer = {
   id: String
-  customerName?: String
+  name?: String
   phone: String
   note?: String
 };

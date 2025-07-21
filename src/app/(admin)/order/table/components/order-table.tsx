@@ -38,12 +38,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Size } from "@/types/Size";
-import { OrderDTO } from "@/types/OrderResponse";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "../../../../../utils/tool";
 import { useRouter } from "next/navigation";
 
 interface OrderTableProps {
-  data: OrderDTO[];
+  data: OrderResponseDTO[];
   itemsPerPage: number;
   totalPages: number;
   currentPage: number;
@@ -181,7 +181,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
-                            {record.customer.customerName}
+                            {record.customer.name}
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">

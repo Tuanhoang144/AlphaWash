@@ -5,18 +5,18 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, Clock, FileText } from "lucide-react";
 import { Select } from "antd";
-import type { Service, ServiceCatalog } from "../types/invoice";
 import { useServiceManager } from "@/services/useServiceManager";
 import { useServiceCatalogManager } from "@/services/userServiceCatalogManager";
+import { ServiceCatalogDTO, ServiceDTO } from "@/types/OrderResponse";
 
 const { Option } = Select;
 
 interface ServiceCatalogSelectorProps {
-  service: Service;
-  serviceCatalog: ServiceCatalog;
+  service: ServiceDTO;
+  serviceCatalog: ServiceCatalogDTO;
   vehicleSize: string;
-  onServiceChange: (service: Service) => void;
-  onServiceCatalogChange: (catalog: ServiceCatalog) => void;
+  onServiceChange: (service: ServiceDTO) => void;
+  onServiceCatalogChange: (catalog: ServiceCatalogDTO) => void;
 }
 
 export default function ServiceCatalogSelector({
@@ -26,8 +26,8 @@ export default function ServiceCatalogSelector({
   onServiceChange,
   onServiceCatalogChange,
 }: ServiceCatalogSelectorProps) {
-  const [services, setServices] = useState<Service[]>([]);
-  const [catalogs, setCatalogs] = useState<ServiceCatalog[]>([]);
+  const [services, setServices] = useState<ServiceDTO[]>([]);
+  const [catalogs, setCatalogs] = useState<ServiceCatalogDTO[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingCatalogs, setLoadingCatalogs] = useState(false);
   const { getServiceCatalogByServiceId } = useServiceCatalogManager();
@@ -98,7 +98,7 @@ export default function ServiceCatalogSelector({
     }
   };
 
-  const selectPredefinedService = (selectedService: Service) => {
+  const selectPredefinedService = (selectedService: ServiceDTO) => {
     onServiceChange(selectedService);
   };
 

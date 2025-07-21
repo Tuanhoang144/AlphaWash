@@ -6,16 +6,21 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Car } from "lucide-react";
 import { Select } from "antd";
-import type { Vehicle, Customer, Brand, Model } from "../types/invoice";
 import { useBrandManager } from "@/services/useBrandManager";
 import { useModelManager } from "@/services/useModelManager";
+import {
+  BrandDTO,
+  CustomerDTO,
+  ModelDTO,
+  VehicleDTO,
+} from "@/types/OrderResponse";
 
 const { Option } = Select;
 
 interface BrandModelSelectorProps {
-  vehicle: Vehicle;
-  onVehicleChange: (vehicle: Vehicle) => void;
-  customer?: Customer;
+  vehicle: VehicleDTO;
+  onVehicleChange: (vehicle: VehicleDTO) => void;
+  customer?: CustomerDTO;
 }
 
 export default function BrandModelSelector({
@@ -23,11 +28,11 @@ export default function BrandModelSelector({
   onVehicleChange,
   customer,
 }: BrandModelSelectorProps) {
-  const [brands, setBrands] = useState<Brand[]>([]);
-  const [models, setModels] = useState<Model[]>([]);
+  const [brands, setBrands] = useState<BrandDTO[]>([]);
+  const [models, setModels] = useState<ModelDTO[]>([]);
   const [loadingBrands, setLoadingBrands] = useState(false);
   const [loadingModels, setLoadingModels] = useState(false);
-  const [selectedBrand, setSelectedBrand] = useState<Brand | null>(null);
+  const [selectedBrand, setSelectedBrand] = useState<BrandDTO | null>(null);
   const { getAllBrands } = useBrandManager();
   const { getModelsByBrandCode } = useModelManager();
 
@@ -35,6 +40,22 @@ export default function BrandModelSelector({
   useEffect(() => {
     loadBrands();
   }, []);
+
+  useEffect(() => {
+    console.log("Selected vehicle:", vehicle);
+    console.log("Customer vehicles:", customer?.vehicles);
+    if (!customer?.vehicles || !vehicle?.licensePlate) return;
+
+    const matched = customer.vehicles.find(
+      (v) =>
+        v.licensePlate.replace(/\s/g, "").toLowerCase() ===
+        vehicle.licensePlate.replace(/\s/g, "").toLowerCase()
+    );
+
+    if (matched) {
+      selectExistingVehicle(matched);
+    }
+  }, [brands]);
 
   // Load models when brand changes
   useEffect(() => {
@@ -50,7 +71,7 @@ export default function BrandModelSelector({
     try {
       const brandsData = await getAllBrands();
       //map code => brandCode
-      const mappedBrands = brandsData.map((brand: Brand) => ({
+      const mappedBrands = brandsData.map((brand: BrandDTO) => ({
         ...brand,
         brandCode: brand.code || "", // Ensure brandCode is set
       }));
@@ -75,18 +96,17 @@ export default function BrandModelSelector({
     }
   };
 
-  const updateVehicle = (field: keyof Vehicle, value: string | number) => {
-    console.log(`Updating vehicle ${field} to`, value);
+  const updateVehicle = (field: keyof VehicleDTO, value: string | number) => {
     onVehicleChange({
       ...vehicle,
       [field]: value,
     });
   };
 
-  const selectExistingVehicle = async (existingVehicle: Vehicle) => {
-    const loadedModels = await loadModels(existingVehicle.brandCode); 
+  const selectExistingVehicle = async (existingVehicle: VehicleDTO) => {
+    const loadedModels = await loadModels(existingVehicle.brandCode);
     const model = loadedModels.find(
-      (m: Model) => m.code === existingVehicle.modelCode
+      (m: ModelDTO) => m.code === existingVehicle.modelCode
     );
 
     const enrichedVehicle = {
@@ -161,7 +181,7 @@ export default function BrandModelSelector({
           <div className="flex flex-wrap gap-2">
             {customer.vehicles.map((existingVehicle) => (
               <Badge
-                key={existingVehicle.id}
+                key={existingVehicle.licensePlate}
                 variant={
                   vehicle.id === existingVehicle.id ? "default" : "outline"
                 }
@@ -181,7 +201,7 @@ export default function BrandModelSelector({
           <Label>Biển số xe *</Label>
           <Input
             placeholder="29A-12345"
-            value={vehicle.licensePlate}
+            value={vehicle.licensePlate ?? ""}
             onChange={(e) => updateVehicle("licensePlate", e.target.value)}
             required
           />
@@ -193,7 +213,7 @@ export default function BrandModelSelector({
             placeholder={loadingBrands ? "Đang tải..." : "Chọn hãng xe"}
             optionFilterProp="label"
             filterOption={filterBrandOption}
-            value={vehicle.brandCode || undefined}
+            value={vehicle.brandCode ?? undefined}
             onChange={handleBrandSelect}
             loading={loadingBrands}
             style={{ width: "100%" }}
@@ -222,7 +242,7 @@ export default function BrandModelSelector({
             }
             optionFilterProp="label"
             filterOption={filterModelOption}
-            value={vehicle.modelCode || undefined}
+            value={vehicle.modelCode ?? undefined}
             onChange={handleModelSelect}
             disabled={!selectedBrand || loadingModels}
             loading={loadingModels}

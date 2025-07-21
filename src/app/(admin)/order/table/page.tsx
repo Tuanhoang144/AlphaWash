@@ -6,14 +6,14 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/dist/client/components/navigation";
 
 import Header from "./components/header";
-import { OrderDTO } from "@/types/OrderResponse";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 import { useOrderManager } from "@/services/useOrderManager";
 import OrderTable from "./components/order-table";
 import LoadingPage from "../../loading";
 import SearchTable from "./components/sreach";
 
 export default function WashServiceTable() {
-  const [data, setData] = useState<OrderDTO[]>([]);
+  const [data, setData] = useState<OrderResponseDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
@@ -25,13 +25,13 @@ export default function WashServiceTable() {
 
   const fetchData = async () => {
     try {
-      const result: OrderDTO[] = await getAllOrders();
+      const result: OrderResponseDTO[] = await getAllOrders();
 
       const transformed = result.map((order) => ({
         ...order,
         customer: {
           ...order.customer,
-          customerName: order.customer?.customerName ?? "Khách lẻ",
+          customerName: order.customer?.name ?? "Khách lẻ",
           phone: order.customer?.phone ?? "",
         },
       }));
@@ -56,7 +56,7 @@ export default function WashServiceTable() {
           record.orderDetails[0]?.vehicle.licensePlate
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          record.customer.customerName
+          record.customer.name
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
           record.orderDetails[0]?.vehicle.brandName
@@ -79,7 +79,7 @@ export default function WashServiceTable() {
       result.sort((a, b) => {
         console.log("Sorting by payment status");
 
-        const getPriority = (order: OrderDTO) => {
+        const getPriority = (order: OrderResponseDTO) => {
           const status = order.orderDetails[0]?.status;
           const paymentStatus = order.paymentStatus ?? "";
 
@@ -106,7 +106,7 @@ export default function WashServiceTable() {
     }
 
     if (selectedFilter === "time") {
-      const getFullCheckInDate = (record: OrderDTO): number => {
+      const getFullCheckInDate = (record: OrderResponseDTO): number => {
         if (!record.checkIn) return -Infinity;
 
         const orderDate = new Date(record.orderDate);

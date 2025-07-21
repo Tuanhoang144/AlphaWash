@@ -12,8 +12,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { CreditCard } from "lucide-react";
 
-import type { Customer } from "../create/types/invoice";
 import QRCodeDisplay from "./qr-code-display";
+import { CustomerDTO } from "@/types/OrderResponse";
 
 interface PaymentFormContentProps {
   paymentType: string;
@@ -25,7 +25,7 @@ interface PaymentFormContentProps {
   totalPrice: number; // totalPrice đã không bao gồm tip
   baseServicePrice: number; // Prop mới: tổng tiền dịch vụ trước thuế và giảm giá
   onPaymentChange: (field: string, value: string | number) => void;
-  customer?: Customer | null;
+  customer?: CustomerDTO | null;
   licensePlate?: string | null;
 }
 
@@ -57,7 +57,7 @@ export default function PaymentFormContent({
     bankName: paymentConfig.bankName,
     accountNumber: paymentConfig.accountNumber,
     accountName: paymentConfig.accountName,
-    transferInfo: `TT HD ${customer?.customerName || "Khach le"} - ${
+    transferInfo: `TT HD ${customer?.name || "Khach le"} - ${
       licensePlate || "Xe khong BS"
     }`,
   };

@@ -2,13 +2,13 @@
 
 import { useCallback } from "react";
 import useApiService from "@/config/useApi";
-import { Customer } from "@/app/(admin)/order/create/types/invoice";
+import { CustomerDTO } from "@/types/OrderResponse";
 
 export function useCustomerManager() {
   const { callApi, loading, setIsLoading } = useApiService();
 
   const getCustomersByPhone = useCallback(
-    async (phone: string): Promise<Customer[]> => {
+    async (phone: string): Promise<CustomerDTO[]> => {
       if (!phone.trim()) return [];
 
       setIsLoading(true);
@@ -31,7 +31,7 @@ export function useCustomerManager() {
   );
 
   const createCustomer = useCallback(
-    async (payload: any): Promise<Customer | null> => {
+    async (payload: any): Promise<CustomerDTO | null> => {
       setIsLoading(true);
       try {
         const response = await callApi("post", "customer/insert", payload);

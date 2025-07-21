@@ -19,15 +19,15 @@ import {
 } from "@/components/ui/card";
 import { Car, Plus, Trash2 } from "lucide-react";
 import EmployeeSelector from "./employee-selector";
-import type { OrderDetail, Customer } from "../types/invoice";
 import BrandModelSelector from "./brand-model-selector";
 import ServiceCatalogSelector from "./service-catalog-selector";
 import { Textarea } from "@/components/ui/textarea";
+import { CustomerDTO, OrderDetailDTO } from "@/types/OrderResponse";
 
 interface OrderDetailFormProps {
-  orderDetails: OrderDetail[];
-  onOrderDetailsChange: (orderDetails: OrderDetail[]) => void;
-  customer?: Customer;
+  orderDetails: OrderDetailDTO[];
+  onOrderDetailsChange: (orderDetails: OrderDetailDTO[]) => void;
+  customer?: CustomerDTO;
 }
 
 export default function OrderDetailForm({

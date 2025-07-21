@@ -10,12 +10,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Car, Users, Clock, FileText, Plus, Minus } from "lucide-react";
-import type { OrderDetail } from "../types/invoice";
 import { Button } from "@/components/ui/button";
 import { tool } from "@/utils/tool";
+import { OrderDetailDTO } from "@/types/OrderResponse";
 
 interface InvoiceSummaryProps {
-  orderDetails: OrderDetail[];
+  orderDetails: OrderDetailDTO[];
   totalPrice: number;
   statusPayment: string;
 }

@@ -4,8 +4,8 @@ import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import useApiService from "@/config/useApi";
 import { mapFullOrderToRequest } from "@/utils/mapperCreateOrder";
-import { OrderDTO } from "@/app/(admin)/order/create/types/invoice";
 import { mapFullOrderToUpdateRequest } from "@/utils/mapperUpdateOrder";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 
 export function useOrderManager() {
   const { callApi, loading, setIsLoading } = useApiService();
@@ -41,7 +41,7 @@ export function useOrderManager() {
   );
 
   const createOrder = useCallback(
-    async (orderData: OrderDTO) => {
+    async (orderData: OrderResponseDTO) => {
       setIsLoading(true);
       try {
         //Map
@@ -63,7 +63,7 @@ export function useOrderManager() {
   );
 
   const updateOrder = useCallback(
-    async (order: OrderDTO, id : string) => {
+    async (order: OrderResponseDTO, id : string) => {
       setIsLoading(true);
       try {
         const requestBody = mapFullOrderToUpdateRequest(id, order);

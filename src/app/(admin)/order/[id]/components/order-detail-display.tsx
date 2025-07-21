@@ -9,12 +9,12 @@ import {
 } from "@/components/ui/collapsible";
 import { Car, Plus, Minus, User } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { OrderDetail } from "../types/invoice";
 import { Button } from "@/components/ui/button";
 import { tool } from "@/utils/tool";
+import { OrderDetailDTO } from "@/types/OrderResponse";
 
 interface OrderDetailDisplayProps {
-  orderDetails: OrderDetail[];
+  orderDetails: OrderDetailDTO[];
 }
 
 export default function OrderDetailDisplay({
@@ -110,8 +110,8 @@ export default function OrderDetailDisplay({
                       <div className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm">
                         <p className="text-xs text-gray-500 mb-1">Giá</p>
                         <p className="text-sm font-medium text-gray-800">
-                          {detail.serviceCatalog?.price != null
-                            ? detail.serviceCatalog.price.toLocaleString(
+                          {detail.service.serviceCatalog?.price != null
+                            ? detail.service.serviceCatalog.price.toLocaleString(
                                 "vi-VN"
                               ) + "đ"
                             : "N/A"}

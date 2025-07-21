@@ -8,11 +8,11 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { User, Plus, Minus } from "lucide-react";
-import type { Customer } from "../types/invoice";
 import { Button } from "@/components/ui/button";
+import { CustomerDTO } from "@/types/OrderResponse";
 
 interface CustomerInfoDisplayProps {
-  customer: Customer | null;
+  customer: CustomerDTO | null;
 }
 
 export default function CustomerInfoDisplay({
@@ -49,7 +49,7 @@ export default function CustomerInfoDisplay({
                     Tên khách hàng
                   </span>
                   <span className="text-base font-semibold text-gray-900">
-                    {customer.customerName}
+                    {customer.name}
                   </span>
                 </div>
 

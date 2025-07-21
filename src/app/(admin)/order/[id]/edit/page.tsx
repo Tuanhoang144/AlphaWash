@@ -24,35 +24,39 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { Customer, OrderDTO, OrderDetail } from "../types/invoice";
 import CustomerInfoSection from "../../create/components/customer-info-section";
 import OrderDetailForm from "../../create/components/order-detail-form";
 import OrderInfoForm from "../../create/components/order-info-form";
 import InvoiceSummary from "../../create/components/invoice-summary";
 import PaymentFormContent from "../../components/payment-form";
 import { SidebarInset } from "@/components/ui/sidebar";
+import { CustomerDTO, OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import { useCustomerManager } from "@/services/useCustomerManager";
 
 export default function EditInvoicePage() {
   const params = useParams();
   const id = params.id as string;
   const { loading, getOrderById } = useOrderManager();
-
   // State để giữ dữ liệu form, được khởi tạo từ fetchedOrder
-  const [formData, setFormData] = useState<OrderDTO | null>(null);
+  const [customerData, setCustomerData] = useState<CustomerDTO | null>(null);
+  const [formData, setFormData] = useState<OrderResponseDTO | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [fetchedOrder, setFetchedOrder] = useState<any | null>(null);
 
   const { updateOrder } = useOrderManager();
+  const { getCustomersByPhone } = useCustomerManager();
   const router = useRouter();
 
   useEffect(() => {
     const fetchOrderData = async () => {
       const data = await getOrderById(id);
+      const customerData = await getCustomersByPhone(data.customer.phone);
       if (!data) {
         console.error("Order data not found for ID:", id);
         return;
       }
       setFetchedOrder(data);
+      setCustomerData(customerData && customerData.length > 0 ? customerData[0] : null);
     };
     fetchOrderData();
   }, [id, getOrderById]);
@@ -63,16 +67,16 @@ export default function EditInvoicePage() {
       setFormData({
         ...fetchedOrder,
         // Đảm bảo các đối tượng lồng nhau không phải là null/undefined nếu form mong đợi chúng
-        customer: fetchedOrder.customer
+        customer: customerData
           ? {
-              customerId: fetchedOrder.customer.id || "",
-              customerName: fetchedOrder.customer.customerName || "",
-              phone: fetchedOrder.customer.phone || "",
-              vehicles: fetchedOrder.customer.vehicles || [],
+              id: customerData.id || "",
+              name: customerData.name || "",
+              phone: customerData.phone || "",
+              vehicles: customerData.vehicles || [],
             }
           : {
-              customerId: "",
-              customerName: "",
+              id: "",
+              name: "",
               phone: "",
               vehicles: [],
             },
@@ -81,14 +85,14 @@ export default function EditInvoicePage() {
     }
   }, [fetchedOrder]);
 
-  const handleCustomerChange = (customer: Customer | null) => {
+  const handleCustomerChange = (customer: CustomerDTO | null) => {
     setFormData((prev) =>
       prev
         ? {
             ...prev,
             customer: customer || {
-              customerId: "",
-              customerName: "",
+              id: "",
+              name: "",
               phone: "",
             },
           }
@@ -104,7 +108,7 @@ export default function EditInvoicePage() {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  const handleOrderDetailsChange = (orderDetails: OrderDetail[]) => {
+  const handleOrderDetailsChange = (orderDetails: OrderDetailDTO[]) => {
     setFormData((prev) => (prev ? { ...prev, orderDetails } : null));
   };
 
@@ -133,7 +137,7 @@ export default function EditInvoicePage() {
     e.preventDefault();
     if (!formData) return;
 
-    const updatedOrder: OrderDTO = {
+    const updatedOrder: OrderResponseDTO = {
       ...formData,
       totalPrice: calculateTotal(), // Tính toán lại tổng tiền trước khi gửi
     };
@@ -221,11 +225,11 @@ export default function EditInvoicePage() {
               <div className="lg:col-span-2 space-y-6">
                 <CustomerInfoSection
                   customer={
-                    !formData.customer.customerId
+                    !formData.customer.id
                       ? null
                       : {
-                          customerId: formData.customer.customerId || "",
-                          customerName: formData.customer.customerName,
+                          id: formData.customer.id || "",
+                          name: formData.customer.name,
                           phone: formData.customer.phone || "",
                           vehicles: (formData.customer as any).vehicles,
                         }

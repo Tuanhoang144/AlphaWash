@@ -16,12 +16,12 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, User, Phone, MapPin, UserPlus, X, Save } from "lucide-react";
-import type { Customer } from "../types/invoice";
 import { useCustomerManager } from "@/services/useCustomerManager";
+import { CustomerDTO } from "@/types/OrderResponse";
 
 interface CustomerSearchDialogProps {
-  onCustomerSelect: (customer: Customer | null) => void;
-  selectedCustomer: Customer | null;
+  onCustomerSelect: (customer: CustomerDTO | null) => void;
+  selectedCustomer: CustomerDTO | null;
 }
 
 export default function CustomerSearchDialog({
@@ -33,14 +33,14 @@ export default function CustomerSearchDialog({
 
   // Search state
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<Customer[]>([]);
+  const [searchResults, setSearchResults] = useState<CustomerDTO[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { getCustomersByPhone, createCustomer } = useCustomerManager();
 
   // Create customer state
-  const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({
-    customerId: "",
-    customerName: "",
+  const [newCustomer, setNewCustomer] = useState<Partial<CustomerDTO>>({
+    id: "",
+    name: "",
     phone: "",
   });
   const [isCreating, setIsCreating] = useState(false);
@@ -61,7 +61,7 @@ export default function CustomerSearchDialog({
     }
   };
 
-  const handleCustomerSelect = (customer: Customer) => {
+  const handleCustomerSelect = (customer: CustomerDTO) => {
     onCustomerSelect(customer);
     setOpen(false);
     resetDialog();
@@ -78,7 +78,7 @@ export default function CustomerSearchDialog({
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomer.customerName || !newCustomer.phone) {
+    if (!newCustomer.name || !newCustomer.phone) {
       alert("Vui lòng nhập tên và số điện thoại");
       return;
     }
@@ -87,7 +87,7 @@ export default function CustomerSearchDialog({
     try {
       // Gọi API tạo khách hàng
       const createdCustomer = await createCustomer({
-        customerName: newCustomer.customerName,
+        customerName: newCustomer.name,
         phone: newCustomer.phone,
       });
 
@@ -113,14 +113,14 @@ export default function CustomerSearchDialog({
     setSearchTerm("");
     setSearchResults([]);
     setNewCustomer({
-      customerId: "",
-      customerName: "",
+      id: "",
+      name: "",
       phone: "",
     });
     setActiveTab("search");
   };
 
-  const updateNewCustomer = (field: keyof Customer, value: string) => {
+  const updateNewCustomer = (field: keyof CustomerDTO, value: string) => {
     setNewCustomer((prev) => ({
       ...prev,
       [field]: value,
@@ -145,7 +145,7 @@ export default function CustomerSearchDialog({
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-blue-600" />
                 <span className="font-medium text-blue-900">
-                  {selectedCustomer.customerName}
+                  {selectedCustomer.name}
                 </span>
               </div>
               <div className="flex items-center gap-2 text-sm text-blue-700">
@@ -219,7 +219,7 @@ export default function CustomerSearchDialog({
                           <h4 className="font-medium">Kết quả tìm kiếm:</h4>
                           {searchResults.map((customer) => (
                             <div
-                              key={customer.customerId}
+                              key={customer.id}
                               className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
                               onClick={() => handleCustomerSelect(customer)}
                             >
@@ -228,7 +228,7 @@ export default function CustomerSearchDialog({
                                   <div className="flex items-center gap-2">
                                     <User className="h-4 w-4" />
                                     <span className="font-medium">
-                                      {customer.customerName}
+                                      {customer.id}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -287,10 +287,10 @@ export default function CustomerSearchDialog({
                             <Input
                               id="newCustomerName"
                               placeholder="Nhập tên khách hàng"
-                              value={newCustomer.customerName || ""}
+                              value={newCustomer.name || ""}
                               onChange={(e) =>
                                 updateNewCustomer(
-                                  "customerName",
+                                  "name",
                                   e.target.value
                                 )
                               }
@@ -318,7 +318,7 @@ export default function CustomerSearchDialog({
                             onClick={handleCreateCustomer}
                             disabled={
                               isCreating ||
-                              !newCustomer.customerName ||
+                              !newCustomer.name ||
                               !newCustomer.phone
                             }
                             className="w-full"
@@ -429,7 +429,7 @@ export default function CustomerSearchDialog({
                         <h4 className="font-medium">Kết quả tìm kiếm:</h4>
                         {searchResults.map((customer) => (
                           <div
-                            key={customer.customerId}
+                            key={customer.id}
                             className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
                             onClick={() => handleCustomerSelect(customer)}
                           >
@@ -438,7 +438,7 @@ export default function CustomerSearchDialog({
                                 <div className="flex items-center gap-2">
                                   <User className="h-4 w-4" />
                                   <span className="font-medium">
-                                    {customer.customerName}
+                                    {customer.name}
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -496,9 +496,9 @@ export default function CustomerSearchDialog({
                           <Input
                             id="newCustomerName"
                             placeholder="Nhập tên khách hàng"
-                            value={newCustomer.customerName || ""}
+                            value={newCustomer.name || ""}
                             onChange={(e) =>
-                              updateNewCustomer("customerName", e.target.value)
+                              updateNewCustomer("name", e.target.value)
                             }
                             required
                           />
@@ -524,7 +524,7 @@ export default function CustomerSearchDialog({
                           onClick={handleCreateCustomer}
                           disabled={
                             isCreating ||
-                            !newCustomer.customerName ||
+                            !newCustomer.name ||
                             !newCustomer.phone
                           }
                           className="w-full"
