@@ -9,7 +9,6 @@ import OrderInfoForm from "./components/order-info-form";
 import OrderDetailForm from "./components/order-detail-form";
 import PaymentFormContent from "../components/payment-form"; // Renamed import
 import InvoiceSummary from "./components/invoice-summary";
-import type { Customer, OrderDTO } from "./types/invoice";
 import {
   Dialog,
   DialogContent,
@@ -30,14 +29,15 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
 import { useRouter } from "next/navigation";
+import { CustomerDTO, OrderResponseDTO } from "@/types/OrderResponse";
 
 export default function CreateInvoiceForm() {
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
     null
   );
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false); // State for payment dialog
   const route = useRouter();
-  const [formData, setFormData] = useState<Partial<OrderDTO>>({
+  const [formData, setFormData] = useState<Partial<OrderResponseDTO>>({
     orderDate: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
     checkOut: "",
@@ -50,7 +50,7 @@ export default function CreateInvoiceForm() {
     note: null,
     customer: {
       id: "",
-      customerName: "",
+      name: "",
       phone: "",
       vehicles: [],
     },
@@ -76,6 +76,12 @@ export default function CreateInvoiceForm() {
           duration: "",
           note: "",
           serviceTypeCode: "",
+          serviceCatalog: {
+            id: 0,
+            code: "",
+            size: "",
+            price: 0,
+          },
         },
         serviceCatalog: {
           id: 0,
@@ -89,7 +95,7 @@ export default function CreateInvoiceForm() {
     ],
   });
 
-  const handleCustomerChange = (customer: Customer | null) => {
+  const handleCustomerChange = (customer: CustomerDTO | null) => {
     setSelectedCustomer(customer);
     setFormData((prev) => ({
       ...prev,
@@ -115,8 +121,9 @@ export default function CreateInvoiceForm() {
   const { createOrder } = useOrderManager();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData: OrderDTO = {
+    const finalData: OrderResponseDTO = {
       ...formData,
+      id: formData.id ?? "", // Ensure id is always a string
       tip: formData.tip ?? 0,
       totalPrice: calculateTotal(),
       orderDate: formData.orderDate as string,
@@ -127,7 +134,7 @@ export default function CreateInvoiceForm() {
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
       note: formData.note ?? null, // Ensure note is string or null, never undefined
-      customer: selectedCustomer as Customer, // Ensure customer is always a Customer
+      customer: selectedCustomer as CustomerDTO, // Ensure customer is always a Customer
       orderDetails: formData.orderDetails ?? [], // Ensure orderDetails is always an array
     };
     console.log("Form submitted:", finalData);
@@ -273,7 +280,7 @@ export default function CreateInvoiceForm() {
                               totalPrice={currentTotalPrice} // totalPrice đã không bao gồm tip
                               baseServicePrice={baseServicePrice} // Truyền baseServicePrice mới
                               onPaymentChange={(field, value) =>
-                                setFormData((prev) => ({
+                                setFormData((prev: Partial<OrderResponseDTO>) => ({
                                   ...prev,
                                   [field]: value,
                                 }))

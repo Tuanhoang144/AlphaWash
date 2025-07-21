@@ -12,7 +12,7 @@ import { Search, Filter, Plus } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/navigation";
 import OrderForm from "../../create/page";
-import LoadingPage from "@/app/(admin)/loading";
+import LoadingPage from "@/app/loading";
 
 interface HeaderProps {}
 

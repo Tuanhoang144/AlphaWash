@@ -9,7 +9,7 @@ import Header from "./components/header";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { useOrderManager } from "@/services/useOrderManager";
 import OrderTable from "./components/order-table";
-import LoadingPage from "../../loading";
+import LoadingPage from "../../../loading";
 import SearchTable from "./components/sreach";
 
 export default function WashServiceTable() {

@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
 import { Button } from "@/components/ui/button";
-import { CreditCard, QrCode } from "lucide-react";
+import { CreditCard, Printer, QrCode } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -27,9 +27,10 @@ import CustomerInfoDisplay from "./components/customer-info-display";
 import OrderInfoDisplay from "./components/order-info-display";
 import OrderDetailDisplay from "./components/order-detail-display";
 import PaymentFormContent from "../components/payment-form";
-import LoadingPage from "../../loading";
+import LoadingPage from "../../../loading";
 import { useRouter } from "next/navigation";
 import { OrderResponseDTO } from "@/types/OrderResponse";
+import InvoiceTemplate from "../components/invoice";
 
 export default function InvoiceClientPage({
   params,
@@ -97,11 +98,10 @@ export default function InvoiceClientPage({
   // Calculate base service price for PaymentFormContent display
   const baseServicePrice =
     orderData.orderDetails?.reduce(
-      (sum: number, detail: { serviceCatalog?: { price?: number } }) =>
-        sum + (detail.serviceCatalog?.price || 0),
+      (sum: number, detail: { service: { serviceCatalog?: { price?: number } } }) =>
+        sum + (detail.service.serviceCatalog?.price || 0),
       0
     ) || 0;
-
   // Get the first vehicle's license plate for transfer info, if available
   const firstVehicleLicensePlate =
     orderData.orderDetails?.[0]?.vehicle.licensePlate || null;
@@ -216,14 +216,27 @@ export default function InvoiceClientPage({
                         />
                       </DialogContent>
                     </Dialog>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-transparent"
-                      onClick={() => router.push(`/order/${id}/print`)}
-                    >
-                      In Hóa Đơn
-                    </Button>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full bg-transparent"
+                        >
+                          <Printer className="h-4 w-4 mr-2" />
+                          In Hóa Đơn
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto">
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <Printer className="h-5 w-5" />
+                            Xem & In Hóa Đơn
+                          </DialogTitle>
+                        </DialogHeader>
+                        <InvoiceTemplate order={orderData} />
+                      </DialogContent>
+                    </Dialog>
                     <Button
                       type="button"
                       variant="outline"

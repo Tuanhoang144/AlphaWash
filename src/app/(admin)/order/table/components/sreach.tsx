@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 
 import { Search, Filter, Plus, Clock, CreditCard } from "lucide-react";
 import { useRouter } from "next/navigation";
-import LoadingPage from "@/app/(admin)/loading";
+import LoadingPage from "@/app/loading";
 import {
   DropdownMenu,
   DropdownMenuContent,

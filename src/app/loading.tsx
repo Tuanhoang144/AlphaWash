@@ -1,4 +1,6 @@
 
+'use client';
+
 import Loading from '@/components/common/loading'
 import React from 'react'
 

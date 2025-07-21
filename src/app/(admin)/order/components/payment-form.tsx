@@ -61,7 +61,9 @@ export default function PaymentFormContent({
       licensePlate || "Xe khong BS"
     }`,
   };
-
+  console.log("baseServicePrice", baseServicePrice);
+  console.log("vatAmount", vatAmount);
+  console.log("discountAmount", discountAmount);
   return (
     <div className="flex justify-center gap-6 mt-4">
       {/* Left: Payment Details */}

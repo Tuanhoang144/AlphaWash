@@ -295,7 +295,7 @@ export default function EditInvoicePage() {
                               Xem Thông Tin Thanh Toán
                             </Button>
                           </DialogTrigger>
-                          <DialogContent className="max-w-6xl p-6 max-h-[90vh] overflow-y-auto">
+                          <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto">
                             <DialogHeader>
                               <DialogTitle className="flex items-center gap-2">
                                 <CreditCard className="h-5 w-5" />
