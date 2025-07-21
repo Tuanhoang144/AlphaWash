@@ -9,7 +9,7 @@ const useApiService = () => {
 
   const callApi = useCallback(
     async (
-      method: "get" | "post" | "put" | "delete",
+      method: "get" | "post" | "patch" | "put" | "delete",
       url: string,
       data?: any
     ) => {

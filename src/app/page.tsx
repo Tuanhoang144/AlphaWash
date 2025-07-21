@@ -1,19 +1,22 @@
+"use client";
+
 import Image from "next/image"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
+import { useRouter } from "next/navigation"
 
 export default function WelcomePage() {
+  const router = useRouter()
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 p-8">
       <div className="flex flex-col items-center space-y-8 max-w-md w-full">
         {/* Logo */}
         <div className="flex flex-col items-center space-y-6">
           <Image
-            src="/logo.jpg"
+            src="/logo.png"
             alt="Alpha Wash Logo"
-            width={200}
-            height={200}
-            className="w-48 h-48 object-contain"
+            width={300}
+            height={300}
+            className="object-contain"
             priority
           />
 
@@ -24,9 +27,8 @@ export default function WelcomePage() {
           </div>
         </div>
 
-        {/* Action Button */}
-        <Button asChild size="lg" className="w-full max-w-xs h-12 text-base font-medium">
-          <Link href="/dashboard">Đi đến trang làm việc</Link>
+        <Button size="lg" className="w-full max-w-xs h-12 text-base font-medium" onClick={() => router.push("/dashboard")}>
+          Đi đến trang làm việc
         </Button>
       </div>
     </div>
