@@ -41,6 +41,30 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
       const logoBase64 = await loadImageAsBase64("/logo.png");
       const qrBase64 = await loadImageAsBase64(qrUrl);
 
+      let vatRow = "";
+      if (order.vat > 0) {
+        vatRow = `
+        <div class="total-row">
+          <span>VAT (${order.vat}%):</span>
+          <span>${(
+            (order.vat / 100) *
+            order.totalPrice
+          ).toLocaleString()}đ</span>
+        </div>`;
+      }
+
+      let discountRow = "";
+      if (order.discount > 0) {
+        discountRow = `
+        <div class="total-row">
+          <span>Giảm giá (${order.discount}%):</span>
+          <span>-${(
+            (order.discount / 100) *
+            order.totalPrice
+          ).toLocaleString()}đ</span>
+        </div>`;
+      }
+
       // Clone nội dung và thay thế images
       let content = printRef.current.innerHTML;
 
@@ -108,8 +132,8 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
               }
               
               .logo {
-                width: 60px;
-                height: 60px;
+                width: 100px;
+                height: 100px;
                 margin-right: 8px;
                 flex-shrink: 0;
               }
@@ -231,8 +255,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
               }
               
               .qr-code {
-                width: 120px;
-                height: 120px;
+                width: 200px;
                 margin: 0 auto 8px;
                 display: block;
               }
@@ -252,6 +275,18 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
                 font-size: 11px;
                 font-style: italic;
               }
+              .top-meta {
+                display: flex;
+                justify-content: space-between;
+                font-size: 10px;
+                margin-bottom: 4px;
+              }
+              .invoice-id {
+                font-weight: bold;
+              }
+              .print-time {
+                font-style: italic;
+              }
               
               @media print {
                 body { 
@@ -267,14 +302,19 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
           </head>
           <body>
             <div class="print-container">
+            <div class="top-meta">
+              <div class="invoice-id">Mã HĐ: </div>
+              <div class="print-time">In lúc: ${new Date().toLocaleString(
+                "vi-VN"
+              )}</div>
+            </div>
               <div class="header">
                 <img src="${
                   logoBase64 || "/logo.png"
                 }" alt="Logo" class="logo" />
                 <div class="company-info-container">
                   <div class="company-name">ALPHA WASH</div>
-                  <div class="company-info">297G Đ.Liên Phường, Phường Phú Hữu</div>
-                  <div class="company-info">TP Thủ Đức, TP Hồ Chí Minh</div>
+                  <div class="company-info">297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh</div>
                   <div class="company-info">SĐT: 0966291909</div>
                 </div>
               </div>
@@ -283,26 +323,33 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
 
               <div class="order-info">
                 <div class="order-info-left">
-                  <div class="info-row"><strong>Ngày:</strong> ${new Date(
-                    order.orderDate
-                  ).toLocaleDateString("vi-VN")}</div>
+                  ${
+                    order.customer?.name
+                      ? `
+                  <div class="info-row"><strong>Khách hàng:</strong> ${
+                    order.customer.name
+                  }</div>
+                  <div class="info-row"><strong>Kỹ thuật:</strong> ${
+                    order.orderDetails[0].employees[0]?.name || "Chưa có"
+                  }</div>
+                  `
+                      : ""
+                  }
+                  <div class="info-row"><strong>Biến số:</strong> ${
+                    vehicle.licensePlate
+                  }</div>
+                </div>
+                <div class="order-info-right">
+                 <div class="info-row"><strong>Ngày:</strong> ${new Date(
+                   order.orderDate
+                 ).toLocaleDateString("vi-VN")}</div>
                   <div class="info-row"><strong>Giờ vào:</strong> ${formatTime(
                     order.checkIn
                   )}</div>
                   <div class="info-row"><strong>Giờ ra:</strong> ${formatTime(
                     order.checkOut
                   )}</div>
-                </div>
-                <div class="order-info-right">
-                  ${
-                    order.customer?.name
-                      ? `
-                  <div class="info-row"><strong>Khách hàng:</strong> ${order.customer.name}</div>
-                  <div class="info-row"><strong>SĐT:</strong> ${order.customer.phone}</div>
-                  `
-                      : ""
-                  }
-                  <div class="info-row"><strong>Biến số:</strong> ${vehicle.licensePlate}</div>
+                 
                 </div>
               </div>
 
@@ -328,20 +375,8 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
                   <span>Tạm tính:</span>
                   <span>${order.totalPrice.toLocaleString()}đ</span>
                 </div>
-                <div class="total-row">
-                  <span>VAT (${order.vat}%):</span>
-                  <span>${(
-                    (order.vat / 100) *
-                    order.totalPrice
-                  ).toLocaleString()}đ</span>
-                </div>
-                <div class="total-row">
-                  <span>Giảm giá (${order.discount}%):</span>
-                  <span>-${(
-                    (order.discount / 100) *
-                    order.totalPrice
-                  ).toLocaleString()}đ</span>
-                </div>
+                ${vatRow}
+                ${discountRow}
                 
                 <div class="total-divider"></div>
                 
@@ -359,13 +394,6 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
               <div class="qr-section">
                 <div class="qr-title">Quét mã QR để thanh toán</div>
                 <img src="${qrBase64 || qrUrl}" alt="QR Code" class="qr-code" />
-                <div class="bank-info">
-                  <div><strong>NH:</strong> ${paymentConfig.bankName}</div>
-                  <div><strong>STK:</strong> ${
-                    paymentConfig.accountNumber
-                  }</div>
-                  <div><strong>Tên:</strong> ${paymentConfig.accountName}</div>
-                </div>
               </div>
 
               <div class="thank-you">
@@ -424,9 +452,9 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
           <img
             src="/logo.png?height=80&width=80"
             alt="Logo"
-            className="w-16 h-16 object-contain mr-3 flex-shrink-0"
+            className="w-40 h-40 object-contain mr-3 flex-shrink-0"
           />
-          <div className="flex-1">
+          <div className="flex-1 text-start justify-center my-auto">
             <p className="text-lg font-bold text-gray-800">ALPHA WASH</p>
             <p className="text-xs text-gray-600 mt-1">
               297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh
@@ -458,22 +486,18 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
           {order.customer?.name && (
             <div className="flex-1 text-xs text-gray-700">
               <p className="mb-1">
-                <strong>KH:</strong> {order.customer.name}
+                <strong>Khách hàng:</strong> {order.customer.name}
               </p>
               <p className="mb-1">
-                <strong>SĐT:</strong> {order.customer.phone}
+                <strong>Kỹ Thuật:</strong>{" "}
+                {order.orderDetails[0].employees[0]?.name || "Chưa có"}
+              </p>
+              <p className="mb-1">
+                <strong>Xe:</strong> {vehicle.brandName} {vehicle.modelName}{" "}
+                {vehicle.licensePlate}
               </p>
             </div>
           )}
-        </div>
-
-        <div className="mb-4 text-xs text-gray-700">
-          <p className="mb-1">
-            <strong>Xe:</strong> {vehicle.brandName} {vehicle.modelName}
-          </p>
-          <p className="mb-1">
-            <strong>BKS:</strong> {vehicle.licensePlate}
-          </p>
         </div>
 
         <table className="w-full text-xs border border-gray-300 mb-4">
@@ -508,22 +532,22 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
             <span>Tạm tính:</span>
             <span>{order.totalPrice.toLocaleString()}đ</span>
           </div>
-          <div className="flex justify-between">
-            <span>VAT ({order.vat}%):</span>
-            <span>
-              {((order.vat / 100) * order.totalPrice).toLocaleString()}đ
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Giảm giá ({order.discount}%):</span>
-            <span>
-              -{((order.discount / 100) * order.totalPrice).toLocaleString()}đ
-            </span>
-          </div>
-          <div className="flex justify-between">
-            <span>Tiền tip:</span>
-            <span>{order.tip.toLocaleString()}đ</span>
-          </div>
+          {order.vat > 0 && (
+            <div className="flex justify-between">
+              <span>VAT ({order.vat}%):</span>
+              <span>
+                {((order.vat / 100) * order.totalPrice).toLocaleString()}đ
+              </span>
+            </div>
+          )}
+          {order.discount > 0 && (
+            <div className="flex justify-between">
+              <span>Giảm giá ({order.discount}%):</span>
+              <span>
+                -{((order.discount / 100) * order.totalPrice).toLocaleString()}đ
+              </span>
+            </div>
+          )}
           <hr className="my-4 border-t-2 border-dashed border-gray-300" />
           <div className="flex justify-between font-bold text-lg text-gray-900">
             <span>Tổng thanh toán:</span>
