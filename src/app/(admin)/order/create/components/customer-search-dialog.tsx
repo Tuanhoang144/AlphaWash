@@ -97,7 +97,12 @@ export default function CustomerSearchDialog({
       }
 
       // Chọn khách hàng vừa tạo
-      onCustomerSelect(createdCustomer);
+      onCustomerSelect({
+        id: createdCustomer.id,
+        name: createdCustomer.name,
+        phone: createdCustomer.phone,
+        vehicles: createdCustomer.vehicles || [],
+      });
       setOpen(false);
       resetDialog();
       alert("Khách hàng đã được tạo thành công!");

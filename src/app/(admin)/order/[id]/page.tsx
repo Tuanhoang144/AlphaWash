@@ -234,7 +234,7 @@ export default function InvoiceClientPage({
                             Xem & In Hóa Đơn
                           </DialogTitle>
                         </DialogHeader>
-                        <InvoiceTemplate order={orderData} />
+                        <InvoiceTemplate order={orderData} baseServicePrice={baseServicePrice} />
                       </DialogContent>
                     </Dialog>
                     <Button

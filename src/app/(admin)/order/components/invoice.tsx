@@ -7,8 +7,16 @@ import QRCodeDisplay from "./qr-code-display";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
 
-const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
+type InvoiceTemplateProps = {
+  order: OrderResponseDTO;
+  baseServicePrice: number;
+};
+
+const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
   const printRef = useRef<HTMLDivElement>(null);
+
+  console.log("order", order);
+  console.log("baseServicePrice", baseServicePrice);
 
   const { formatTime } = tool();
 
@@ -48,7 +56,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
           <span>VAT (${order.vat}%):</span>
           <span>${(
             (order.vat / 100) *
-            order.totalPrice
+            baseServicePrice
           ).toLocaleString()}đ</span>
         </div>`;
       }
@@ -60,7 +68,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
           <span>Giảm giá (${order.discount}%):</span>
           <span>-${(
             (order.discount / 100) *
-            order.totalPrice
+            baseServicePrice
           ).toLocaleString()}đ</span>
         </div>`;
       }
@@ -170,7 +178,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
               }
               
               .order-info-left {
-                flex: 1;
+                flex: 2;
                 margin-right: 5px;
               }
               
@@ -373,7 +381,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
               <div class="total-section">
                 <div class="total-row">
                   <span>Tạm tính:</span>
-                  <span>${order.totalPrice.toLocaleString()}đ</span>
+                  <span>${baseServicePrice.toLocaleString()}đ</span>
                 </div>
                 ${vatRow}
                 ${discountRow}
@@ -382,7 +390,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
                 
                 <div class="total-row final-total">
                   <span>TỔNG THANH TOÁN:</span>
-                  <span>${calcTotal().toLocaleString()}đ</span>
+                  <span>${order.totalPrice.toLocaleString()}đ</span>
                 </div>
                 
                 <div class="total-row payment-method">
@@ -437,7 +445,7 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
 
   const qrUrl = `https://img.vietqr.io/image/${paymentConfig.bankName}-${
     paymentConfig.accountNumber
-  }-compact2.jpg?amount=${Math.floor(calcTotal())}&addInfo=${encodeURIComponent(
+  }-compact2.jpg?amount=${Math.floor(order.totalPrice)}&addInfo=${encodeURIComponent(
     vehicle.licensePlate + " - " + service.serviceName
   )}&accountName=${encodeURIComponent(paymentConfig.accountName)}`;
 
@@ -530,13 +538,13 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
         <div className="text-sm mt-4 space-y-2 text-gray-700">
           <div className="flex justify-between">
             <span>Tạm tính:</span>
-            <span>{order.totalPrice.toLocaleString()}đ</span>
+            <span>{baseServicePrice.toLocaleString()}đ</span>
           </div>
           {order.vat > 0 && (
             <div className="flex justify-between">
               <span>VAT ({order.vat}%):</span>
               <span>
-                {((order.vat / 100) * order.totalPrice).toLocaleString()}đ
+                {((order.vat / 100) * baseServicePrice).toLocaleString()}đ
               </span>
             </div>
           )}
@@ -544,14 +552,14 @@ const InvoiceTemplate = ({ order }: { order: OrderResponseDTO }) => {
             <div className="flex justify-between">
               <span>Giảm giá ({order.discount}%):</span>
               <span>
-                -{((order.discount / 100) * order.totalPrice).toLocaleString()}đ
+                -{((order.discount / 100) * baseServicePrice).toLocaleString()}đ
               </span>
             </div>
           )}
           <hr className="my-4 border-t-2 border-dashed border-gray-300" />
           <div className="flex justify-between font-bold text-lg text-gray-900">
             <span>Tổng thanh toán:</span>
-            <span>{calcTotal().toLocaleString()}đ</span>
+            <span>{order.totalPrice.toLocaleString()}đ</span>
           </div>
           <div className="flex justify-between">
             <span className="font-semibold">Thanh toán bằng:</span>
