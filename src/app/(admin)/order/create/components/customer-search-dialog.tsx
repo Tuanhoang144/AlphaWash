@@ -200,7 +200,7 @@ export default function CustomerSearchDialog({
                       <div className="flex gap-2">
                         <div className="flex-1">
                           <Input
-                            placeholder="Nhập tên hoặc số điện thoại..."
+                            placeholder="Nhập biển số hoặc số điện thoại..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             onKeyPress={handleKeyPress}

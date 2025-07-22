@@ -15,7 +15,7 @@ export function useCustomerManager() {
       try {
         const response = await callApi(
           "get",
-          `customer/by-phone-with-vehicles?phone=${encodeURIComponent(phone)}`
+          `customer/by-phone-or-plate?phone=${encodeURIComponent(phone)}`
         );
 
         const customer = response?.data;

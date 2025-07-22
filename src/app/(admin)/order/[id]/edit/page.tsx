@@ -30,7 +30,11 @@ import OrderInfoForm from "../../create/components/order-info-form";
 import InvoiceSummary from "../../create/components/invoice-summary";
 import PaymentFormContent from "../../components/payment-form";
 import { SidebarInset } from "@/components/ui/sidebar";
-import { CustomerDTO, OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import {
+  CustomerDTO,
+  OrderDetailDTO,
+  OrderResponseDTO,
+} from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
 
 export default function EditInvoicePage() {
@@ -41,7 +45,9 @@ export default function EditInvoicePage() {
   const [customerData, setCustomerData] = useState<CustomerDTO | null>(null);
   const [formData, setFormData] = useState<OrderResponseDTO | null>(null);
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [fetchedOrder, setFetchedOrder] = useState<any | null>(null);
+  const [fetchedOrder, setFetchedOrder] = useState<OrderResponseDTO | null>(
+    null
+  );
 
   const { updateOrder } = useOrderManager();
   const { getCustomersByPhone } = useCustomerManager();
@@ -50,13 +56,21 @@ export default function EditInvoicePage() {
   useEffect(() => {
     const fetchOrderData = async () => {
       const data = await getOrderById(id);
-      const customerData = await getCustomersByPhone(data.customer.phone);
+      console.log("Fetched order data:", data);
+
       if (!data) {
         console.error("Order data not found for ID:", id);
         return;
       }
+
+      let matchedCustomer: CustomerDTO | null = null;
+      if (data.customer?.phone) {
+        const found = await getCustomersByPhone(data.customer.phone);
+        matchedCustomer = found?.[0] ?? null;
+      }
+
       setFetchedOrder(data);
-      setCustomerData(customerData && customerData.length > 0 ? customerData[0] : null);
+      setCustomerData(matchedCustomer);
     };
     fetchOrderData();
   }, [id, getOrderById]);
@@ -70,16 +84,18 @@ export default function EditInvoicePage() {
         customer: customerData
           ? {
               id: customerData.id || "",
-              name: customerData.name || "",
-              phone: customerData.phone || "",
+              name: customerData.name || "Khách lẻ",
+              phone: customerData.phone || "Chưa có",
               vehicles: customerData.vehicles || [],
             }
-          : {
-              id: "",
-              name: "",
-              phone: "",
-              vehicles: [],
-            },
+          : fetchedOrder.customer
+          ? {
+              id: fetchedOrder.customer.id || "",
+              name: fetchedOrder.customer.name || "Khách lẻ",
+              phone: fetchedOrder.customer.phone || "Chưa có",
+              vehicles: fetchedOrder.customer.vehicles || [],
+            }
+          : fetchedOrder.customer,
         orderDetails: fetchedOrder.orderDetails || [],
       });
     }
@@ -252,7 +268,7 @@ export default function EditInvoicePage() {
                   onOrderInfoChange={handleOrderInfoChange}
                 />
                 <InvoiceSummary
-                statusPayment={formData.paymentStatus || ""}
+                  statusPayment={formData.paymentStatus || ""}
                   orderDetails={formData.orderDetails}
                   totalPrice={currentTotalPrice}
                 />
