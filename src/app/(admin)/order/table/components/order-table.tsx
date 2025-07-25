@@ -300,14 +300,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 <Eye className="mr-2 h-4 w-4" />
                                 Xem chi tiết
                               </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  router.push(`/order/${record.id}/edit`);
-                                }}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Chỉnh sửa
-                              </DropdownMenuItem>
+                              {!record.deleteFlag && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    router.push(`/order/${record.id}/edit`);
+                                  }}
+                                >
+                                  <Edit className="mr-2 h-4 w-4" />
+                                  Chỉnh sửa
+                                </DropdownMenuItem>
+                              )}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </TableCell>

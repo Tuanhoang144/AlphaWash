@@ -31,7 +31,7 @@ export function useCustomerManager() {
   );
 
   const createCustomer = useCallback(
-    async (payload: any): Promise<CustomerDTO | null> => {
+    async (payload: any) => {
       setIsLoading(true);
       try {
         const response = await callApi("post", "customer/insert", payload);

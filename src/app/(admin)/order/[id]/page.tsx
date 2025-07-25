@@ -160,6 +160,7 @@ export default function InvoiceClientPage({
                 checkOut={orderData.checkOut}
               />
               <InvoiceSummary
+                deleteFlag={orderData.deleteFlag || false}
                 statusPayment={orderData.paymentStatus}
                 orderDetails={orderData.orderDetails}
                 totalPrice={orderData.totalPrice}
@@ -222,6 +223,7 @@ export default function InvoiceClientPage({
                           type="button"
                           variant="outline"
                           className="w-full bg-transparent"
+                          disabled={orderData.deleteFlag}
                         >
                           <Printer className="h-4 w-4 mr-2" />
                           In Hóa Đơn
@@ -242,6 +244,7 @@ export default function InvoiceClientPage({
                       variant="outline"
                       className="w-full bg-transparent text-blue-600 hover:text-blue-700"
                       onClick={handleNavigate}
+                      disabled={orderData.deleteFlag}
                     >
                       Chỉnh Sửa Hóa Đơn
                     </Button>

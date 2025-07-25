@@ -18,12 +18,14 @@ interface InvoiceSummaryProps {
   orderDetails: OrderDetailDTO[];
   totalPrice: number;
   statusPayment: string;
+  deleteFlag?: boolean;
 }
 
 export default function InvoiceSummary({
   statusPayment,
   orderDetails,
   totalPrice,
+  deleteFlag,
 }: InvoiceSummaryProps) {
   const [isOpen, setIsOpen] = useState(true); // Default to open
 
@@ -56,6 +58,13 @@ export default function InvoiceSummary({
         <CollapsibleContent>
           <CardContent className="space-y-4">
             {/* Quick Stats */}
+            {deleteFlag && (
+              <div className="rounded-xl bg-red-100 p-4 text-center shadow-sm">
+                <div className="flex justify-center items-center gap-2 text-red-600 mb-1">
+                  <span className="text-sm font-medium">Đơn hàng đã bị hủy</span>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">

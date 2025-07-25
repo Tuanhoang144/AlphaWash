@@ -63,7 +63,7 @@ export function useOrderManager() {
   );
 
   const updateOrder = useCallback(
-    async (order: OrderResponseDTO, id : string) => {
+    async (order: OrderResponseDTO, id: string) => {
       setIsLoading(true);
       try {
         const requestBody = mapFullOrderToUpdateRequest(id, order);
@@ -79,11 +79,29 @@ export function useOrderManager() {
     [callApi, setIsLoading]
   );
 
+  const cancelOrderById = useCallback(
+    async (id: string) => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const response = await callApi("put", `orders/cancel/${id}`);
+        return response?.data;
+      } catch (error) {
+        console.error("Lỗi huỷ đơn hàng:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   return {
     getAllOrders,
     getOrderById,
     createOrder,
     updateOrder,
+    cancelOrderById,
     loading,
   };
 }

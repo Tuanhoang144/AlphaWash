@@ -36,6 +36,7 @@ import {
   OrderResponseDTO,
 } from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
+import { addToast } from "@heroui/react";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -49,7 +50,7 @@ export default function EditInvoicePage() {
     null
   );
 
-  const { updateOrder } = useOrderManager();
+  const { updateOrder, cancelOrderById } = useOrderManager();
   const { getCustomersByPhone } = useCustomerManager();
   const router = useRouter();
 
@@ -164,13 +165,21 @@ export default function EditInvoicePage() {
         console.log("Order updated successfully:", response);
         // Cập nhật formData với dữ liệu mới nếu cần
         setFormData(response);
-
-        alert("Hóa đơn đã được cập nhật thành công!");
+        addToast({
+          title: "Thành công",
+          description: "Hóa đơn đã được cập nhật thành công!",
+          color: "success",
+        });
         router.push(`/order/${id}`);
       })
       .catch((error) => {
         console.error("Error updating order:", error);
-        alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+        // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+        addToast({
+          title: "Lỗi",
+          description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+          color: "danger",
+        });
       });
     console.log("Submitting updated OrderDTO:", updatedOrder);
   };
@@ -196,6 +205,25 @@ export default function EditInvoicePage() {
     ) || 0;
   const firstVehicleLicensePlate =
     formData.orderDetails?.[0]?.vehicle.licensePlate || null;
+
+  const handleCancel = async (id: string): Promise<void> => {
+    try {
+      await cancelOrderById(id);
+      addToast({
+        title: "Thành công",
+        description: "Đơn hàng đã được hủy thành công!",
+        color: "success",
+      });
+      router.push(`/order/${id}`);
+    } catch (error) {
+      addToast({
+        title: "Lỗi",
+        description: "Không thể hủy đơn hàng. Vui lòng thử lại sau.",
+        color: "danger",
+      });
+      console.error("Error canceling order:", error);
+    }
+  };
 
   return (
     <SidebarInset>
@@ -268,6 +296,7 @@ export default function EditInvoicePage() {
                   onOrderInfoChange={handleOrderInfoChange}
                 />
                 <InvoiceSummary
+                  deleteFlag={formData.deleteFlag || false}
                   statusPayment={formData.paymentStatus || ""}
                   orderDetails={formData.orderDetails}
                   totalPrice={currentTotalPrice}
@@ -294,8 +323,9 @@ export default function EditInvoicePage() {
                         type="button"
                         variant="outline"
                         className="w-full bg-transparent"
+                        onClick={() => handleCancel(id)}
                       >
-                        Hủy
+                        Hủy Hóa Đơn
                       </Button>
                       {currentTotalPrice > 0 && (
                         <Dialog

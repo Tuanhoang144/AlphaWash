@@ -30,6 +30,7 @@ import {
 import { useOrderManager } from "@/services/useOrderManager";
 import { useRouter } from "next/navigation";
 import { CustomerDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import { addToast } from "@heroui/react";
 
 export default function CreateInvoiceForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
@@ -46,6 +47,7 @@ export default function CreateInvoiceForm() {
     paymentStatus: "PENDING",
     vat: 0,
     discount: 0,
+    deleteFlag: false,
     totalPrice: 0,
     note: null,
     customer: {
@@ -136,17 +138,26 @@ export default function CreateInvoiceForm() {
       note: formData.note ?? null, // Ensure note is string or null, never undefined
       customer: selectedCustomer as CustomerDTO, // Ensure customer is always a Customer
       orderDetails: formData.orderDetails ?? [], // Ensure orderDetails is always an array
+      deleteFlag: formData.deleteFlag ?? false, // Ensure deleteFlag is always boolean
     };
     console.log("Form submitted:", finalData);
     try {
       const response = await createOrder(finalData);
       console.log("✅ Tạo hóa đơn thành công:", response);
-      alert("Hóa đơn đã được tạo thành công!");
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được tạo thành công!",
+        color: "success",
+      });
       route.push("/order/table"); 
       
     } catch (error) {
       console.error("❌ Lỗi khi tạo hóa đơn:", error);
-      alert("Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.");
+      addToast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.",
+        color: "danger",
+      });
     }
   };
 
@@ -237,13 +248,13 @@ export default function CreateInvoiceForm() {
                         <FileText className="h-4 w-4 mr-2" />
                         Tạo Hóa Đơn
                       </Button>
-                      <Button
+                      {/* <Button
                         type="button"
                         variant="outline"
                         className="w-full bg-transparent"
                       >
                         Lưu nháp
-                      </Button>
+                      </Button> */}
                       {/* New Payment Button - Conditionally rendered */}
                       {currentTotalPrice > 0 && (
                         <Dialog

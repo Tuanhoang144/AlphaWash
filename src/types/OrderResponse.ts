@@ -80,6 +80,7 @@ export interface OrderResponseDTO {
   paymentType: string;
   paymentStatus: string;
   vat: number;
+  deleteFlag: boolean;
   discount: number;
   totalPrice: number;
   note: string | null;

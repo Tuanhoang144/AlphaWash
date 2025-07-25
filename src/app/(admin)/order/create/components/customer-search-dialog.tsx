@@ -99,7 +99,7 @@ export default function CustomerSearchDialog({
       // Chọn khách hàng vừa tạo
       onCustomerSelect({
         id: createdCustomer.id,
-        name: createdCustomer.name,
+        name: createdCustomer.customerName,
         phone: createdCustomer.phone,
         vehicles: createdCustomer.vehicles || [],
       });
