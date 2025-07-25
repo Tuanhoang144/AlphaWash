@@ -224,7 +224,7 @@ export default function CustomerSearchDialog({
                           <h4 className="font-medium">Kết quả tìm kiếm:</h4>
                           {searchResults.map((customer) => (
                             <div
-                              key={customer.id}
+                              key={customer.name}
                               className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
                               onClick={() => handleCustomerSelect(customer)}
                             >
@@ -233,7 +233,7 @@ export default function CustomerSearchDialog({
                                   <div className="flex items-center gap-2">
                                     <User className="h-4 w-4" />
                                     <span className="font-medium">
-                                      {customer.id}
+                                      {customer.name}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -415,7 +415,7 @@ export default function CustomerSearchDialog({
                     <div className="flex gap-2">
                       <div className="flex-1">
                         <Input
-                          placeholder="Nhập tên hoặc số điện thoại..."
+                          placeholder="Nhập biển số hoặc số điện thoại..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           onKeyPress={handleKeyPress}
