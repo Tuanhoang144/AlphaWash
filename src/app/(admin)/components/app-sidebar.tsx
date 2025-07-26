@@ -14,6 +14,8 @@ import {
   Settings2,
   SquareTerminal,
   Users,
+  ShoppingBag,
+  ChartArea
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -83,29 +85,18 @@ const data = {
       icon: Users,
       isActive: true,
     },
-    // {
-    //   title: "Settings",
-    //   url: "#",
-    //   icon: Settings2,
-    //   items: [
-    //     {
-    //       title: "General",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Team",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Billing",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Limits",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
+    {
+      title: "Quản lý Dịch vụ",
+      url: "/services",
+      icon: ShoppingBag,
+      isActive: true,
+    },
+    {
+      title: "Thống kê",
+      url: "/statistics",
+      icon: ChartArea,
+      isActive: true,
+    }
   ],
   navSecondary: [
     {

@@ -21,7 +21,7 @@ import { Employee } from "@/types/Employee";
 function ManageEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
+  const [currentEmployee, setCurrentEmployee] = useState  <Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
   const {
