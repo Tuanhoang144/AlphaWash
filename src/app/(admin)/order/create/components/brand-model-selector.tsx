@@ -170,10 +170,6 @@ export default function BrandModelSelector({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Car className="h-4 w-4" />
-        <Label className="font-medium">Thông tin xe</Label>
-      </div>
 
       {customer?.vehicles && customer.vehicles.length > 0 && (
         <div className="space-y-2">

@@ -1,98 +1,77 @@
-"use client";
+"use client"
 
-import { useRef } from "react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
-import QRCodeDisplay from "./qr-code-display";
-import { OrderResponseDTO } from "@/types/OrderResponse";
-import { tool } from "@/utils/tool";
+import { useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { Printer } from "lucide-react"
+import type { OrderResponseDTO } from "@/types/OrderResponse"
+import { tool } from "@/utils/tool"
 
 type InvoiceTemplateProps = {
-  order: OrderResponseDTO;
-  baseServicePrice: number;
-};
+  order: OrderResponseDTO
+  baseServicePrice: number
+}
 
 const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
-  const printRef = useRef<HTMLDivElement>(null);
-
-  console.log("order", order);
-  console.log("baseServicePrice", baseServicePrice);
-
-  const { formatTime } = tool();
+  const printRef = useRef<HTMLDivElement>(null)
+  const { formatTime } = tool()
 
   const loadImageAsBase64 = (url: string): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
+      const img = new Image()
+      img.crossOrigin = "anonymous"
       img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
+        const canvas = document.createElement("canvas")
+        canvas.width = img.width
+        canvas.height = img.height
+        const ctx = canvas.getContext("2d")
         if (ctx) {
-          ctx.drawImage(img, 0, 0);
-          resolve(canvas.toDataURL("image/png"));
+          ctx.drawImage(img, 0, 0)
+          resolve(canvas.toDataURL("image/png"))
         } else {
-          resolve("");
+          resolve("")
         }
-      };
-      img.onerror = () => resolve("");
-      img.src = url;
-    });
-  };
+      }
+      img.onerror = () => resolve("")
+      img.src = url
+    })
+  }
 
   const handlePrint = async () => {
-    if (!printRef.current) return;
+    if (!printRef.current) return
 
     try {
-      // Load logo và QR code as base64
-      const logoBase64 = await loadImageAsBase64("/logo.png");
-      const qrBase64 = await loadImageAsBase64(qrUrl);
+      const logoBase64 = await loadImageAsBase64("/logo.png")
+      const qrBase64 = await loadImageAsBase64(qrUrl)
 
-      let vatRow = "";
+      let vatRow = ""
       if (order.vat > 0) {
         vatRow = `
         <div class="total-row">
           <span>VAT (${order.vat}%):</span>
-          <span>${(
-            (order.vat / 100) *
-            baseServicePrice
-          ).toLocaleString()}đ</span>
-        </div>`;
+          <span>${((order.vat / 100) * baseServicePrice).toLocaleString()}đ</span>
+        </div>`
       }
 
-      let discountRow = "";
+      let discountRow = ""
       if (order.discount > 0) {
         discountRow = `
         <div class="total-row">
           <span>Giảm giá (${order.discount}%):</span>
-          <span>-${(
-            (order.discount / 100) *
-            baseServicePrice
-          ).toLocaleString()}đ</span>
-        </div>`;
+          <span>-${((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span>
+        </div>`
       }
 
-      // Clone nội dung và thay thế images
-      let content = printRef.current.innerHTML;
+      let content = printRef.current.innerHTML
 
-      // Replace logo
       if (logoBase64) {
-        content = content.replace(
-          /src="\/logo\.png[^"]*"/g,
-          `src="${logoBase64}"`
-        );
+        content = content.replace(/src="\/logo\.png[^"]*"/g, `src="${logoBase64}"`)
       }
 
-      // Replace QR code
       if (qrBase64) {
-        content = content.replace(
-          new RegExp(qrUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
-          qrBase64
-        );
+        content = content.replace(new RegExp(qrUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"), qrBase64)
       }
 
-      const printWindow = window.open("", "", "width=320,height=600");
+      const printWindow = window.open("", "", "width=320,height=600")
 
       if (printWindow) {
         printWindow.document.write(`
@@ -311,15 +290,11 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           <body>
             <div class="print-container">
             <div class="top-meta">
-              <div class="invoice-id">Mã HĐ: </div>
-              <div class="print-time">In lúc: ${new Date().toLocaleString(
-                "vi-VN"
-              )}</div>
+              <div class="invoice-id">Mã HĐ: ${order.id}</div>
+              <div class="print-time">In lúc: ${new Date().toLocaleString("vi-VN")}</div>
             </div>
               <div class="header">
-                <img src="${
-                  logoBase64 || "/logo.png"
-                }" alt="Logo" class="logo" />
+                <img src="${logoBase64 || "/logo.png"}" alt="Logo" class="logo" />
                 <div class="company-info-container">
                   <div class="company-name">ALPHA WASH</div>
                   <div class="company-info">297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh</div>
@@ -334,30 +309,19 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                   ${
                     order.customer?.name
                       ? `
-                  <div class="info-row"><strong>Khách hàng:</strong> ${
-                    order.customer.name
-                  }</div>
+                  <div class="info-row"><strong>Khách hàng:</strong> ${order.customer.name}</div>
                   <div class="info-row"><strong>Kỹ thuật:</strong> ${
                     order.orderDetails[0].employees[0]?.name || "Chưa có"
                   }</div>
                   `
                       : ""
                   }
-                  <div class="info-row"><strong>Biến số:</strong> ${
-                    vehicle.licensePlate
-                  }</div>
+                  <div class="info-row"><strong>Biến số:</strong> ${vehicle.licensePlate}</div>
                 </div>
                 <div class="order-info-right">
-                 <div class="info-row"><strong>Ngày:</strong> ${new Date(
-                   order.orderDate
-                 ).toLocaleDateString("vi-VN")}</div>
-                  <div class="info-row"><strong>Giờ vào:</strong> ${formatTime(
-                    order.checkIn
-                  )}</div>
-                  <div class="info-row"><strong>Giờ ra:</strong> ${formatTime(
-                    order.checkOut
-                  )}</div>
-                 
+                 <div class="info-row"><strong>Ngày:</strong> ${new Date(order.date).toLocaleDateString("vi-VN")}</div>
+                  <div class="info-row"><strong>Giờ vào:</strong> ${formatTime(order.checkIn)}</div>
+                  <div class="info-row"><strong>Giờ ra:</strong> ${formatTime(order.checkOut)}</div>
                 </div>
               </div>
 
@@ -370,11 +334,18 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>${service.serviceName}</td>
-                    <td>${service.serviceCatalog.size}</td>
-                    <td class="price">${service.serviceCatalog.price.toLocaleString()}đ</td>
-                  </tr>
+                  ${order.orderDetails
+                    .flatMap((detail) => detail.service)
+                    .map(
+                      (service) => `
+                    <tr>
+                      <td>${service.serviceName}</td>
+                      <td>${service.serviceCatalog.size}</td>
+                      <td class="price">${service.serviceCatalog.price.toLocaleString()}đ</td>
+                    </tr>
+                  `,
+                    )
+                    .join("")}
                 </tbody>
               </table>
 
@@ -411,77 +382,60 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
             </div>
           </body>
         </html>
-        `);
+        `)
 
-        printWindow.document.close();
+        printWindow.document.close()
 
-        // Wait for images to load before printing
         setTimeout(() => {
-          printWindow.focus();
-          printWindow.print();
-          printWindow.close();
-        }, 1000);
+          printWindow.focus()
+          printWindow.print()
+          printWindow.close()
+        }, 1000)
       }
     } catch (error) {
-      console.error("Error printing:", error);
+      console.error("Error printing:", error)
     }
-  };
+  }
 
-  const service = order.orderDetails[0].service;
-  const vehicle = order.orderDetails[0].vehicle;
-
-  const calcTotal = () => {
-    const base = order.totalPrice;
-    const vat = (order.vat / 100) * base;
-    const discount = (order.discount / 100) * base;
-    return base + vat - discount;
-  };
+  const vehicle = order.orderDetails[0].vehicle
+  const services = order.orderDetails.flatMap((detail) => detail.service)
 
   const paymentConfig = {
     bankName: process.env.NEXT_PUBLIC_NAMEBANK || "TPBANK",
     accountNumber: process.env.NEXT_PUBLIC_ACCOUNTNUMBER || "0384605830",
     accountName: process.env.NEXT_PUBLIC_ACCOUNTNAME || "CONG TY RUA XE",
-  };
+  }
 
   const qrUrl = `https://img.vietqr.io/image/${paymentConfig.bankName}-${
     paymentConfig.accountNumber
   }-compact2.jpg?amount=${Math.floor(order.totalPrice)}&addInfo=${encodeURIComponent(
-    vehicle.licensePlate + " - " + service.serviceName
-  )}&accountName=${encodeURIComponent(paymentConfig.accountName)}`;
+    vehicle.licensePlate + " - " + services.map((s) => s.serviceName).join(", "),
+  )}&accountName=${encodeURIComponent(paymentConfig.accountName)}`
 
   return (
-    <div className="p-6 bg-gray-50 min-h-screen">
+    <div className="space-y-6">
       <div
         ref={printRef}
-        className="print-area bg-white max-w-md mx-auto"
+        className="print-area bg-white max-w-md mx-auto border rounded-lg shadow-sm"
         style={{ padding: "1px 0.5cm" }}
       >
         <div className="flex items-start mb-6 pb-4 border-b border-gray-200">
-          <img
-            src="/logo.png?height=80&width=80"
-            alt="Logo"
-            className="w-40 h-40 object-contain mr-3 flex-shrink-0"
-          />
+          <img src="/logo.png?height=80&width=80" alt="Logo" className="w-40 h-40 object-contain mr-3 flex-shrink-0" />
           <div className="flex-1 text-start justify-center my-auto">
             <p className="text-lg font-bold text-gray-800">ALPHA WASH</p>
-            <p className="text-xs text-gray-600 mt-1">
-              297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh
-            </p>
+            <p className="text-xs text-gray-600 mt-1">297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh</p>
             <p className="text-xs text-gray-600">SĐT: 0966291909</p>
           </div>
         </div>
 
         <div className="text-center mb-4">
-          <h2 className="text-xl font-extrabold text-gray-900">
-            HÓA ĐƠN DỊCH VỤ
-          </h2>
+          <h2 className="text-xl font-extrabold text-gray-900">HÓA ĐƠN DỊCH VỤ</h2>
         </div>
 
         <div className="mb-4 flex">
           <div className="flex-1 text-xs text-gray-700 mr-2">
             <p className="mb-1">
-              <strong>Ngày:</strong>{" "}
-              {new Date(order.orderDate).toLocaleDateString("vi-VN")}
+              <strong>Ngày:</strong> {new Date(order.date).toLocaleDateString("vi-VN")}
             </p>
             <p className="mb-1">
               <strong>Giờ vào:</strong> {formatTime(order.checkIn)}
@@ -497,12 +451,10 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                 <strong>Khách hàng:</strong> {order.customer.name}
               </p>
               <p className="mb-1">
-                <strong>Kỹ Thuật:</strong>{" "}
-                {order.orderDetails[0].employees[0]?.name || "Chưa có"}
+                <strong>Kỹ Thuật:</strong> {order.orderDetails[0].employees[0]?.name || "Chưa có"}
               </p>
               <p className="mb-1">
-                <strong>Xe:</strong> {vehicle.brandName} {vehicle.modelName}{" "}
-                {vehicle.licensePlate}
+                <strong>Xe:</strong> {vehicle.brandName} {vehicle.modelName} {vehicle.licensePlate}
               </p>
             </div>
           )}
@@ -511,27 +463,19 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         <table className="w-full text-xs border border-gray-300 mb-4">
           <thead>
             <tr className="bg-transparent">
-              <th className="p-2 border-r border-gray-300 text-left font-semibold">
-                Dịch vụ
-              </th>
-              <th className="p-2 border-r border-gray-300 text-left font-semibold">
-                Loại xe
-              </th>
+              <th className="p-2 border-r border-gray-300 text-left font-semibold">Dịch vụ</th>
+              <th className="p-2 border-r border-gray-300 text-left font-semibold">Loại xe</th>
               <th className="p-2 text-left font-semibold">Giá</th>
             </tr>
           </thead>
           <tbody>
-            <tr>
-              <td className="p-2 border-r border-gray-300">
-                {service.serviceName}
-              </td>
-              <td className="p-2 border-r border-gray-300">
-                {service.serviceCatalog.size}
-              </td>
-              <td className="p-2 text-right">
-                {service.serviceCatalog.price.toLocaleString()}đ
-              </td>
-            </tr>
+            {services.map((service, index) => (
+              <tr key={index}>
+                <td className="p-2 border-r border-gray-300">{service.serviceName}</td>
+                <td className="p-2 border-r border-gray-300">{service.serviceCatalog.size}</td>
+                <td className="p-2 text-right">{service.serviceCatalog.price.toLocaleString()}đ</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 
@@ -543,17 +487,13 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           {order.vat > 0 && (
             <div className="flex justify-between">
               <span>VAT ({order.vat}%):</span>
-              <span>
-                {((order.vat / 100) * baseServicePrice).toLocaleString()}đ
-              </span>
+              <span>{((order.vat / 100) * baseServicePrice).toLocaleString()}đ</span>
             </div>
           )}
           {order.discount > 0 && (
             <div className="flex justify-between">
               <span>Giảm giá ({order.discount}%):</span>
-              <span>
-                -{((order.discount / 100) * baseServicePrice).toLocaleString()}đ
-              </span>
+              <span>-{((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span>
             </div>
           )}
           <hr className="my-4 border-t-2 border-dashed border-gray-300" />
@@ -568,11 +508,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         </div>
 
         <div className="mt-8 text-center p-4 bg-gray-50 rounded-md border border-gray-100">
-          <p className="font-bold text-lg mb-3 text-gray-800">
-            Quét mã QR để thanh toán
-          </p>
+          <p className="font-bold text-lg mb-3 text-gray-800">Quét mã QR để thanh toán</p>
           <img
-            src={qrUrl}
+            src={qrUrl || "/placeholder.svg"}
             alt="Mã QR Thanh Toán"
             width={250}
             height={250}
@@ -592,13 +530,14 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         </div>
       </div>
 
-      <div className="mt-6 text-center">
-        <Button onClick={handlePrint} className="px-8 py-3 text-lg">
-          In hóa đơn
+      <div className="text-center">
+        <Button onClick={handlePrint} className="px-8 py-3 text-lg bg-blue-600 hover:bg-blue-700">
+          <Printer className="h-5 w-5 mr-2" />
+          In Hóa Đơn
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default InvoiceTemplate;
+export default InvoiceTemplate

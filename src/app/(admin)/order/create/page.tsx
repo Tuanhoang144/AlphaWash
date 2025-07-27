@@ -29,8 +29,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
 import { useRouter } from "next/navigation";
-import { CustomerDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import {
+  CustomerDTO,
+  OrderResponseDTO,
+  VehicleDTO,
+} from "@/types/OrderResponse";
 import { addToast } from "@heroui/react";
+import calculateTotal from "../utils/calculateTotal";
 
 export default function CreateInvoiceForm() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
@@ -39,7 +44,7 @@ export default function CreateInvoiceForm() {
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false); // State for payment dialog
   const route = useRouter();
   const [formData, setFormData] = useState<Partial<OrderResponseDTO>>({
-    orderDate: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
     checkOut: "",
     tip: 0,
@@ -71,26 +76,20 @@ export default function CreateInvoiceForm() {
           size: "",
           imageUrl: "",
         },
-        service: {
-          id: 0,
-          code: "",
-          serviceName: "",
-          duration: "",
-          note: "",
-          serviceTypeCode: "",
-          serviceCatalog: {
+        service: [
+          {
             id: 0,
-            code: "",
-            size: "",
-            price: 0,
+            serviceCode: "",
+            serviceName: "",
+            serviceTypeCode: "",
+            serviceCatalog: {
+              id: 0,
+              code: "",
+              size: "",
+              price: 0,
+            },
           },
-        },
-        serviceCatalog: {
-          id: 0,
-          code: "",
-          size: "",
-          price: 0,
-        },
+        ],
         status: "PENDING",
         note: null,
       },
@@ -105,21 +104,7 @@ export default function CreateInvoiceForm() {
     }));
   };
 
-  const calculateTotal = () => {
-    const serviceTotalBeforeTaxAndDiscount =
-      formData.orderDetails?.reduce(
-        (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
-        0
-      ) || 0;
-    const vatAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.vat || 0)) / 100;
-    const discountAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.discount || 0)) / 100;
-    return Math.round(
-      serviceTotalBeforeTaxAndDiscount + vatAmount - discountAmount
-    );
-  };
-
+  const total = calculateTotal(formData as OrderResponseDTO);
   const { createOrder } = useOrderManager();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -127,32 +112,44 @@ export default function CreateInvoiceForm() {
       ...formData,
       id: formData.id ?? "", // Ensure id is always a string
       tip: formData.tip ?? 0,
-      totalPrice: calculateTotal(),
-      orderDate: formData.orderDate as string,
+      totalPrice: total,
+      date: formData.date ? `${formData.date}T00:00:00` : new Date().toISOString(),
       checkIn: formData.checkIn as string,
       checkOut: formData.checkOut as string,
       paymentType: formData.paymentType ?? "Cash",
       paymentStatus: formData.paymentStatus ?? "PENDING",
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
-      note: formData.note ?? null, // Ensure note is string or null, never undefined
-      customer: selectedCustomer as CustomerDTO, // Ensure customer is always a Customer
-      orderDetails: formData.orderDetails ?? [], // Ensure orderDetails is always an array
-      deleteFlag: formData.deleteFlag ?? false, // Ensure deleteFlag is always boolean
+      note: formData.note ?? null,
+      customer: selectedCustomer as CustomerDTO,
+      orderDetails:
+        formData.orderDetails?.map((detail) => ({
+          ...detail,
+          vehicle: detail.vehicle as VehicleDTO,
+          service: detail.service?.map((service) => ({
+            ...service,
+            serviceCatalog: {
+              ...service.serviceCatalog,
+              code: service.serviceCatalog?.code ?? "",
+              price: service.serviceCatalog?.price ?? 0,
+            },
+          })) || [],
+          note: detail.note ?? null,
+        })) ?? [],
+      deleteFlag: formData.deleteFlag ?? false,
     };
     console.log("Form submitted:", finalData);
     try {
       const response = await createOrder(finalData);
-      console.log("✅ Tạo hóa đơn thành công:", response);
+      console.log("Tạo hóa đơn thành công:", response);
       addToast({
         title: "Thành công",
         description: "Hóa đơn đã được tạo thành công!",
         color: "success",
       });
-      route.push("/order/table"); 
-      
+      // route.push("/order/table");
     } catch (error) {
-      console.error("❌ Lỗi khi tạo hóa đơn:", error);
+      console.error("Lỗi khi tạo hóa đơn:", error);
       addToast({
         title: "Lỗi",
         description: "Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.",
@@ -164,10 +161,16 @@ export default function CreateInvoiceForm() {
   // Get the first vehicle's license plate for transfer info, if available
   const firstVehicleLicensePlate =
     formData.orderDetails?.[0]?.vehicle.licensePlate || null;
-  const currentTotalPrice = calculateTotal();
+  const currentTotalPrice = total;
   const baseServicePrice =
     formData.orderDetails?.reduce(
-      (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
+      (sum, detail) =>
+        sum +
+        detail.service.reduce(
+          (serviceSum, service) =>
+            serviceSum + (service.serviceCatalog?.price || 0),
+          0
+        ),
       0
     ) || 0;
 
@@ -216,7 +219,7 @@ export default function CreateInvoiceForm() {
               <div className="lg:col-span-1 space-y-6">
                 {/* Order Information */}
                 <OrderInfoForm
-                  orderDate={formData.orderDate || ""}
+                  orderDate={formData.date || ""}
                   checkIn={formData.checkIn || ""}
                   checkOut={formData.checkOut || ""}
                   onOrderInfoChange={(field, value) =>
@@ -291,10 +294,12 @@ export default function CreateInvoiceForm() {
                               totalPrice={currentTotalPrice} // totalPrice đã không bao gồm tip
                               baseServicePrice={baseServicePrice} // Truyền baseServicePrice mới
                               onPaymentChange={(field, value) =>
-                                setFormData((prev: Partial<OrderResponseDTO>) => ({
-                                  ...prev,
-                                  [field]: value,
-                                }))
+                                setFormData(
+                                  (prev: Partial<OrderResponseDTO>) => ({
+                                    ...prev,
+                                    [field]: value,
+                                  })
+                                )
                               }
                               customer={selectedCustomer}
                               licensePlate={firstVehicleLicensePlate}

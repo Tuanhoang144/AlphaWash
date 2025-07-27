@@ -33,13 +33,15 @@ export default function OrderInfoForm({
     return `${hours}:${minutes}`;
   };
 
-  const { formatDate } = tool();
+  const { formatDateToDDMMYYYY, convertToISO } = tool();
 
   console.log("Order Info Form Rendered", {
     orderDate,
     checkIn,
     checkOut,
   });
+
+  console.log("Formatted Order Date:", formatDateToDDMMYYYY(orderDate));
 
   return (
     <Card>
@@ -58,8 +60,11 @@ export default function OrderInfoForm({
           <Input
             id="orderDate"
             type="date"
-            value={orderDate ? orderDate.slice(0, 10) : ""}
-            onChange={(e) => onOrderInfoChange("orderDate", e.target.value)}
+            value={orderDate?.substring(0, 10) || ""} 
+            onChange={(e) => {
+              const isoDate = e.target.value; 
+              onOrderInfoChange("orderDate", isoDate);
+            }}
             className="w-full"
           />
         </div>

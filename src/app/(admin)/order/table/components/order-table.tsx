@@ -150,7 +150,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         key={record.id}
                         className="hover:bg-muted/50 transition-colors"
                       >
-                        <TableCell>{formatDate(record.orderDate)}</TableCell>
+                        <TableCell>{formatDate(record.date)}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
                             <div className="flex items-center gap-2 text-sm">
@@ -216,15 +216,22 @@ const OrderTable: React.FC<OrderTableProps> = ({
                           </div>
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
-                          <div
-                            className="text-sm max-w-[120px] line-clamp-2"
-                            title={
-                              record.orderDetails[0]?.service.serviceName ||
-                              "Chưa có"
-                            }
-                          >
-                            {record.orderDetails[0]?.service.serviceName ||
-                              "Chưa có"}
+                          <div className="space-y-1">
+                            <div
+                              className="text-sm max-w-[120px] line-clamp-2"
+                              title={
+                                record.orderDetails[0]?.service[0]?.serviceName ||
+                                "Chưa có"
+                              }
+                            >
+                              {record.orderDetails[0]?.service[0]?.serviceName ||
+                                "Chưa có"}
+                            </div>
+                            {record.orderDetails[0]?.service.length > 1 && (
+                              <div className="text-xs text-muted-foreground">
+                                +{record.orderDetails[0]?.service.length - 1} dịch vụ khác
+                              </div>
+                            )}
                           </div>
                         </TableCell>
                         <TableCell>

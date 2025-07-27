@@ -47,7 +47,7 @@ export interface ModelDTO {
 
 export interface ServiceDTO {
   id: number;
-  code: string;
+  serviceCode: string;
   serviceName: string;
   serviceTypeCode: string;
   serviceCatalog: ServiceCatalogDTO;
@@ -56,10 +56,10 @@ export interface ServiceDTO {
 }
 
 export interface OrderDetailDTO {
+  code: string;
   employees: EmployeeDTO[];
   vehicle: VehicleDTO;
-  service: ServiceDTO;
-  serviceCatalog: ServiceCatalogDTO;
+  service: ServiceDTO[];
   status: string;
   note: string | null;
 }
@@ -73,7 +73,7 @@ export interface CustomerDTO {
 
 export interface OrderResponseDTO {
   id: string;
-  orderDate: string;
+  date: string;
   checkIn: string;
   checkOut: string;
   tip: number;

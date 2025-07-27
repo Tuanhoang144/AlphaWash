@@ -111,11 +111,7 @@ export default function ServiceCatalogSelector({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Wrench className="h-4 w-4" />
-        <Label className="font-medium">Dịch vụ</Label>
-      </div>
+    <div className="space-y-2">
       {/* Quick Service Selection */}
       <div className="space-y-2">
         <Label className="text-sm">Dịch vụ có sẵn:</Label>
@@ -151,7 +147,7 @@ export default function ServiceCatalogSelector({
           >
             {services.map((serviceItem) => (
               <Option
-                key={serviceItem.code}
+                key={serviceItem.serviceCode}
                 value={serviceItem.id}
                 label={serviceItem.serviceName}
               >
@@ -170,7 +166,7 @@ export default function ServiceCatalogSelector({
           <Select
             showSearch
             placeholder={
-              !service.code
+              !service.serviceCode
                 ? "Chọn dịch vụ trước"
                 : loadingCatalogs
                 ? "Đang tải..."
@@ -180,7 +176,7 @@ export default function ServiceCatalogSelector({
             filterOption={filterCatalogOption}
             value={serviceCatalog?.id || undefined}
             onChange={handleCatalogSelect}
-            disabled={!service.code || loadingCatalogs}
+            disabled={!service.serviceCode || loadingCatalogs}
             loading={loadingCatalogs}
             style={{ width: "100%" }}
             size="large"
@@ -203,7 +199,7 @@ export default function ServiceCatalogSelector({
         </div>
       </div>
 
-      {/* Price Display */}
+      {/* Price Display
       {serviceCatalog?.id > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -219,7 +215,7 @@ export default function ServiceCatalogSelector({
             </div>
           </div>
         </div>
-      )}
+      )} */}
       {/* Auto-pricing notification */}
       {vehicleSize && serviceCatalog?.size === vehicleSize && (
         <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">

@@ -46,6 +46,7 @@ export function useOrderManager() {
       try {
         //Map
         const orderRequest = mapFullOrderToRequest(orderData);
+        console.log("Order request data:", orderRequest);
         const response = await callApi(
           "post",
           "orders/create-order",
@@ -67,7 +68,7 @@ export function useOrderManager() {
       setIsLoading(true);
       try {
         const requestBody = mapFullOrderToUpdateRequest(id, order);
-        const response = await callApi("post", "orders/update", requestBody);
+        const response = await callApi("patch", "orders/update", requestBody);
         return response?.data;
       } catch (error) {
         console.error("Lỗi cập nhật đơn hàng:", error);
@@ -84,7 +85,7 @@ export function useOrderManager() {
       if (!id) return;
       setIsLoading(true);
       try {
-        const response = await callApi("put", `orders/cancel/${id}`);
+        const response = await callApi("patch", `orders/cancel/${id}`);
         return response?.data;
       } catch (error) {
         console.error("Lỗi huỷ đơn hàng:", error);

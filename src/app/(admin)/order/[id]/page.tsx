@@ -26,11 +26,9 @@ import InvoiceSummary from "./components/invoice-summary";
 import CustomerInfoDisplay from "./components/customer-info-display";
 import OrderInfoDisplay from "./components/order-info-display";
 import OrderDetailDisplay from "./components/order-detail-display";
-import PaymentFormContent from "../components/payment-form";
 import LoadingPage from "../../../loading";
 import { useRouter } from "next/navigation";
 import { OrderResponseDTO } from "@/types/OrderResponse";
-import InvoiceTemplate from "../components/invoice";
 
 export default function InvoiceClientPage({
   params,
@@ -41,7 +39,7 @@ export default function InvoiceClientPage({
   const { getOrderById } = useOrderManager();
   const [loading, setLoading] = useState(true);
   const [orderData, setOrderData] = useState<OrderResponseDTO | null>(null);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  // const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   useEffect(() => {
     const fetchOrderData = async () => {
       try {
@@ -70,6 +68,11 @@ export default function InvoiceClientPage({
     router.push(`/order/${id}/edit`);
   };
 
+  const handleNavigateToPayment = () => {
+    setIsNavigating(true);
+    router.push(`/order/${id}/payment`);
+  };
+
   if (loading || isNavigating) {
     return <LoadingPage />;
   }
@@ -94,17 +97,6 @@ export default function InvoiceClientPage({
       </div>
     );
   }
-
-  // Calculate base service price for PaymentFormContent display
-  const baseServicePrice =
-    orderData.orderDetails?.reduce(
-      (sum: number, detail: { service: { serviceCatalog?: { price?: number } } }) =>
-        sum + (detail.service.serviceCatalog?.price || 0),
-      0
-    ) || 0;
-  // Get the first vehicle's license plate for transfer info, if available
-  const firstVehicleLicensePlate =
-    orderData.orderDetails?.[0]?.vehicle.licensePlate || null;
 
   return (
     <SidebarInset>
@@ -155,7 +147,7 @@ export default function InvoiceClientPage({
             {/* Right Column - Invoice Info & Payment Display */}
             <div className="lg:col-span-1 space-y-6">
               <OrderInfoDisplay
-                orderDate={orderData.orderDate}
+                orderDate={orderData.date}
                 checkIn={orderData.checkIn}
                 checkOut={orderData.checkOut}
               />
@@ -179,66 +171,14 @@ export default function InvoiceClientPage({
                   </div>
                   <div className="flex flex-col space-y-2">
                     {/* Reusing PaymentFormContent for display in a dialog */}
-                    <Dialog
-                      open={isPaymentDialogOpen}
-                      onOpenChange={setIsPaymentDialogOpen}
+                    <Button
+                      onClick={handleNavigateToPayment}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={orderData.deleteFlag}
                     >
-                      <DialogTrigger asChild>
-                        <Button
-                          variant="default"
-                          className="w-full bg-green-600 hover:bg-green-700"
-                        >
-                          <QrCode className="h-4 w-4 mr-2" />
-                          Xem Thông Tin Thanh Toán
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto ">
-                        <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2">
-                            <CreditCard className="h-5 w-5" />
-                            Thông Tin Thanh Toán & Mã QR
-                          </DialogTitle>
-                          <DialogDescription>
-                            Thông tin thanh toán chi tiết của hóa đơn này.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <PaymentFormContent
-                          paymentType={orderData.paymentType || ""}
-                          paymentStatus={orderData.paymentStatus || ""}
-                          vat={orderData.vat || 0}
-                          discount={orderData.discount || 0}
-                          tip={orderData.tip || 0}
-                          note={orderData.note}
-                          totalPrice={orderData.totalPrice}
-                          baseServicePrice={baseServicePrice}
-                          onPaymentChange={() => {}} // No change allowed in view mode
-                          customer={orderData.customer}
-                          licensePlate={firstVehicleLicensePlate}
-                        />
-                      </DialogContent>
-                    </Dialog>
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="w-full bg-transparent"
-                          disabled={orderData.deleteFlag}
-                        >
-                          <Printer className="h-4 w-4 mr-2" />
-                          In Hóa Đơn
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                          <DialogTitle className="flex items-center gap-2">
-                            <Printer className="h-5 w-5" />
-                            Xem & In Hóa Đơn
-                          </DialogTitle>
-                        </DialogHeader>
-                        <InvoiceTemplate order={orderData} baseServicePrice={baseServicePrice} />
-                      </DialogContent>
-                    </Dialog>
+                      <QrCode className="h-4 w-4 mr-2" />
+                      Thanh Toán & In Hóa Đơn
+                    </Button>
                     <Button
                       type="button"
                       variant="outline"
