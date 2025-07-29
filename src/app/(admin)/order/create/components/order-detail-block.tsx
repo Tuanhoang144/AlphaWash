@@ -76,23 +76,29 @@ export default function OrderDetailBlock({
             <Label className="text-base font-medium">Danh sách dịch vụ</Label>
           </div>
 
-          {orderDetail.service.map((service, index) => (
-            <ServiceInfoBlock
-              key={index}
-              service={service}
-              onServiceChange={(updatedService) =>
-                updateService(index, updatedService)
-              }
-              onRemove={
-                orderDetail.service.length > 1
-                  ? () => removeService(index)
-                  : undefined
-              }
-              vehicleSize={vehicleSize}
-              canRemove={orderDetail.service.length > 1}
-              serviceIndex={index}
-            />
-          ))}
+          {orderDetail.service.map((service, index) => {
+            const selectedServiceIds = orderDetail.service
+              .filter((_, i) => i !== index)
+              .map((s) => s.id);
+            return (
+              <ServiceInfoBlock
+                key={`service-${service.id}-${index}`}
+                service={service}
+                onServiceChange={(updatedService) =>
+                  updateService(index, updatedService)
+                }
+                onRemove={
+                  orderDetail.service.length > 1
+                    ? () => removeService(index)
+                    : undefined
+                }
+                vehicleSize={vehicleSize}
+                canRemove={orderDetail.service.length > 1}
+                serviceIndex={index}
+                selectedServiceIds={selectedServiceIds}
+              />
+            );
+          })}
 
           <Button
             type="button"

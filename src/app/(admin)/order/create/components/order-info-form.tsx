@@ -1,6 +1,5 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Card,
@@ -11,7 +10,9 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock } from "lucide-react";
-import { tool } from "@/utils/tool";
+import { Input, DatePicker } from "antd";
+import dayjs from "dayjs";
+import "dayjs/locale/vi";
 
 interface OrderInfoFormProps {
   orderDate: string;
@@ -32,17 +33,8 @@ export default function OrderInfoForm({
     const minutes = now.getMinutes().toString().padStart(2, "0");
     return `${hours}:${minutes}`;
   };
-
-  const { formatDateToDDMMYYYY, convertToISO } = tool();
-
-  console.log("Order Info Form Rendered", {
-    orderDate,
-    checkIn,
-    checkOut,
-  });
-
-  console.log("Formatted Order Date:", formatDateToDDMMYYYY(orderDate));
-
+  dayjs.locale("vi");
+  console.log("Ngày được truyền vào input:", orderDate);
   return (
     <Card>
       <CardHeader>
@@ -57,15 +49,19 @@ export default function OrderInfoForm({
         {/* Ngày đặt */}
         <div className="space-y-2">
           <Label htmlFor="orderDate">Ngày đặt</Label>
-          <Input
-            id="orderDate"
-            type="date"
-            value={orderDate?.substring(0, 10) || ""} 
-            onChange={(e) => {
-              const isoDate = e.target.value; 
-              onOrderInfoChange("orderDate", isoDate);
+          <DatePicker
+            value={orderDate ? dayjs(orderDate) : null}
+            onChange={(date: dayjs.Dayjs | null) => {
+              console.log("DatePicker onChange:", date?.format("YYYY-MM-DD"));
+              const isoDate = date?.format("YYYY-MM-DD") || "";
+              onOrderInfoChange("date", isoDate);
             }}
-            className="w-full"
+            format="DD/MM/YYYY"
+            placeholder="Chọn ngày (dd/mm/yyyy)"
+            style={{ width: "100%" }}
+            size="large"
+            showToday={true}
+            allowClear={true}
           />
         </div>
 
@@ -79,7 +75,9 @@ export default function OrderInfoForm({
                 id="checkIn"
                 type="time"
                 value={checkIn}
-                onChange={(e) => onOrderInfoChange("checkIn", e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onOrderInfoChange("checkIn", e.target.value)
+                }
                 className="w-full"
               />
               <Button
@@ -101,7 +99,9 @@ export default function OrderInfoForm({
                 id="checkOut"
                 type="time"
                 value={checkOut}
-                onChange={(e) => onOrderInfoChange("checkOut", e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onOrderInfoChange("checkOut", e.target.value)
+                }
                 className="w-full"
               />
               <Button

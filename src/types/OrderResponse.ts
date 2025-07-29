@@ -73,6 +73,7 @@ export interface CustomerDTO {
 
 export interface OrderResponseDTO {
   id: string;
+  code: string;
   date: string;
   checkIn: string;
   checkOut: string;

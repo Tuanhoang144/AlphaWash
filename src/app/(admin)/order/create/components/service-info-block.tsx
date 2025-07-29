@@ -23,6 +23,7 @@ interface ServiceInfoBlockProps {
   vehicleSize: string
   canRemove?: boolean
   serviceIndex: number
+  selectedServiceIds?: number[];
 }
 
 export default function ServiceInfoBlock({
@@ -32,6 +33,7 @@ export default function ServiceInfoBlock({
   vehicleSize,
   canRemove = false,
   serviceIndex,
+  selectedServiceIds,
 }: ServiceInfoBlockProps) {
   const updateService = (field: string, value: any) => {
     if (field === "service") {
@@ -66,26 +68,15 @@ export default function ServiceInfoBlock({
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
-        {/* Service Selection */}
         <ServiceCatalogSelector
           service={service}
           serviceCatalog={service.serviceCatalog}
           vehicleSize={vehicleSize}
           onServiceChange={(newService) => updateService("service", newService)}
           onServiceCatalogChange={(catalog) => updateService("serviceCatalog", catalog)}
+          selectedServiceIds={selectedServiceIds}
         />
 
-        {/* Price Display
-        {service.serviceCatalog?.price && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-green-700">Giá dịch vụ:</span>
-              <span className="font-semibold text-green-800">
-                {service.serviceCatalog.price.toLocaleString("vi-VN")} VNĐ
-              </span>
-            </div>
-          </div>
-        )} */}
       </CardContent>
     </Card>
   )

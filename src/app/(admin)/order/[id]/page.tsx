@@ -127,7 +127,7 @@ export default function InvoiceClientPage({
               Chi Tiết Hóa Đơn
             </h1>
             <p className="text-gray-600 mt-2">
-              Xem thông tin chi tiết của hóa đơn dịch vụ
+              Xem thông tin chi tiết của hóa đơn #{orderData.code}
             </p>
           </div>
 

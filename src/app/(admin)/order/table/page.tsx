@@ -65,9 +65,9 @@ export default function WashServiceTable() {
           record.orderDetails[0]?.vehicle.modelName
             .toLowerCase()
             .includes(searchTerm.toLowerCase()) ||
-          record.orderDetails[0]?.service.serviceName
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
+          record.orderDetails[0]?.service?.filter((service) =>
+            service.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
+          )?.length ||
           record.orderDetails[0]?.employees.some((emp) =>
             emp.name?.toLowerCase().includes(searchTerm.toLowerCase())
           )
@@ -109,7 +109,7 @@ export default function WashServiceTable() {
       const getFullCheckInDate = (record: OrderResponseDTO): number => {
         if (!record.checkIn) return -Infinity;
 
-        const orderDate = new Date(record.orderDate);
+        const orderDate = new Date(record.date);
         const [h, m, s] = record.checkIn.split(":").map(Number);
         const full = new Date(orderDate);
         full.setHours(h, m, s, 0);

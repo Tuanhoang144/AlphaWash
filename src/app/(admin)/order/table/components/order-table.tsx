@@ -26,6 +26,7 @@ import {
   Eye,
   MoreHorizontal,
   Phone,
+  QrCode,
   Search,
   User,
 } from "lucide-react";
@@ -90,6 +91,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   {[
+                    "Mã đơn",
                     "Ngày",
                     "Thời gian",
                     "Biển số",
@@ -150,6 +152,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         key={record.id}
                         className="hover:bg-muted/50 transition-colors"
                       >
+                        <TableCell>{record.code}</TableCell>
                         <TableCell>{formatDate(record.date)}</TableCell>
                         <TableCell>
                           <div className="space-y-1">
@@ -181,16 +184,20 @@ const OrderTable: React.FC<OrderTableProps> = ({
                         </TableCell>
                         <TableCell>
                           <div className="font-medium">
-                            {record.customer.name}
+                            {record.customer.name || "Khách lẻ"}
                           </div>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3" />
-                            <span className="font-mono">
-                              {record.customer.phone}
-                            </span>
-                          </div>
+                          {record.customer.phone ? (
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <Phone className="h-3 w-3" />
+                              <span className="font-mono">
+                                {record.customer.phone}
+                              </span>
+                            </div>
+                          ) : (
+                            "Chưa có"
+                          )}
                         </TableCell>
                         <TableCell>
                           <div className="space-y-2">
@@ -220,16 +227,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
                             <div
                               className="text-sm max-w-[120px] line-clamp-2"
                               title={
-                                record.orderDetails[0]?.service[0]?.serviceName ||
-                                "Chưa có"
+                                record.orderDetails[0]?.service[0]
+                                  ?.serviceName || "Chưa có"
                               }
                             >
-                              {record.orderDetails[0]?.service[0]?.serviceName ||
-                                "Chưa có"}
+                              {record.orderDetails[0]?.service[0]
+                                ?.serviceName || "Chưa có"}
                             </div>
                             {record.orderDetails[0]?.service.length > 1 && (
                               <div className="text-xs text-muted-foreground">
-                                +{record.orderDetails[0]?.service.length - 1} dịch vụ khác
+                                +{record.orderDetails[0]?.service.length - 1}{" "}
+                                dịch vụ khác
                               </div>
                             )}
                           </div>
@@ -315,6 +323,16 @@ const OrderTable: React.FC<OrderTableProps> = ({
                                 >
                                   <Edit className="mr-2 h-4 w-4" />
                                   Chỉnh sửa
+                                </DropdownMenuItem>
+                              )}
+                              {!record.deleteFlag && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    router.push(`/order/${record.id}/payment`);
+                                  }}
+                                >
+                                  <QrCode className="mr-2 h-4 w-4" />
+                                  Thanh toán
                                 </DropdownMenuItem>
                               )}
                             </DropdownMenuContent>

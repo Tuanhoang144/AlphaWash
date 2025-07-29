@@ -18,6 +18,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Search, User, Phone, MapPin, UserPlus, X, Save } from "lucide-react";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { CustomerDTO } from "@/types/OrderResponse";
+import { addToast } from "@heroui/react";
+import { add } from "date-fns";
 
 interface CustomerSearchDialogProps {
   onCustomerSelect: (customer: CustomerDTO | null) => void;
@@ -30,20 +32,21 @@ export default function CustomerSearchDialog({
 }: CustomerSearchDialogProps) {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("search");
-
-  // Search state
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<CustomerDTO[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const { getCustomersByPhone, createCustomer } = useCustomerManager();
-
-  // Create customer state
   const [newCustomer, setNewCustomer] = useState<Partial<CustomerDTO>>({
     id: "",
     name: "",
     phone: "",
   });
   const [isCreating, setIsCreating] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const isValidVietnamesePhone = (phone: string) => {
+    const regex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    return regex.test(phone.trim());
+  };
 
   const handleSearch = async () => {
     if (!searchTerm.trim()) return;
@@ -79,7 +82,16 @@ export default function CustomerSearchDialog({
 
   const handleCreateCustomer = async () => {
     if (!newCustomer.name || !newCustomer.phone) {
-      alert("Vui lòng nhập tên và số điện thoại");
+      addToast({
+        title: "Thông tin không đầy đủ",
+        description: "Vui lòng nhập tên và số điện thoại khách hàng.",
+        color: "warning",
+      });
+      return;
+    }
+
+    if (!isValidVietnamesePhone(newCustomer.phone)) {
+      setPhoneError("Số điện thoại không hợp lệ");
       return;
     }
 
@@ -105,10 +117,18 @@ export default function CustomerSearchDialog({
       });
       setOpen(false);
       resetDialog();
-      alert("Khách hàng đã được tạo thành công!");
+      addToast({
+        title: "Khách hàng đã được tạo thành công!",
+        description: `Khách hàng ${newCustomer.name} đã được tạo và chọn.`,
+        color: "success",
+      });
     } catch (error) {
       console.error("Lỗi khi tạo khách hàng:", error);
-      alert("Có lỗi xảy ra khi tạo khách hàng");
+      addToast({
+        title: "Lỗi khi tạo khách hàng",
+        description: "Vui lòng kiểm tra lại thông tin và thử lại.",
+        color: "danger",
+      });
     } finally {
       setIsCreating(false);
     }
@@ -207,7 +227,9 @@ export default function CustomerSearchDialog({
                           <Input
                             placeholder="Nhập biển số hoặc số điện thoại..."
                             value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => setSearchTerm(e.target.value)}
                             onKeyPress={handleKeyPress}
                           />
                         </div>
@@ -293,12 +315,9 @@ export default function CustomerSearchDialog({
                               id="newCustomerName"
                               placeholder="Nhập tên khách hàng"
                               value={newCustomer.name || ""}
-                              onChange={(e) =>
-                                updateNewCustomer(
-                                  "name",
-                                  e.target.value
-                                )
-                              }
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => updateNewCustomer("name", e.target.value)}
                               required
                             />
                           </div>
@@ -310,11 +329,25 @@ export default function CustomerSearchDialog({
                               id="newCustomerPhone"
                               placeholder="Nhập số điện thoại"
                               value={newCustomer.phone || ""}
-                              onChange={(e) =>
-                                updateNewCustomer("phone", e.target.value)
-                              }
+                              onChange={(
+                                e: React.ChangeEvent<HTMLInputElement>
+                              ) => {
+                                const value = e.target.value;
+                                updateNewCustomer("phone", value);
+
+                                if (!value || isValidVietnamesePhone(value)) {
+                                  setPhoneError(null); // hợp lệ
+                                } else {
+                                  setPhoneError("Số điện thoại không hợp lệ");
+                                }
+                              }}
                               required
                             />
+                            {phoneError && (
+                              <p className="text-sm text-red-600 mt-1">
+                                {phoneError}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -417,7 +450,9 @@ export default function CustomerSearchDialog({
                         <Input
                           placeholder="Nhập biển số hoặc số điện thoại..."
                           value={searchTerm}
-                          onChange={(e) => setSearchTerm(e.target.value)}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                            setSearchTerm(e.target.value)
+                          }
                           onKeyPress={handleKeyPress}
                         />
                       </div>
@@ -502,9 +537,9 @@ export default function CustomerSearchDialog({
                             id="newCustomerName"
                             placeholder="Nhập tên khách hàng"
                             value={newCustomer.name || ""}
-                            onChange={(e) =>
-                              updateNewCustomer("name", e.target.value)
-                            }
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => updateNewCustomer("name", e.target.value)}
                             required
                           />
                         </div>
@@ -516,9 +551,9 @@ export default function CustomerSearchDialog({
                             id="newCustomerPhone"
                             placeholder="Nhập số điện thoại"
                             value={newCustomer.phone || ""}
-                            onChange={(e) =>
-                              updateNewCustomer("phone", e.target.value)
-                            }
+                            onChange={(
+                              e: React.ChangeEvent<HTMLInputElement>
+                            ) => updateNewCustomer("phone", e.target.value)}
                             required
                           />
                         </div>

@@ -40,6 +40,23 @@ export function useOrderManager() {
     [callApi, setIsLoading]
   );
 
+  const getOrderByCode = useCallback(
+    async (code: string) => {
+      if (!code) return null;
+      setIsLoading(true);
+      try {
+        const response = await callApi("get", `orders/code/${code}`);
+        return response?.data;
+      } catch (error: any) {
+        console.error("Lỗi khi gọi API getOrderById:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   const createOrder = useCallback(
     async (orderData: OrderResponseDTO) => {
       setIsLoading(true);
@@ -100,6 +117,7 @@ export function useOrderManager() {
   return {
     getAllOrders,
     getOrderById,
+    getOrderByCode,
     createOrder,
     updateOrder,
     cancelOrderById,

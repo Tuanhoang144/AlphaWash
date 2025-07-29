@@ -255,7 +255,7 @@ export default function EditInvoicePage() {
               Chỉnh Sửa Hóa Đơn
             </h1>
             <p className="text-gray-600 mt-2">
-              Cập nhật thông tin chi tiết của hóa đơn
+              Cập nhật thông tin chi tiết của hóa đơn #{formData.code}
             </p>
           </div>
 
