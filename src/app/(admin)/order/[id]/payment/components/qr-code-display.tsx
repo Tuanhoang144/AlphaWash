@@ -26,14 +26,14 @@ export default function QRCodeDisplay({ paymentInfo }: QRCodeDisplayProps) {
   const qrUrl = generateQRUrl(paymentInfo)
 
   return (
-    <Card className="w-full flex flex-col">
+    <Card className="w-full h-fit">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <QrCode className="h-5 w-5" />
           Mã QR Thanh Toán
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-col items-center justify-center p-4 flex-grow">
+      <CardContent className="flex flex-col items-center justify-center p-4">
         {paymentInfo.amount > 0 ? (
           <>
             <img

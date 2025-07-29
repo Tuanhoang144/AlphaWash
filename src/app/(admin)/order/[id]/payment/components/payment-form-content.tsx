@@ -1,6 +1,5 @@
 "use client";
 
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -11,19 +10,19 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CreditCard } from "lucide-react";
-
+import type { CustomerDTO } from "@/types/OrderResponse";
 import QRCodeDisplay from "./qr-code-display";
-import { CustomerDTO } from "@/types/OrderResponse";
+import { Input } from "antd";
 
 interface PaymentFormContentProps {
   paymentType: string;
   paymentStatus: string;
   vat: number;
   discount: number;
-  tip: number; // Vẫn nhận tip để hiển thị
+  tip: number;
   note: string | null;
-  totalPrice: number; // totalPrice đã không bao gồm tip
-  baseServicePrice: number; // Prop mới: tổng tiền dịch vụ trước thuế và giảm giá
+  totalPrice: number;
+  baseServicePrice: number;
   onPaymentChange: (field: string, value: string | number) => void;
   customer?: CustomerDTO | null;
   licensePlate?: string | null;
@@ -40,20 +39,19 @@ export default function PaymentFormContent({
   paymentStatus,
   vat,
   discount,
-  tip, // Vẫn nhận tip
+  tip,
   note,
-  totalPrice, // totalPrice đã không bao gồm tip
-  baseServicePrice, // Sử dụng prop mới
+  totalPrice,
+  baseServicePrice,
   onPaymentChange,
   customer,
   licensePlate,
 }: PaymentFormContentProps) {
-  // Tính toán VAT và Discount dựa trên baseServicePrice và làm tròn
   const vatAmount = Math.round((baseServicePrice * vat) / 100);
   const discountAmount = Math.round((baseServicePrice * discount) / 100);
 
   const paymentInfo = {
-    amount: totalPrice, // QR code vẫn hiển thị tổng tiền hóa đơn (không bao gồm tip)
+    amount: totalPrice,
     bankName: paymentConfig.bankName,
     accountNumber: paymentConfig.accountNumber,
     accountName: paymentConfig.accountName,
@@ -61,92 +59,116 @@ export default function PaymentFormContent({
       licensePlate || "Xe khong BS"
     }`,
   };
-  console.log("baseServicePrice", baseServicePrice);
-  console.log("vatAmount", vatAmount);
-  console.log("discountAmount", discountAmount);
+
   return (
-    <div className="flex justify-center gap-6 mt-4">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
       {/* Left: Payment Details */}
-      <div className="space-y-3 w-full max-w-md">
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <CreditCard className="h-5 w-5" />
-          Chi tiết thanh toán
-        </h3>
-        <div className="space-y-2">
-          <Label>Phương thức</Label>
-          <Select
-            value={paymentType}
-            onValueChange={(value) => onPaymentChange("paymentType", value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Chọn trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Cash">Tiền mặt</SelectItem>
-              <SelectItem value="Transfer">Chuyển khoản</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="space-y-2">
-          <Label>Trạng thái</Label>
-          <Select
-            value={paymentStatus}
-            onValueChange={(value) => onPaymentChange("paymentStatus", value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Chọn trạng thái" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="PENDING">Chờ thanh toán</SelectItem>
-              <SelectItem value="DONE">Đã thanh toán</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
+            <Label>Phương thức thanh toán</Label>
+            <Select
+              value={paymentType}
+              onValueChange={(value) => onPaymentChange("paymentType", value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Chọn phương thức" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Cash">Tiền mặt</SelectItem>
+                <SelectItem value="Transfer">Chuyển khoản</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Trạng thái thanh toán</Label>
+            <Select
+              value={paymentStatus}
+              onValueChange={(value) => onPaymentChange("paymentStatus", value)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Chọn trạng thái" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="PENDING">Chờ thanh toán</SelectItem>
+                <SelectItem value="DONE">Đã thanh toán</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4">
+          {/* <div className="space-y-2">
             <Label>VAT (%)</Label>
             <Input
               type="number"
               placeholder="10"
               value={vat}
-              onChange={(e) =>
-                onPaymentChange("vat", Number.parseInt(e.target.value) || 0)
-              }
+              onChange={(e) => onPaymentChange("vat", Number.parseInt(e.target.value) || 0)}
             />
-          </div>
+          </div> */}
           <div className="space-y-2">
             <Label>Giảm giá (%)</Label>
             <Input
               type="number"
               placeholder="5"
               value={discount}
-              onChange={(e) =>
-                onPaymentChange(
-                  "discount",
-                  Number.parseInt(e.target.value) || 0
-                )
-              }
+              min={0}
+              max={100}
+              onChange={(e) => {
+                const value = Number.parseInt(e.target.value) || 0;
+                if (value >= 0 && value <= 100) {
+                  onPaymentChange("discount", value);
+                }
+              }}
+              onBlur={(e) => {
+                const value = Number.parseInt(e.target.value) || 0;
+                if (value > 100) {
+                  onPaymentChange("discount", 100);
+                } else if (value < 0) {
+                  onPaymentChange("discount", 0);
+                }
+              }}
             />
+            {discount > 100 && (
+              <p className="text-sm text-red-500">
+                Giảm giá không được vượt quá 100%
+              </p>
+            )}
           </div>
         </div>
 
-        {/* Tiền tip vẫn là một trường nhập liệu riêng biệt */}
         <div className="space-y-2">
           <Label>Tiền tip (VNĐ)</Label>
           <Input
             type="number"
             placeholder="50000"
             value={tip}
-            onChange={(e) =>
-              onPaymentChange("tip", Number.parseInt(e.target.value) || 0)
-            }
+            min={0}
+            onChange={(e) => {
+              const value = Number.parseInt(e.target.value) || 0;
+              // Chỉ cho phép số dương hoặc 0
+              if (value >= 0) {
+                onPaymentChange("tip", value);
+              }
+            }}
+            onBlur={(e) => {
+              // Double check khi blur
+              const value = Number.parseInt(e.target.value) || 0;
+              if (value < 0) {
+                onPaymentChange("tip", 0);
+              }
+            }}
           />
+          {tip < 0 && (
+            <p className="text-sm text-red-500">Tiền tip không được âm</p>
+          )}
         </div>
 
         {/* Price Breakdown */}
-        <div className="border-t pt-4 space-y-2">
+        <div className="border-t pt-4 space-y-3 bg-gray-50 p-4 rounded-lg">
+          <h4 className="font-semibold text-gray-800">Chi tiết thanh toán</h4>
           <div className="flex justify-between text-sm">
             <span>Tổng dịch vụ:</span>
             <span>{Math.round(baseServicePrice).toLocaleString("vi-VN")}đ</span>
@@ -163,7 +185,6 @@ export default function PaymentFormContent({
               <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
             </div>
           )}
-          {/* Dòng tiền tip đã được loại bỏ khỏi phần tổng cộng */}
           <div className="flex justify-between font-bold text-lg border-t pt-2">
             <span>Tổng cộng:</span>
             <span className="text-green-600">
@@ -184,7 +205,7 @@ export default function PaymentFormContent({
       </div>
 
       {/* Right: QR Code Display */}
-      <div className="w-full max-w-md">
+      <div>
         <QRCodeDisplay paymentInfo={paymentInfo} />
       </div>
     </div>

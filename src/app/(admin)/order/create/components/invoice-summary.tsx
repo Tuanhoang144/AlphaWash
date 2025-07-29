@@ -18,16 +18,21 @@ interface InvoiceSummaryProps {
   orderDetails: OrderDetailDTO[];
   totalPrice: number;
   statusPayment: string;
+  deleteFlag?: boolean;
 }
 
 export default function InvoiceSummary({
   statusPayment,
   orderDetails,
   totalPrice,
+  deleteFlag,
 }: InvoiceSummaryProps) {
   const [isOpen, setIsOpen] = useState(true); // Default to open
 
-  const totalServices = orderDetails.length;
+  const totalServices = orderDetails.reduce(
+    (sum, detail) => sum + detail.service.length,
+    0
+  );
   const totalEmployees = orderDetails.reduce(
     (sum, detail) => sum + detail.employees.length,
     0
@@ -56,6 +61,15 @@ export default function InvoiceSummary({
         <CollapsibleContent>
           <CardContent className="space-y-4">
             {/* Quick Stats */}
+            {deleteFlag && (
+              <div className="rounded-xl bg-red-100 p-4 text-center shadow-sm">
+                <div className="flex justify-center items-center gap-2 text-red-600 mb-1">
+                  <span className="text-sm font-medium">
+                    Đơn hàng đã bị hủy
+                  </span>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
@@ -107,8 +121,26 @@ export default function InvoiceSummary({
                     </div>
 
                     <div className="text-sm text-gray-600">
-                      <div>
-                        {detail.service?.serviceName || "Không rõ dịch vụ"}
+                      <div className="space-y-1">
+                        {detail.service?.map((service) => (
+                          <div className="flex justify-between items-center" key={service.id}>
+                            <div>
+                              <span className="font-medium">{service.serviceName || "Không rõ dịch vụ"}</span>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {service.serviceCatalog ? (
+                                <div className="price">
+                                  {service.serviceCatalog.price.toLocaleString(
+                                    "vi-VN"
+                                  )}{" "}
+                                  VNĐ
+                                </div>
+                              ) : (
+                                "Không rõ giá"
+                              )}
+                            </div>
+                          </div>
+                        )) || "Không rõ dịch vụ"}
                       </div>
                     </div>
 
@@ -127,12 +159,20 @@ export default function InvoiceSummary({
                     )}
 
                     <div className="flex justify-between items-center pt-2 border-t">
-                      <span className="text-sm">Giá:</span>
+                      <span className="text-sm">Tổng tiền:</span>
                       <span className="font-medium text-green-600">
-                        {detail.serviceCatalog?.price != null
-                          ? detail.serviceCatalog.price.toLocaleString(
-                              "vi-VN"
-                            ) + "đ"
+                        {detail.service?.reduce(
+                          (acc, curr) =>
+                            acc + (curr.serviceCatalog?.price || 0),
+                          0
+                        ) != null
+                          ? detail.service
+                              .reduce(
+                                (acc, curr) =>
+                                  acc + (curr.serviceCatalog?.price || 0),
+                                0
+                              )
+                              .toLocaleString("vi-VN") + "đ"
                           : "N/A"}
                       </span>
                     </div>
@@ -140,15 +180,6 @@ export default function InvoiceSummary({
                 ))}
               </div>
             )}
-
-            {/* Total
-            <Separator />
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <div className="text-sm text-green-600 mb-1">Tổng tiền</div>
-              <div className="text-2xl font-bold text-green-700">
-                {totalPrice.toLocaleString("vi-VN")} VNĐ
-              </div>
-            </div> */}
           </CardContent>
         </CollapsibleContent>
       </Card>

@@ -7,16 +7,7 @@ import { FileText, CreditCard, QrCode } from "lucide-react"; // Import CreditCar
 import CustomerInfoSection from "./components/customer-info-section";
 import OrderInfoForm from "./components/order-info-form";
 import OrderDetailForm from "./components/order-detail-form";
-import PaymentFormContent from "../components/payment-form"; // Renamed import
 import InvoiceSummary from "./components/invoice-summary";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -29,16 +20,18 @@ import {
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
 import { useRouter } from "next/navigation";
-import { CustomerDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import {
+  CustomerDTO,
+  OrderResponseDTO,
+  VehicleDTO,
+} from "@/types/OrderResponse";
+import calculateTotal from "../utils/calculateTotal";
+import { addToast } from "@heroui/toast";
+import LoadingPage from "@/app/loading";
 
 export default function CreateInvoiceForm() {
-  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
-    null
-  );
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false); // State for payment dialog
-  const route = useRouter();
   const [formData, setFormData] = useState<Partial<OrderResponseDTO>>({
-    orderDate: new Date().toISOString().split("T")[0],
+    date: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
     checkOut: "",
     tip: 0,
@@ -46,6 +39,7 @@ export default function CreateInvoiceForm() {
     paymentStatus: "PENDING",
     vat: 0,
     discount: 0,
+    deleteFlag: false,
     totalPrice: 0,
     note: null,
     customer: {
@@ -56,6 +50,7 @@ export default function CreateInvoiceForm() {
     },
     orderDetails: [
       {
+        code: "",
         employees: [],
         vehicle: {
           id: "",
@@ -69,31 +64,32 @@ export default function CreateInvoiceForm() {
           size: "",
           imageUrl: "",
         },
-        service: {
-          id: 0,
-          code: "",
-          serviceName: "",
-          duration: "",
-          note: "",
-          serviceTypeCode: "",
-          serviceCatalog: {
+        service: [
+          {
             id: 0,
-            code: "",
-            size: "",
-            price: 0,
+            serviceCode: "",
+            serviceName: "",
+            serviceTypeCode: "",
+            serviceCatalog: {
+              id: 0,
+              code: "",
+              size: "",
+              price: 0,
+            },
           },
-        },
-        serviceCatalog: {
-          id: 0,
-          code: "",
-          size: "",
-          price: 0,
-        },
+        ],
         status: "PENDING",
         note: null,
       },
     ],
   });
+  const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
+    null
+  );
+  const [isNavigating, setIsNavigating] = useState(false);
+  const currentTotalPrice = calculateTotal(formData as OrderResponseDTO);
+  const { createOrder } = useOrderManager();
+  const route = useRouter();
 
   const handleCustomerChange = (customer: CustomerDTO | null) => {
     setSelectedCustomer(customer);
@@ -103,62 +99,107 @@ export default function CreateInvoiceForm() {
     }));
   };
 
-  const calculateTotal = () => {
-    const serviceTotalBeforeTaxAndDiscount =
-      formData.orderDetails?.reduce(
-        (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
-        0
-      ) || 0;
-    const vatAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.vat || 0)) / 100;
-    const discountAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.discount || 0)) / 100;
-    return Math.round(
-      serviceTotalBeforeTaxAndDiscount + vatAmount - discountAmount
-    );
-  };
-
-  const { createOrder } = useOrderManager();
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const createNewOrder = async (): Promise<string> => {
+    // Return Promise<string>
     const finalData: OrderResponseDTO = {
       ...formData,
-      id: formData.id ?? "", // Ensure id is always a string
+      id: formData.id ?? "",
+      code: formData.code ?? "",
       tip: formData.tip ?? 0,
-      totalPrice: calculateTotal(),
-      orderDate: formData.orderDate as string,
+      totalPrice: currentTotalPrice,
+      date: formData.date
+        ? `${formData.date}T00:00:00`
+        : new Date().toISOString(),
       checkIn: formData.checkIn as string,
       checkOut: formData.checkOut as string,
       paymentType: formData.paymentType ?? "Cash",
       paymentStatus: formData.paymentStatus ?? "PENDING",
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
-      note: formData.note ?? null, // Ensure note is string or null, never undefined
-      customer: selectedCustomer as CustomerDTO, // Ensure customer is always a Customer
-      orderDetails: formData.orderDetails ?? [], // Ensure orderDetails is always an array
+      note: formData.note ?? null,
+      customer: selectedCustomer as CustomerDTO,
+      orderDetails:
+        formData.orderDetails?.map((detail) => ({
+          ...detail,
+          vehicle: detail.vehicle as VehicleDTO,
+          service:
+            detail.service?.map((service) => ({
+              ...service,
+              serviceCatalog: {
+                ...service.serviceCatalog,
+                code: service.serviceCatalog?.code ?? "",
+                price: service.serviceCatalog?.price ?? 0,
+              },
+            })) || [],
+          note: detail.note ?? null,
+        })) ?? [],
+      deleteFlag: formData.deleteFlag ?? false,
     };
+
     console.log("Form submitted:", finalData);
+
     try {
       const response = await createOrder(finalData);
-      console.log("✅ Tạo hóa đơn thành công:", response);
-      alert("Hóa đơn đã được tạo thành công!");
-      route.push("/order/table"); 
-      
+      console.log("Order created successfully:", response);
+
+      const orderId = response;
+
+      console.log("Order ID:", orderId);
+
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được tạo thành công!",
+        color: "success",
+      });
+
+      return orderId;
     } catch (error) {
-      console.error("❌ Lỗi khi tạo hóa đơn:", error);
-      alert("Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.");
+      console.error("Lỗi khi tạo hóa đơn:", error);
+      addToast({
+        title: "Lỗi",
+        description: "Có lỗi xảy ra khi tạo hóa đơn. Vui lòng thử lại.",
+        color: "danger",
+      });
+      throw error;
     }
   };
 
-  // Get the first vehicle's license plate for transfer info, if available
-  const firstVehicleLicensePlate =
-    formData.orderDetails?.[0]?.vehicle.licensePlate || null;
-  const currentTotalPrice = calculateTotal();
-  const baseServicePrice =
-    formData.orderDetails?.reduce(
-      (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
-      0
-    ) || 0;
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) {
+      e.preventDefault();
+    }
+    setIsNavigating(true);
+
+    try {
+      await createNewOrder();
+      route.push("/order/table");
+    } catch (error) {
+      console.error("Error in handleSubmit:", error);
+      setIsNavigating(false); 
+    }
+  };
+
+  const handleNavigateToPayment = async () => {
+    setIsNavigating(true);
+
+    try {
+      const orderId = await createNewOrder();
+      console.log("Navigating to payment with ID:", orderId);
+
+      if (orderId) {
+        route.push(`/order/${orderId}/payment`);
+      } else {
+        throw new Error("Order ID is empty");
+      }
+    } catch (error) {
+      console.error("Error creating order:", error);
+      setIsNavigating(false);
+    }
+  };
+
+  if (isNavigating) {
+    return <LoadingPage />;
+  }
 
   return (
     <SidebarInset>
@@ -194,9 +235,9 @@ export default function CreateInvoiceForm() {
                 {/* Order Details */}
                 <OrderDetailForm
                   orderDetails={formData.orderDetails || []}
-                  onOrderDetailsChange={(orderDetails) =>
-                    setFormData((prev) => ({ ...prev, orderDetails }))
-                  }
+                  onOrderDetailsChange={(
+                    orderDetails: OrderResponseDTO["orderDetails"]
+                  ) => setFormData((prev) => ({ ...prev, orderDetails }))}
                   customer={selectedCustomer || undefined}
                 />
               </div>
@@ -205,10 +246,10 @@ export default function CreateInvoiceForm() {
               <div className="lg:col-span-1 space-y-6">
                 {/* Order Information */}
                 <OrderInfoForm
-                  orderDate={formData.orderDate || ""}
+                  orderDate={formData.date || ""}
                   checkIn={formData.checkIn || ""}
                   checkOut={formData.checkOut || ""}
-                  onOrderInfoChange={(field, value) =>
+                  onOrderInfoChange={(field: string, value: any) =>
                     setFormData((prev) => ({ ...prev, [field]: value }))
                   }
                 />
@@ -237,59 +278,15 @@ export default function CreateInvoiceForm() {
                         <FileText className="h-4 w-4 mr-2" />
                         Tạo Hóa Đơn
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full bg-transparent"
-                      >
-                        Lưu nháp
-                      </Button>
-                      {/* New Payment Button - Conditionally rendered */}
                       {currentTotalPrice > 0 && (
-                        <Dialog
-                          open={isPaymentDialogOpen}
-                          onOpenChange={setIsPaymentDialogOpen}
+                        <Button
+                          onClick={handleNavigateToPayment}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          disabled={formData.deleteFlag}
                         >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="default"
-                              className="w-full bg-green-600 hover:bg-green-700"
-                            >
-                              <QrCode className="h-4 w-4 mr-2" />
-                              Thanh Toán
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto ">
-                            <DialogHeader>
-                              <DialogTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5" />
-                                Thông Tin Thanh Toán & Mã QR
-                              </DialogTitle>
-                              <DialogDescription>
-                                Kiểm tra thông tin và sử dụng mã QR để thanh
-                                toán
-                              </DialogDescription>
-                            </DialogHeader>
-                            <PaymentFormContent
-                              paymentType={formData.paymentType || ""}
-                              paymentStatus={formData.paymentStatus || ""}
-                              vat={formData.vat || 0}
-                              discount={formData.discount || 0}
-                              tip={formData.tip || 0} // Vẫn truyền tip để hiển thị
-                              note={formData.note ?? null}
-                              totalPrice={currentTotalPrice} // totalPrice đã không bao gồm tip
-                              baseServicePrice={baseServicePrice} // Truyền baseServicePrice mới
-                              onPaymentChange={(field, value) =>
-                                setFormData((prev: Partial<OrderResponseDTO>) => ({
-                                  ...prev,
-                                  [field]: value,
-                                }))
-                              }
-                              customer={selectedCustomer}
-                              licensePlate={firstVehicleLicensePlate}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Thanh Toán & In Hóa Đơn
+                        </Button>
                       )}
                     </div>
                   </div>

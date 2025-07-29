@@ -15,6 +15,7 @@ interface ServiceCatalogSelectorProps {
   service: ServiceDTO;
   serviceCatalog: ServiceCatalogDTO;
   vehicleSize: string;
+  selectedServiceIds?: number[];
   onServiceChange: (service: ServiceDTO) => void;
   onServiceCatalogChange: (catalog: ServiceCatalogDTO) => void;
 }
@@ -23,6 +24,7 @@ export default function ServiceCatalogSelector({
   service,
   serviceCatalog,
   vehicleSize,
+  selectedServiceIds,
   onServiceChange,
   onServiceCatalogChange,
 }: ServiceCatalogSelectorProps) {
@@ -45,7 +47,6 @@ export default function ServiceCatalogSelector({
     }
   }, [service.id]);
 
-  // Auto-select catalog based on vehicle size
   useEffect(() => {
     if (catalogs.length > 0 && vehicleSize) {
       const matchingCatalog = catalogs.find(
@@ -111,29 +112,7 @@ export default function ServiceCatalogSelector({
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Wrench className="h-4 w-4" />
-        <Label className="font-medium">Dịch vụ</Label>
-      </div>
-      {/* Quick Service Selection */}
-      <div className="space-y-2">
-        <Label className="text-sm">Dịch vụ có sẵn:</Label>
-        <div className="flex flex-wrap gap-2">
-          {services.map((predefinedService) => (
-            <Badge
-              key={predefinedService.id}
-              variant={
-                service.id === predefinedService.id ? "default" : "outline"
-              }
-              className="cursor-pointer"
-              onClick={() => selectPredefinedService(predefinedService)}
-            >
-              {predefinedService.serviceName}
-            </Badge>
-          ))}
-        </div>
-      </div>
+    <div className="space-y-2">
       {/* Service Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -149,20 +128,30 @@ export default function ServiceCatalogSelector({
             style={{ width: "100%" }}
             size="large"
           >
-            {services.map((serviceItem) => (
-              <Option
-                key={serviceItem.code}
-                value={serviceItem.id}
-                label={serviceItem.serviceName}
-              >
-                <div className="flex justify-between items-center w-full">
-                  <span className="font-medium">{serviceItem.serviceName}</span>
-                  <span className="text-xs text-gray-500">
-                    {serviceItem.duration}
-                  </span>
-                </div>
-              </Option>
-            ))}
+            {services.map((serviceItem) => {
+              const isDisabled = selectedServiceIds?.includes(serviceItem.id);
+              return (
+                <Option
+                  key={serviceItem.serviceCode}
+                  value={serviceItem.id}
+                  label={serviceItem.serviceName}
+                  disabled={isDisabled}
+                >
+                  <div className="flex justify-between items-center w-full">
+                    <span
+                      className={`font-medium ${
+                        isDisabled ? "text-gray-400" : ""
+                      }`}
+                    >
+                      {serviceItem.serviceName}
+                    </span>
+                    <span className="text-xs text-gray-500">
+                      {serviceItem.duration}
+                    </span>
+                  </div>
+                </Option>
+              );
+            })}
           </Select>
         </div>
         <div className="space-y-2">
@@ -170,7 +159,7 @@ export default function ServiceCatalogSelector({
           <Select
             showSearch
             placeholder={
-              !service.code
+              !service.serviceCode
                 ? "Chọn dịch vụ trước"
                 : loadingCatalogs
                 ? "Đang tải..."
@@ -180,7 +169,7 @@ export default function ServiceCatalogSelector({
             filterOption={filterCatalogOption}
             value={serviceCatalog?.id || undefined}
             onChange={handleCatalogSelect}
-            disabled={!service.code || loadingCatalogs}
+            disabled={!service.serviceCode || loadingCatalogs}
             loading={loadingCatalogs}
             style={{ width: "100%" }}
             size="large"
@@ -203,7 +192,7 @@ export default function ServiceCatalogSelector({
         </div>
       </div>
 
-      {/* Price Display */}
+      {/* Price Display
       {serviceCatalog?.id > 0 && (
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -219,7 +208,7 @@ export default function ServiceCatalogSelector({
             </div>
           </div>
         </div>
-      )}
+      )} */}
       {/* Auto-pricing notification */}
       {vehicleSize && serviceCatalog?.size === vehicleSize && (
         <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">

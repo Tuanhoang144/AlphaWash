@@ -28,7 +28,6 @@ import CustomerInfoSection from "../../create/components/customer-info-section";
 import OrderDetailForm from "../../create/components/order-detail-form";
 import OrderInfoForm from "../../create/components/order-info-form";
 import InvoiceSummary from "../../create/components/invoice-summary";
-import PaymentFormContent from "../../components/payment-form";
 import { SidebarInset } from "@/components/ui/sidebar";
 import {
   CustomerDTO,
@@ -36,6 +35,8 @@ import {
   OrderResponseDTO,
 } from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
+import { addToast } from "@heroui/react";
+import calculateTotal from "../../utils/calculateTotal";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -49,7 +50,7 @@ export default function EditInvoicePage() {
     null
   );
 
-  const { updateOrder } = useOrderManager();
+  const { updateOrder, cancelOrderById } = useOrderManager();
   const { getCustomersByPhone } = useCustomerManager();
   const router = useRouter();
 
@@ -133,46 +134,38 @@ export default function EditInvoicePage() {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  const calculateTotal = () => {
-    if (!formData || !formData.orderDetails) return 0;
-    const serviceTotalBeforeTaxAndDiscount =
-      formData.orderDetails.reduce(
-        (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
-        0
-      ) || 0;
-    const vatAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.vat || 0)) / 100;
-    const discountAmount =
-      (serviceTotalBeforeTaxAndDiscount * (formData.discount || 0)) / 100;
-    return Math.round(
-      serviceTotalBeforeTaxAndDiscount + vatAmount - discountAmount
-    );
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
 
     const updatedOrder: OrderResponseDTO = {
       ...formData,
-      totalPrice: calculateTotal(), // Tính toán lại tổng tiền trước khi gửi
+      totalPrice: total, // Tính toán lại tổng tiền trước khi gửi
     };
 
+    console.log("Submitting updated OrderDTO:", updatedOrder);
     // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
     updateOrder(updatedOrder, id)
       .then((response) => {
         console.log("Order updated successfully:", response);
         // Cập nhật formData với dữ liệu mới nếu cần
         setFormData(response);
-
-        alert("Hóa đơn đã được cập nhật thành công!");
+        addToast({
+          title: "Thành công",
+          description: "Hóa đơn đã được cập nhật thành công!",
+          color: "success",
+        });
         router.push(`/order/${id}`);
       })
       .catch((error) => {
         console.error("Error updating order:", error);
-        alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+        // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+        addToast({
+          title: "Lỗi",
+          description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+          color: "danger",
+        });
       });
-    console.log("Submitting updated OrderDTO:", updatedOrder);
   };
 
   if (loading || !formData) {
@@ -188,14 +181,45 @@ export default function EditInvoicePage() {
     );
   }
 
-  const currentTotalPrice = calculateTotal();
+  const total = calculateTotal(formData as OrderResponseDTO);
+  const currentTotalPrice = total;
   const baseServicePrice =
     formData.orderDetails?.reduce(
-      (sum, detail) => sum + (detail.serviceCatalog?.price || 0),
+      (sum, detail) =>
+        sum +
+        detail.service.reduce(
+          (serviceSum, service) =>
+            serviceSum + (service.serviceCatalog?.price || 0),
+          0
+        ),
       0
     ) || 0;
   const firstVehicleLicensePlate =
     formData.orderDetails?.[0]?.vehicle.licensePlate || null;
+
+  const handleCancel = async (id: string): Promise<void> => {
+    try {
+      await cancelOrderById(id);
+      addToast({
+        title: "Thành công",
+        description: "Đơn hàng đã được hủy thành công!",
+        color: "success",
+      });
+      router.push(`/order/${id}`);
+    } catch (error) {
+      addToast({
+        title: "Lỗi",
+        description: "Không thể hủy đơn hàng. Vui lòng thử lại sau.",
+        color: "danger",
+      });
+      console.error("Error canceling order:", error);
+    }
+  };
+  
+  const handleNavigateToPayment = () => {
+  //   setIsNavigating(true);
+    router.push(`/order/${id}/payment`);
+  };
 
   return (
     <SidebarInset>
@@ -231,7 +255,7 @@ export default function EditInvoicePage() {
               Chỉnh Sửa Hóa Đơn
             </h1>
             <p className="text-gray-600 mt-2">
-              Cập nhật thông tin chi tiết của hóa đơn
+              Cập nhật thông tin chi tiết của hóa đơn #{formData.code}
             </p>
           </div>
 
@@ -253,7 +277,7 @@ export default function EditInvoicePage() {
                   onCustomerChange={handleCustomerChange}
                 />
                 <OrderDetailForm
-                  orderDetails={formData.orderDetails}
+                  orderDetails={formData.orderDetails || []}
                   onOrderDetailsChange={handleOrderDetailsChange}
                   customer={formData.customer || undefined}
                 />
@@ -262,12 +286,13 @@ export default function EditInvoicePage() {
               {/* Cột phải - Thông tin hóa đơn & Thanh toán */}
               <div className="lg:col-span-1 space-y-6">
                 <OrderInfoForm
-                  orderDate={formData.orderDate}
+                  orderDate={formData.date}
                   checkIn={formData.checkIn}
                   checkOut={formData.checkOut}
                   onOrderInfoChange={handleOrderInfoChange}
                 />
                 <InvoiceSummary
+                  deleteFlag={formData.deleteFlag || false}
                   statusPayment={formData.paymentStatus || ""}
                   orderDetails={formData.orderDetails}
                   totalPrice={currentTotalPrice}
@@ -294,49 +319,19 @@ export default function EditInvoicePage() {
                         type="button"
                         variant="outline"
                         className="w-full bg-transparent"
+                        onClick={() => handleCancel(id)}
                       >
-                        Hủy
+                        Hủy Hóa Đơn
                       </Button>
                       {currentTotalPrice > 0 && (
-                        <Dialog
-                          open={isPaymentDialogOpen}
-                          onOpenChange={setIsPaymentDialogOpen}
+                        <Button
+                          onClick={handleNavigateToPayment}
+                          className="w-full bg-green-600 hover:bg-green-700"
+                          disabled={fetchedOrder?.deleteFlag || false}
                         >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="default"
-                              className="w-full bg-green-600 hover:bg-green-700"
-                            >
-                              <QrCode className="h-4 w-4 mr-2" />
-                              Xem Thông Tin Thanh Toán
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="!max-w-none w-fit p-6 max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="flex items-center gap-2">
-                                <CreditCard className="h-5 w-5" />
-                                Thông Tin Thanh Toán & Mã QR
-                              </DialogTitle>
-                              <DialogDescription>
-                                Kiểm tra thông tin và sử dụng mã QR để thanh
-                                toán
-                              </DialogDescription>
-                            </DialogHeader>
-                            <PaymentFormContent
-                              paymentType={formData.paymentType || ""}
-                              paymentStatus={formData.paymentStatus || ""}
-                              vat={formData.vat || 0}
-                              discount={formData.discount || 0}
-                              tip={formData.tip || 0}
-                              note={formData.note ?? null}
-                              totalPrice={currentTotalPrice}
-                              baseServicePrice={baseServicePrice}
-                              onPaymentChange={handlePaymentChange}
-                              customer={formData.customer}
-                              licensePlate={firstVehicleLicensePlate}
-                            />
-                          </DialogContent>
-                        </Dialog>
+                          <QrCode className="h-4 w-4 mr-2" />
+                          Thanh Toán & In Hóa Đơn
+                        </Button>
                       )}
                     </div>
                   </div>

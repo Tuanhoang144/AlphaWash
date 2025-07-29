@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Employee } from "@/types/Employee"
+import { addToast } from "@heroui/react"
 
 interface EmployeeDialogProps {
   isOpen: boolean
@@ -43,7 +44,11 @@ export function EmployeeDialog({ isOpen, onOpenChange, employee, onSave }: Emplo
   const handleSubmit = () => {
     // Basic validation
     if (!name || !phone) {
-      alert("Tên và Số điện thoại là bắt buộc.")
+      addToast({
+        title: "Lỗi",
+        description: "Vui lòng điền đầy đủ thông tin bắt buộc.",
+        color: "danger",
+      })
       return
     }
 

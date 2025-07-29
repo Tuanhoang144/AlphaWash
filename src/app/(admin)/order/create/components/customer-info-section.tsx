@@ -14,6 +14,7 @@ import { User, Edit, Save, X, Plus, Minus } from "lucide-react";
 import CustomerSearchDialog from "./customer-search-dialog";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { CustomerDTO } from "@/types/OrderResponse";
+import { addToast } from "@heroui/toast";
 
 interface CustomerInfoSectionProps {
   customer: CustomerDTO | null;
@@ -25,9 +26,17 @@ export default function CustomerInfoSection({
   onCustomerChange,
 }: CustomerInfoSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerDTO>>({});
+  const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerDTO>>(
+    {}
+  );
   const [isOpen, setIsOpen] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const { updateCustomer } = useCustomerManager();
+
+  const isValidVietnamesePhone = (phone: string) => {
+    const regex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
+    return regex.test(phone.trim());
+  };
 
   const handleEditStart = () => {
     setEditingCustomer(customer || {});
@@ -36,11 +45,28 @@ export default function CustomerInfoSection({
 
   const handleEditSave = async () => {
     if (editingCustomer.name && editingCustomer.phone) {
-      if (!customer?.id) {
-        alert("Không tìm thấy ID khách hàng");
+      if (!editingCustomer.name || !editingCustomer.phone) {
+        addToast({
+          title: "Thiếu thông tin",
+          description: "Vui lòng nhập tên và số điện thoại khách hàng.",
+          color: "warning",
+        });
         return;
       }
 
+      if (!isValidVietnamesePhone(editingCustomer.phone)) {
+        setPhoneError("Số điện thoại không hợp lệ");
+        return;
+      }
+
+      if (!customer?.id) {
+        addToast({
+          title: "Không tìm thấy khách hàng",
+          description: "Không thể cập nhật thông tin khách hàng.",
+          color: "warning",
+        });
+        return;
+      }
       try {
         await updateCustomer(customer.id, {
           customerName: editingCustomer.name,
@@ -54,10 +80,18 @@ export default function CustomerInfoSection({
           vehicles: customer.vehicles,
         });
 
-        alert("Cập nhật khách hàng thành công!");
+        addToast({
+          title: "Cập nhật thành công",
+          description: "Thông tin khách hàng đã được cập nhật.",
+          color: "success",
+        });
       } catch (error) {
         console.error("Lỗi cập nhật khách hàng:", error);
-        alert("Cập nhật khách hàng thất bại!");
+        addToast({
+          title: "Cập nhật thất bại",
+          description: "Không thể cập nhật thông tin khách hàng.",
+          color: "danger",
+        });
       } finally {
         setIsEditing(false);
       }
@@ -119,7 +153,7 @@ export default function CustomerInfoSection({
                     </Button>
                   ) : (
                     <div className="flex gap-2">
-                      <Button size="sm" onClick={handleEditSave}>
+                      <Button size="sm" type="button" onClick={handleEditSave}>
                         <Save className="h-4 w-4 mr-2" />
                         Lưu
                       </Button>
@@ -142,7 +176,7 @@ export default function CustomerInfoSection({
                       <Input
                         placeholder="Nhập tên khách hàng"
                         value={editingCustomer.name || ""}
-                        onChange={(e) =>
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                           updateEditingCustomer("name", e.target.value)
                         }
                       />
@@ -152,10 +186,22 @@ export default function CustomerInfoSection({
                       <Input
                         placeholder="Nhập số điện thoại"
                         value={editingCustomer.phone || ""}
-                        onChange={(e) =>
-                          updateEditingCustomer("phone", e.target.value)
-                        }
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          updateEditingCustomer("phone", value);
+
+                          if (!value || isValidVietnamesePhone(value)) {
+                            setPhoneError(null);
+                          } else {
+                            setPhoneError("Số điện thoại không hợp lệ");
+                          }
+                        }}
                       />
+                      {phoneError && (
+                        <p className="text-sm text-red-600 mt-1">
+                          {phoneError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
