@@ -8,38 +8,37 @@ import ConfirmDialog from "./components/confirm-dialog";
 import { useEffect, useState } from "react";
 import { Service } from "@/types/Service";
 import { getServices, createOrUpdateService } from "@/lib/api";
+import { useService } from "@/services/useService";
 
 export default function ManageService() {
-  const [services, setServices] = useState<Service[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [editService, setEditService] = useState<Service | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
+   const { getAllService, loading } = useService();
+  const [services, setServices] = useState<any[]>([]);
+
   useEffect(() => {
-    getServices().then((data) => {
-      const formatted = data.map((item: any) => ({
-        id: Date.now() + Math.random(),
-        code: item.serviceCode,
-        serviceName: item.serviceName,
-        price: item.price,
-        duration: +item.duration,
-        size: item.size,
-        note: item.note,
-        serviceType: {
-          code: item.serviceTypeCode,
-          serviceTypeName: item.serviceTypeName,
-        },
-      }));
-      setServices(formatted);
-    });
-  }, []);
+    const fetchData = async () => {
+      try {
+        const data = await getAllService();
+        setServices(data || []); // tuỳ theo cấu trúc response
+      } catch (error) {
+        // handle error nếu cần
+      }
+    };
+    fetchData();
+  }, [getAllService]);
+
+  if (loading) return <div>Loading...</div>;
 
   const handleSave = async (data: Service) => {
     const payload = {
-      serviceCode: data.code,
-      serviceTypeCode: data.serviceType.code,
-      serviceTypeName: data.serviceType.serviceTypeName,
+      serviceCode: data.serviceCode,
+      serviceName: data.serviceName,
+      serviceTypeCode: data.serviceTypeCode,
+      serviceTypeName: data.serviceTypeName,
       price: data.price,
       duration: data.duration.toString(),
       size: data.size,

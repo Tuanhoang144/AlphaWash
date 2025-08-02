@@ -13,11 +13,14 @@ import {
   SelectContent,
   SelectItem,
 } from "@/components/ui/select";
-import { Service } from "@/types/Service";
 import { useEffect, useState } from "react";
+import axios from "axios";
+import { Service } from "@/types/Service";
+import { useService } from "@/services/useService";
+
 
 interface ServiceType {
-  code: string;
+  serviceTypeCode: string;
   serviceTypeName: string;
 }
 
@@ -38,35 +41,30 @@ export default function EditDialog({
 }: EditDialogProps) {
   const [form, setForm] = useState<Service>({
     id: 0,
-    code: "",
+    serviceTypeCode: "",
+    serviceTypeName: "",
+    serviceCode: "",
     serviceName: "",
     price: 0,
-    size: "",
     duration: 0,
+    size: "",
     note: "",
-    serviceType: {
-      code: "",
-      serviceTypeName: "",
-    },
   });
 
-  // State lưu danh sách loại dịch vụ từ API (giả lập)
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
-
-  // Giả lập call API lấy service types
+  const { getAllServiceType, loading } = useService();
+  // Call API lấy danh sách loại dịch vụ
   useEffect(() => {
-    // Ví dụ call api async
-    async function fetchServiceTypes() {
-      // Giả lập delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      // Giả lập dữ liệu trả về
-      setServiceTypes([
-        { code: "ST001", serviceTypeName: "Bảo dưỡng" },
-        { code: "ST002", serviceTypeName: "Vệ sinh" },
-      ]);
-    }
-    fetchServiceTypes();
-  }, []);
+    const fetchData = async () => {
+      try {
+        const data = await getAllServiceType();
+        setServiceTypes(data || []); // tuỳ theo cấu trúc response
+      } catch (error) {
+        // handle error nếu cần
+      }
+    };
+    fetchData();
+  }, [getAllServiceType]);
 
   useEffect(() => {
     if (initialData) {
@@ -74,57 +72,40 @@ export default function EditDialog({
     } else {
       setForm({
         id: 0,
-        code: "",
+        serviceTypeCode: "",
+        serviceTypeName: "",
+        serviceCode: "",
         serviceName: "",
         price: 0,
-        size: "",
         duration: 0,
+        size: "",
         note: "",
-        serviceType: {
-          code: "",
-          serviceTypeName: "",
-        },
       });
     }
   }, [initialData]);
 
-  const handleChange = (
-    key: keyof Service | "serviceType.code" | "serviceType.serviceTypeName",
-    value: any
-  ) => {
-    if (key.startsWith("serviceType.")) {
-      const subkey = key.split(".")[1] as keyof Service["serviceType"];
-      setForm((prev) => ({
-        ...prev,
-        serviceType: { ...prev.serviceType, [subkey]: value },
-      }));
-    } else {
-      setForm((prev) => ({ ...prev, [key]: value }));
-    }
+  const handleChange = (key: keyof Service, value: any) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
   };
 
   // Khi chọn dropdown loại dịch vụ thì set đồng thời code và tên
-  const handleSelectServiceType = (selectedName: string) => {
-    const selected = serviceTypes.find((s) => s.serviceTypeName === selectedName);
-    if (selected) {
-      setForm((prev) => ({
-        ...prev,
-        serviceType: {
-          code: selected.code,
-          serviceTypeName: selected.serviceTypeName,
-        },
-      }));
-    } else {
-      // Nếu không tìm thấy thì reset
-      setForm((prev) => ({
-        ...prev,
-        serviceType: {
-          code: "",
-          serviceTypeName: "",
-        },
-      }));
-    }
-  };
+ const handleSelectServiceType = (selectedCode: string) => {
+  console.log(selectedCode)
+  const selected = serviceTypes.find((s) => s.serviceTypeCode === selectedCode);
+  if (selected) {
+    setForm((prev) => ({
+      ...prev,
+      serviceTypeCode: selected.serviceTypeCode,
+      serviceTypeName: selected.serviceTypeName,
+    }));
+  } else {
+    setForm((prev) => ({
+      ...prev,
+      serviceTypeCode: "",
+      serviceTypeName: "",
+    }));
+  }
+};
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -141,7 +122,7 @@ export default function EditDialog({
             <label className="block text-sm font-medium mb-1">Mã loại dịch vụ</label>
             <Input
               placeholder="Mã loại dịch vụ"
-              value={form.serviceType.code}
+              value={form.serviceTypeCode}
               disabled
               readOnly
             />
@@ -151,15 +132,18 @@ export default function EditDialog({
           <div>
             <label className="block text-sm font-medium mb-1">Tên loại dịch vụ</label>
             <Select
-              value={form.serviceType.serviceTypeName}
+              value={form.serviceTypeCode}
               onValueChange={handleSelectServiceType}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Chọn loại dịch vụ" />
               </SelectTrigger>
               <SelectContent>
-                {serviceTypes.map((st) => (
-                  <SelectItem key={st.code} value={st.serviceTypeName}>
+                {serviceTypes.map((st, idx) => (
+                  <SelectItem
+                    key={st.serviceTypeCode || idx}
+                    value={st.serviceTypeCode}
+                  >
                     {st.serviceTypeName}
                   </SelectItem>
                 ))}
@@ -172,8 +156,8 @@ export default function EditDialog({
             <label className="block text-sm font-medium mb-1">Mã dịch vụ</label>
             <Input
               placeholder="Mã dịch vụ"
-              value={form.code}
-              onChange={(e) => handleChange("code", e.target.value)}
+              value={form.serviceCode}
+              onChange={(e) => handleChange("serviceCode", e.target.value)}
               disabled
             />
           </div>
@@ -209,11 +193,10 @@ export default function EditDialog({
 
           {/* Thời lượng */}
           <div>
-            <label className="block text-sm font-medium mb-1">Thời lượng (phút)</label>
+            <label className="block text-sm font-medium mb-1">Thời lượng</label>
             <Input
-              type="number"
               value={form.duration}
-              onChange={(e) => handleChange("duration", +e.target.value)}
+              onChange={(e) => handleChange("duration", e.target.value)}
             />
           </div>
 
@@ -233,7 +216,7 @@ export default function EditDialog({
           </Button>
           <Button
             onClick={() => {
-              if (!form.serviceType.code || !form.serviceType.serviceTypeName) {
+              if (!form.serviceTypeCode || !form.serviceTypeName) {
                 alert("Vui lòng chọn loại dịch vụ.");
                 return;
               }

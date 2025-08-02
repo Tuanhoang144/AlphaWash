@@ -18,8 +18,8 @@ interface ServiceTableProps {
   onEdit: (service: Service) => void;
   onDelete: (id: number) => void;
 }
-
 export function ServiceTable({ services, onEdit, onDelete }: ServiceTableProps) {
+  console.log(services)
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
@@ -39,15 +39,15 @@ export function ServiceTable({ services, onEdit, onDelete }: ServiceTableProps) 
         </TableHeader>
         <TableBody>
           {services.map((s, index) => (
-            <TableRow key={s.id}>
+            <TableRow key={index + 1}>
               <TableCell className="text-center">{index + 1}</TableCell>
-              <TableCell className="text-center">{s.serviceType.serviceTypeName}</TableCell>
-              <TableCell className="text-center">{s.serviceType.code}</TableCell>
+              <TableCell className="text-center">{s.serviceTypeName}</TableCell>
+              <TableCell className="text-center">{s.serviceTypeCode}</TableCell>
               <TableCell className="text-center">{s.serviceName}</TableCell>
-              <TableCell className="text-center">{s.code}</TableCell>
-              <TableCell className="text-center">{s.price.toLocaleString()} đ</TableCell>
+              <TableCell className="text-center">{s.serviceCode}</TableCell>
+              <TableCell className="text-center">{s.price.toLocaleString()} vnđ</TableCell>
               <TableCell className="text-center">{s.size}</TableCell>
-              <TableCell className="text-center">{s.duration} phút</TableCell>
+              <TableCell className="text-center">{s.duration}</TableCell>
               <TableCell className="text-center">{s.note || "-"}</TableCell>
               <TableCell className="text-center">
                 <div className="flex justify-center space-x-2">
