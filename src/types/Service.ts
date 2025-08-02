@@ -1,10 +1,15 @@
 import { ServiceType } from './ServiceType';
 
-export type Service = {
+export interface Service {
   id: number;
   code: string;
-  serviceName?: string;
-  duration?: string;
+  serviceName: string;
+  price: number;
+  size: string;
+  duration: number;
   note?: string;
-  serviceType?: ServiceType;
+  serviceType: {
+    code: string;
+    serviceTypeName: string;
+  };
 }

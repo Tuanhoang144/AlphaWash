@@ -1,3 +1,4 @@
+// File: components/table.tsx
 "use client";
 
 import {
@@ -9,73 +10,67 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { EditIcon } from "lucide-react";
+import { EditIcon, TrashIcon } from "lucide-react";
 import { Service } from "@/types/Service";
 
-interface ServiceTableProp {
-  service: Service[];
-  onEditService: (service: Service) => void;
+interface ServiceTableProps {
+  services: Service[];
+  onEdit: (service: Service) => void;
+  onDelete: (id: number) => void;
 }
 
-export function ServiceTable({
-  service,
-  onEditService,
-}: ServiceTableProp) {
-  if (service.length === 0) {
-    return (
-      <div className="text-center py-4 text-muted-foreground">
-        Không có dịch vụ nào để hiển thị.
-      </div>
-    );
-  }
+export function ServiceTable({ services, onEdit, onDelete }: ServiceTableProps) {
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[80px]">ID</TableHead>
-            <TableHead>Mã dịch vụ</TableHead>
-            <TableHead>Tên dịch vụ</TableHead>
-            <TableHead>Thời lượng</TableHead>
-            <TableHead>Mã loại dịch vụ</TableHead>
-            <TableHead>Tên loại dịch vụ</TableHead>
-            <TableHead>Ghi chú</TableHead>
-            <TableHead className="text-right">Thao tác</TableHead>
+            <TableHead className="text-center">STT</TableHead>
+            <TableHead className="text-center">Tên loại DV</TableHead>
+            <TableHead className="text-center">Mã loại DV</TableHead>
+            <TableHead className="text-center">Tên DV</TableHead>
+            <TableHead className="text-center">Mã DV</TableHead>
+            <TableHead className="text-center">Giá tiền</TableHead>
+            <TableHead className="text-center">Size</TableHead>
+            <TableHead className="text-center">Thời lượng</TableHead>
+            <TableHead className="text-center">Ghi chú</TableHead>
+            <TableHead className="text-center">Thao tác</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {service.length === 0 ? (
-            <TableRow>
-              <TableCell
-                colSpan={5}
-                className="text-center py-4 text-muted-foreground"
-              >
-                Không tìm thấy dịch vụ nào.
-              </TableCell>
-            </TableRow>
-          ) : (
-            service.map((service) => (
-              <TableRow key={String(service.id)}>
-                <TableCell className="font-medium">{service.id}</TableCell>
-                <TableCell>{service.code}</TableCell>
-                <TableCell>{service.serviceName}</TableCell>
-                <TableCell>{service.duration}</TableCell>
-                <TableCell>{service.serviceType?.code}</TableCell>
-                <TableCell>{service.serviceType?.serviceTypeName}</TableCell>
-                <TableCell>{service.note || "-"}</TableCell>
-                <TableCell className="text-right">
+          {services.map((s, index) => (
+            <TableRow key={s.id}>
+              <TableCell className="text-center">{index + 1}</TableCell>
+              <TableCell className="text-center">{s.serviceType.serviceTypeName}</TableCell>
+              <TableCell className="text-center">{s.serviceType.code}</TableCell>
+              <TableCell className="text-center">{s.serviceName}</TableCell>
+              <TableCell className="text-center">{s.code}</TableCell>
+              <TableCell className="text-center">{s.price.toLocaleString()} đ</TableCell>
+              <TableCell className="text-center">{s.size}</TableCell>
+              <TableCell className="text-center">{s.duration} phút</TableCell>
+              <TableCell className="text-center">{s.note || "-"}</TableCell>
+              <TableCell className="text-center">
+                <div className="flex justify-center space-x-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onEditEmployee(service)}
-                    aria-label={`Chỉnh sửa ${service.serviceName}`}
+                    onClick={() => onEdit(s)}
+                    aria-label={`Chỉnh sửa ${s.serviceName}`}
                   >
                     <EditIcon className="h-4 w-4" />
                   </Button>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onDelete(s.id)}
+                    aria-label={`Xóa ${s.serviceName}`}
+                  >
+                    <TrashIcon className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

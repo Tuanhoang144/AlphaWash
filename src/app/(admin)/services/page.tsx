@@ -1,42 +1,110 @@
+// File: app/page.tsx
 "use client";
 
-import {
-  Breadcrumb,
-  BreadcrumbList,
-  BreadcrumbItem,
-  BreadcrumbLink,
-} from "@/components/ui/breadcrumb";
-import { Separator } from "@/components/ui/separator";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import ServiceManagementHeader from "./components/header";
 import { ServiceTable } from "./components/table";
+import EditDialog from "./components/edit-dialog";
+import ConfirmDialog from "./components/confirm-dialog";
+import { useEffect, useState } from "react";
+import { Service } from "@/types/Service";
+import { getServices, createOrUpdateService } from "@/lib/api";
 
 export default function ManageService() {
+  const [services, setServices] = useState<Service[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [editService, setEditService] = useState<Service | null>(null);
+  const [showDialog, setShowDialog] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+
+  useEffect(() => {
+    getServices().then((data) => {
+      const formatted = data.map((item: any) => ({
+        id: Date.now() + Math.random(),
+        code: item.serviceCode,
+        serviceName: item.serviceName,
+        price: item.price,
+        duration: +item.duration,
+        size: item.size,
+        note: item.note,
+        serviceType: {
+          code: item.serviceTypeCode,
+          serviceTypeName: item.serviceTypeName,
+        },
+      }));
+      setServices(formatted);
+    });
+  }, []);
+
+  const handleSave = async (data: Service) => {
+    const payload = {
+      serviceCode: data.code,
+      serviceTypeCode: data.serviceType.code,
+      serviceTypeName: data.serviceType.serviceTypeName,
+      price: data.price,
+      duration: data.duration.toString(),
+      size: data.size,
+      note: data.note || "",
+    };
+    await createOrUpdateService(payload);
+
+    if (data.id === 0) {
+      const newItem = { ...data, id: Date.now() };
+      setServices((prev) => [...prev, newItem]);
+    } else {
+      setServices((prev) => prev.map((s) => (s.id === data.id ? data : s)));
+    }
+    setShowDialog(false);
+  };
+
+  const handleEdit = (s: Service) => {
+    setEditService({ ...s });
+    setShowDialog(true);
+  };
+
+  const handleAdd = () => {
+    setEditService(null);
+    setShowDialog(true);
+  };
+
+  const confirmDelete = (id: number) => {
+    setConfirmDeleteId(id);
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDeleteId !== null) {
+      setServices((prev) => prev.filter((s) => s.id !== confirmDeleteId));
+      setConfirmDeleteId(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setConfirmDeleteId(null);
+  };
+
+  const filtered = services.filter((s) =>
+    s.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
-    <div>
-      <SidebarInset>
-        <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 h-4" />
-          <Breadcrumb>
-            <BreadcrumbList>
-              <BreadcrumbItem className="hidden md:block">
-                <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
-              </BreadcrumbItem>
-            </BreadcrumbList>
-          </Breadcrumb>
-        </header>
-        
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="container mx-auto py-8 px-4">
-            <ServiceManagementHeader
-              onAddService={() => {}}
-              onSearch={() => {}}
-            />
-            <ServiceTable service={[]} onEditService={() => {}} />
-          </div>
-        </div>
-      </SidebarInset>
+    <div className="p-6 w-full max-w-[95vw] xl:max-w-[1400px] mx-auto">
+      <h1 className="text-2xl font-semibold mb-4">Quản lý dịch vụ</h1>
+      <ServiceManagementHeader onAddService={handleAdd} onSearch={setSearchTerm} />
+      <div className="overflow-auto rounded-md border">
+        <ServiceTable services={filtered} onEdit={handleEdit} onDelete={confirmDelete} />
+      </div>
+      <EditDialog
+        open={showDialog}
+        onClose={() => setShowDialog(false)}
+        onSave={handleSave}
+        initialData={editService}
+        availableServices={services}
+      />
+      <ConfirmDialog
+        open={confirmDeleteId !== null}
+        title="Bạn có chắc chắn muốn xóa dịch vụ này không?"
+        onCancel={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
