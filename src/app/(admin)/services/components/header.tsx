@@ -17,7 +17,7 @@ export default function ServiceManagementHeader({ onAddService, onSearch }: Serv
         className="max-w-sm w-full"
         onChange={(e) => onSearch(e.target.value)}
       />
-      <Button variant="default" onClick={onAddService} className="w-full md:w-auto text-white">
+      <Button disabled variant="default" onClick={onAddService} className="w-full md:w-auto text-white">
         <PlusIcon className="mr-2 h-4 w-4" />
         Thêm dịch vụ mới
       </Button>

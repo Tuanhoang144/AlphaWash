@@ -56,6 +56,7 @@ export function ServiceTable({ services, onEdit, onDelete }: ServiceTableProps) 
                     size="icon"
                     onClick={() => onEdit(s)}
                     aria-label={`Chỉnh sửa ${s.serviceName}`}
+                    disabled
                   >
                     <EditIcon className="h-4 w-4" />
                   </Button>
@@ -64,6 +65,7 @@ export function ServiceTable({ services, onEdit, onDelete }: ServiceTableProps) 
                     size="icon"
                     onClick={() => onDelete(s.id)}
                     aria-label={`Xóa ${s.serviceName}`}
+                    disabled
                   >
                     <TrashIcon className="h-4 w-4 text-red-500" />
                   </Button>
