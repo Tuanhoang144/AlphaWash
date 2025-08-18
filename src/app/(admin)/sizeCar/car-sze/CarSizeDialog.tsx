@@ -22,8 +22,8 @@ export function CarSizeDialog({ open, onClose, onSubmit, initialData }: CarSizeD
   const [modelCode, setModelCode] = useState("");
   const [size, setSize] = useState("");
   const [note, setNote] = useState("");
-
-  useEffect(() => {
+  console.log(initialData?.id)
+  useEffect(  () => {
     if (initialData) {
       setModelCode(initialData.modelCode);
       setSize(initialData.size);
@@ -52,7 +52,7 @@ export function CarSizeDialog({ open, onClose, onSubmit, initialData }: CarSizeD
           <Input placeholder="Ghi chú" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex justify-end space-x-2">
             <Button variant="outline" onClick={onClose}>Hủy</Button>
-            <Button onClick={handleSubmit}>{initialData ? "Lưu" : "Thêm"}</Button>
+            <Button onClick={handleSubmit}>{ "Lưu"}</Button>
           </div>
         </div>
       </DialogContent>

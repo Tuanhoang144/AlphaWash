@@ -24,6 +24,8 @@ const dummyData: CarSize[] = [
   },
 ];
 
+const API_URL = "http://localhost:8080/api/vehicle/size";
+
 export function useCarSizeManager() {
   const [carSizes, setCarSizes] = useState<CarSize[]>(dummyData);
   const [loading, setLoading] = useState(false);
@@ -31,11 +33,19 @@ export function useCarSizeManager() {
   const getAllCarSizes = useCallback(async () => {
     setLoading(true);
     try {
-      return carSizes;
+      const res = await fetch(API_URL, { method: "GET" });
+      if (!res.ok) throw new Error("Failed to fetch car sizes");
+      const response  = await res.json();
+      console.log(response);
+      setCarSizes(response.data);
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [carSizes]);
+  }, []);
 
   const addCarSize = async (newData: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">) => {
     const newId = carSizes.length ? Math.max(...carSizes.map(c => c.id)) + 1 : 1;
@@ -49,14 +59,25 @@ export function useCarSizeManager() {
     setCarSizes(prev => [...prev, newCarSize]);
   };
 
-  const updateCarSize = async (id: number, updated: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">) => {
+  const updateCarSize = async ( updated: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">) => {
+    setLoading(true);
+  try {
+    const res = await fetch(`${API_URL}/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updated),
+    });
+    if (!res.ok) throw new Error("Failed to update car size");
+    const updatedData: CarSize = await res.json();
+
     setCarSizes(prev =>
-      prev.map(c =>
-        c.id === id
-          ? { ...c, ...updated }
-          : c
-      )
+      prev.map(c => (c.id === updatedData.id ? { ...c, ...updatedData } : c))
     );
+
+    return updatedData;
+  } finally {
+    setLoading(false);
+  }
   };
 
   const deleteCarSize = async (id: number) => {
