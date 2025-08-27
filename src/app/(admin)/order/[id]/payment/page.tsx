@@ -72,29 +72,42 @@ export default function PaymentAndInvoicePage() {
     setOrder((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
-  const handleSavePayment = async () => {
-    if (!order) return;
-
-    try {
-      const updatedOrder = await updateOrder(order, id);
-      setOrder(updatedOrder);
-      addToast({
-        title: "Thành công",
-        description: "Thông tin thanh toán đã được cập nhật!",
-        color: "success",
-      });
-      let orderData = await getOrderById(id);
-      setOrder(orderData);
-      setShowPrintDialog(true);
-    } catch (error) {
-      console.error("Error updating payment:", error);
-      addToast({
-        title: "Lỗi",
-        description: "Không thể cập nhật thông tin thanh toán",
-        color: "danger",
-      });
-    }
-  };
+  const handleSavePayment = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!order) return;
+  
+      const updatedOrder: OrderResponseDTO = {
+        ...order,
+        totalPrice: calculateTotal(order as OrderResponseDTO), // Tính toán lại tổng tiền trước khi gửi
+      };
+  
+      console.log("Submitting updated OrderDTO:", updatedOrder);
+      // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
+      updateOrder(updatedOrder, id)
+        .then(async (response) => {
+          console.log("Order updated successfully:", updatedOrder);
+          // Cập nhật order với dữ liệu mới nếu cần
+          setOrder(response);
+          addToast({
+            title: "Thành công",
+            description: "Hóa đơn đã được cập nhật thành công!",
+            color: "success",
+          });
+          let orderData = await getOrderById(id);
+          console.log("Fetched updated order data:", orderData);
+          setOrder(orderData);
+          onPrintInvoice();
+        })
+        .catch((error) => {
+          console.error("Error updating order:", error);
+          // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
+          addToast({
+            title: "Lỗi",
+            description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+            color: "danger",
+          });
+        });
+    };
 
   const calculateBaseServicePrice = () => {
     if (!order?.orderDetails) return 0;
@@ -127,6 +140,7 @@ export default function PaymentAndInvoicePage() {
 
   const baseServicePrice = calculateBaseServicePrice();
   const totalPrice = calculateTotal(order);
+  order.totalPrice = totalPrice; // Cập nhật tổng tiền vào order
   const firstVehicleLicensePlate =
     order.orderDetails?.[0]?.vehicle.licensePlate || null;
 
@@ -295,7 +309,7 @@ export default function PaymentAndInvoicePage() {
                   variant="outline"
                   onClick={() => {
                     setShowPrintDialog(false);
-                    router.push(`/order/${id}`);
+                    router.push(`/order/${id}/edit`);
                   }}
                   className="bg-transparent text-black border-1 hover:text-white hover:bg-black"
                 >
