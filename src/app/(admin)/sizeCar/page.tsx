@@ -9,18 +9,18 @@ import { CarSizeDialog } from "./car-sze/CarSizeDialog";
 import { CarSizeTable } from "./car-sze/CarTable";
 
 export default function CarSizePage() {
-  const { carSizes, getAllCarSizes, addCarSize, updateCarSize, deleteCarSize } = useCarSizeManager();
+  const { carSizes, getAllCarSizes, updateCarSize, deleteCarSize } = useCarSizeManager();
   const [openDialog, setOpenDialog] = useState(false);
   const [editing, setEditing] = useState<CarSize | null>(null);
   const [search, setSearch] = useState("");
 
+  // Phân trang
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+
   useEffect(() => {
-    getAllCarSizes(); // load 1 lần khi mount
+    getAllCarSizes();
   }, [getAllCarSizes]);
-  // const handleAdd = () => {
-  //   setEditing(null);
-  //   setOpenDialog(true);
-  // };
 
   const handleEdit = (carSize: CarSize) => {
     setEditing(carSize);
@@ -35,29 +35,59 @@ export default function CarSizePage() {
     form: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">,
     id?: number
   ) => {
-      await updateCarSize(form);
+    await updateCarSize(form);
   };
 
+  // Lọc + phân trang
   const filtered = carSizes?.filter(
     (c) =>
       c.modelCode.toLowerCase().includes(search.toLowerCase()) ||
       c.brandName.toLowerCase().includes(search.toLowerCase()) ||
       c.modelName.toLowerCase().includes(search.toLowerCase())
-  );
+  ) || [];
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-xl font-bold">Quản lý Size xe</h1>
+
       <div className="flex items-center justify-between">
         <Input
           placeholder="Tìm kiếm theo tên xe, hãng, mã..."
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1); // reset về trang 1 khi search
+          }}
           className="max-w-sm"
         />
-        {/* <Button onClick={handleAdd}>Thêm mới</Button> */}
       </div>
-      <CarSizeTable carSizes={filtered} onEdit={handleEdit} onDelete={handleDelete} />
+
+      <CarSizeTable carSizes={paginated} onEdit={handleEdit} onDelete={handleDelete} />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center space-x-2 mt-4">
+          <Button
+            variant="outline"
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            Trang trước
+          </Button>
+          <span className="flex items-center">Trang {page} / {totalPages}</span>
+          <Button
+            variant="outline"
+            disabled={page === totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Trang sau
+          </Button>
+        </div>
+      )}
+
       <CarSizeDialog
         open={openDialog}
         onClose={() => setOpenDialog(false)}

@@ -1,65 +1,62 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Car } from "@/types/CarUser";
+import { useCallback, useState } from "react";
+import useApiService from "@/config/useApi";
+import { ServiceUsedDTO } from "@/types/CarUser";
 
-const dummyData: Car[] = [
-  {
-    id: 1,
-    licensePlate: "51A-12345",
-    vehicleName: "BMW X5",
-    serviceUsage: "3",
-    checkinTime: "2025-08-16T10:30:00",
-    customerName: "Nguyễn Văn A",
-    phone: "0909123456",
-    note: "Khách VIP",
-  },
-  {
-    id: 2,
-    licensePlate: "30F-88888",
-    vehicleName: "Toyota Corolla",
-    serviceUsage: "1",
-    checkinTime: "2025-08-15T09:00:00",
-    customerName: "Trần Thị B",
-    phone: "0912345678",
-    note: "",
-  },
-];
-
-export function useCarManager() {
-  const [cars, setCars] = useState<Car[]>(dummyData);
+export function useServiceUsedManager() {
+  const { callApi } = useApiService();
+  const [servicesUsed, setServicesUsed] = useState<ServiceUsedDTO[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const getAllCars = useCallback(async () => {
+  // GET ALL
+  const getAllServicesUsed = useCallback(async () => {
     setLoading(true);
     try {
-      return cars;
+      const response = await callApi("get", "/vehicle/services-used");
+      setServicesUsed(response?.data || []);
+      return response?.data || [];
     } finally {
       setLoading(false);
     }
-  }, [cars]);
+  }, [callApi]);
 
-  const addCar = async (newData: Omit<Car, "id">) => {
-    const newId = cars.length ? Math.max(...cars.map(c => c.id)) + 1 : 1;
-    setCars(prev => [...prev, { id: newId, ...newData }]);
-  };
+  // CREATE
+  const addServiceUsed = useCallback(
+    async (data: Omit<ServiceUsedDTO, "id">) => {
+      const response = await callApi("post", "/vehicle/services-used", data);
+      await getAllServicesUsed();
+      return response?.data;
+    },
+    [callApi, getAllServicesUsed]
+  );
 
-  const updateCar = async (id: number, updated: Omit<Car, "id">) => {
-    setCars(prev =>
-      prev.map(c => (c.id === id ? { ...c, ...updated } : c))
-    );
-  };
+  // UPDATE
+  const updateServiceUsed = useCallback(
+    async (id: number, data: Omit<ServiceUsedDTO, "id">) => {
+      const response = await callApi("patch", `/vehicle/services-used/${id}`, data);
+      await getAllServicesUsed();
+      return response?.data;
+    },
+    [callApi, getAllServicesUsed]
+  );
 
-  const deleteCar = async (id: number) => {
-    setCars(prev => prev.filter(c => c.id !== id));
-  };
+  // DELETE
+  const deleteServiceUsed = useCallback(
+    async (id: number) => {
+      const response = await callApi("delete", `/vehicle/services-used/${id}`);
+      await getAllServicesUsed();
+      return response?.data;
+    },
+    [callApi, getAllServicesUsed]
+  );
 
   return {
-    cars,
+    servicesUsed,
+    getAllServicesUsed,
+    addServiceUsed,
+    updateServiceUsed,
+    deleteServiceUsed,
     loading,
-    getAllCars,
-    addCar,
-    updateCar,
-    deleteCar,
   };
 }

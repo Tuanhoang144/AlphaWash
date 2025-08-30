@@ -47,7 +47,7 @@ export function CarSizeDialog({ open, onClose, onSubmit, initialData }: CarSizeD
           <DialogTitle>{initialData ? "Sửa size xe" : "Thêm size xe"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
-          <Input placeholder="Mã xe" value={modelCode} onChange={(e) => setModelCode(e.target.value)} />
+          <Input disabled placeholder="Mã xe" value={modelCode} onChange={(e) => setModelCode(e.target.value)} />
           <Input placeholder="Size xe" value={size} onChange={(e) => setSize(e.target.value)} />
           <Input placeholder="Ghi chú" value={note} onChange={(e) => setNote(e.target.value)} />
           <div className="flex justify-end space-x-2">

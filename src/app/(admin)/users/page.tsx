@@ -3,75 +3,109 @@
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Car } from "@/types/CarUser";
-import { CarTable } from "./components/table";
-import { CarDetailDialog } from "./components/car-detail-diaglog";
-import { useCarManager } from "@/services/userCarManager";
-import { CarDialog } from "./components/CarDialog";
+import { ServiceUsedDTO } from "@/types/CarUser";
+import { ServiceUsedTable } from "./components/ServiceUsedTable";
+import { ServiceUsedDetailDialog } from "./components/ServiceUsedDetailDialog";
+import { ServiceUsedDialog } from "./components/ServiceUsedDialog";
+import { useServiceUsedManager } from "@/services/userCarManager";
+import { Pagination } from "./components/pagination";
 
-export default function CarsPage() {
-    const { cars, getAllCars, addCar, updateCar, deleteCar } = useCarManager();
-    const [search, setSearch] = useState("");
-    const [filteredCars, setFilteredCars] = useState<Car[]>([]);
-    const [selectedCar, setSelectedCar] = useState<Car | null>(null);
-    const [detailOpen, setDetailOpen] = useState(false);
-    const [openDetail, setOpenDetail] = useState(false);
+export default function ServiceUsedPage() {
+  const {
+    servicesUsed,
+    getAllServicesUsed,
+    addServiceUsed,
+    updateServiceUsed,
+    deleteServiceUsed,
+  } = useServiceUsedManager();
 
-    const handleViewDetail = (car: Car) => {
-        setSelectedCar(car);
-        setOpenDetail(true);
-    };
+  const [search, setSearch] = useState("");
+  const [filtered, setFiltered] = useState<ServiceUsedDTO[]>([]);
+  const [selected, setSelected] = useState<ServiceUsedDTO | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
 
-    useEffect(() => {
-        getAllCars().then((data) => setFilteredCars(data));
-    }, [cars, getAllCars]);
+  // paging state
+  const [page, setPage] = useState(1);
+  const pageSize = 5; // số dòng mỗi trang
 
-    useEffect(() => {
-        setFilteredCars(
-            cars.filter(
-                (c) =>
-                    c.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-                    c.customerName.toLowerCase().includes(search.toLowerCase())
-            )
-        );
-    }, [search, cars]);
+  useEffect(() => {
+    getAllServicesUsed();
+  }, [getAllServicesUsed]);
 
-    const handleShowDetail = (car: Car) => {
-        setSelectedCar(car);
-        setDetailOpen(true);
-    };
-
-    return (
-        <div className="space-y-4">
-            {/* Thanh tìm kiếm + nút thêm */}
-            <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 w-1/2">
-                    <Input
-                        placeholder="Tìm theo biển số hoặc tên khách..."
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        className="w-full"
-                    />
-                </div>
-                <Button onClick={() => alert("TODO: mở form thêm xe")}>Thêm xe</Button>
-            </div>
-
-            <CarTable
-                cars={filteredCars}
-                onEdit={(c) => alert("TODO: mở form sửa xe " + c.id)}
-                onDelete={deleteCar}
-                onViewDetail={handleViewDetail}
-            />
-            <CarDialog
-                car={selectedCar}
-                open={openDetail}
-                onClose={() => setOpenDetail(false)}
-            />
-            <CarDetailDialog
-                car={selectedCar}
-                open={detailOpen}
-                onClose={() => setDetailOpen(false)}
-            />
-        </div>
+  useEffect(() => {
+    const f = servicesUsed.filter(
+      (c) =>
+        c.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
+        c.customerName.toLowerCase().includes(search.toLowerCase())
     );
+    setFiltered(f);
+    setPage(1); // reset về trang 1 khi search
+  }, [search, servicesUsed]);
+
+  // dữ liệu hiển thị theo trang
+  const pagedData = filtered.slice((page - 1) * pageSize, page * pageSize);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+
+  return (
+    <div className="space-y-4">
+      {/* Thanh tìm kiếm + nút thêm */}
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 w-1/2">
+          <Input
+            placeholder="Tìm theo biển số hoặc tên khách..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full"
+          />
+        </div>
+        {/* <Button onClick={() => setDialogOpen(true)}>Thêm xe/dịch vụ</Button> */}
+      </div>
+
+      <ServiceUsedTable
+        data={pagedData}
+        onEdit={(c) => {
+          setSelected(c);
+          setDialogOpen(true);
+        }}
+        onDelete={deleteServiceUsed}
+        onViewDetail={(c) => {
+          setSelected(c);
+          setDetailOpen(true);
+        }}
+        page={page}
+        pageSize={pageSize}
+      />
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+          />
+        </div>
+      )}
+
+      <ServiceUsedDialog
+        data={selected}
+        open={dialogOpen}
+        onClose={() => {
+          setSelected(null);
+          setDialogOpen(false);
+        }}
+        onSave={(d) => {
+          if (selected) updateServiceUsed(selected.id, d);
+          else addServiceUsed(d);
+        }}
+      />
+
+      <ServiceUsedDetailDialog
+        data={selected}
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+      />
+    </div>
+  );
 }

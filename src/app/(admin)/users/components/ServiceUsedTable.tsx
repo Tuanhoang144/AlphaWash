@@ -10,16 +10,25 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { EditIcon, TrashIcon } from "lucide-react";
-import { Car } from "@/types/CarUser";
+import { ServiceUsedDTO } from "@/types/CarUser";
 
-interface CarTableProps {
-  cars: Car[];
-  onEdit: (car: Car) => void;
+interface Props {
+  data: ServiceUsedDTO[];
+  onEdit: (item: ServiceUsedDTO) => void;
   onDelete: (id: number) => void;
-  onViewDetail: (car: Car) => void;
+  onViewDetail: (item: ServiceUsedDTO) => void;
+  page: number;
+  pageSize: number;
 }
 
-export function CarTable({ cars, onEdit, onDelete, onViewDetail }: CarTableProps) {
+export function ServiceUsedTable({
+  data,
+  onEdit,
+  onDelete,
+  onViewDetail,
+  page,
+  pageSize,
+}: Props) {
   return (
     <div className="rounded-md border overflow-x-auto">
       <Table>
@@ -33,13 +42,15 @@ export function CarTable({ cars, onEdit, onDelete, onViewDetail }: CarTableProps
             <TableHead className="text-center">Tên khách</TableHead>
             <TableHead className="text-center">Số ĐT</TableHead>
             <TableHead className="text-center">Ghi chú</TableHead>
-            <TableHead className="text-center">Thao tác</TableHead>
+            {/* <TableHead className="text-center">Thao tác</TableHead> */}
           </TableRow>
         </TableHeader>
         <TableBody>
-          {cars.map((c, index) => (
+          {data.map((c, index) => (
             <TableRow key={c.id}>
-              <TableCell className="text-center">{index + 1}</TableCell>
+              <TableCell className="text-center">
+                {(page - 1) * pageSize + index + 1}
+              </TableCell>
               <TableCell>
                 <button
                   className="text-blue-600 hover:underline"
@@ -50,7 +61,7 @@ export function CarTable({ cars, onEdit, onDelete, onViewDetail }: CarTableProps
               </TableCell>
               <TableCell className="text-center">{c.vehicleName}</TableCell>
               <TableCell className="text-center">{c.serviceUsage}</TableCell>
-              <TableCell className="text-center">{c.checkinTime}</TableCell>
+              <TableCell className="text-center">{c.checkinTime || "-"}</TableCell>
               <TableCell>
                 <button
                   className="text-blue-600 hover:underline"
@@ -61,20 +72,21 @@ export function CarTable({ cars, onEdit, onDelete, onViewDetail }: CarTableProps
               </TableCell>
               <TableCell className="text-center">{c.phone}</TableCell>
               <TableCell className="text-center">{c.note || "-"}</TableCell>
-              <TableCell className="text-center">
+              {/* <TableCell className="text-center">
                 <div className="flex justify-center space-x-2">
-                  <Button variant="ghost" size="icon" onClick={() => onEdit(c)}>
+                  <Button disabled variant="ghost" size="icon" onClick={() => onEdit(c)}>
                     <EditIcon className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon"
+                    disabled
                     onClick={() => onDelete(c.id)}
                   >
                     <TrashIcon className="h-4 w-4 text-red-500" />
                   </Button>
                 </div>
-              </TableCell>
+              </TableCell> */}
             </TableRow>
           ))}
         </TableBody>
