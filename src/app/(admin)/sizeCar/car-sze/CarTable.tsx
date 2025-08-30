@@ -36,7 +36,7 @@ export function CarSizeTable({ carSizes, onEdit, onDelete }: CarSizeTableProps) 
         </TableHeader>
         <TableBody>
           {carSizes.map((c, index) => (
-            <TableRow key={c.id}>
+            <TableRow key={index + 1}>
               <TableCell className="text-center">{index + 1}</TableCell>
               <TableCell className="text-center">{c.brandCode}</TableCell>
               <TableCell className="text-center">{c.modelCode}</TableCell>
@@ -49,9 +49,9 @@ export function CarSizeTable({ carSizes, onEdit, onDelete }: CarSizeTableProps) 
                   <Button variant="ghost" size="icon" onClick={() => onEdit(c)}>
                     <EditIcon className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => onDelete(c.id)}>
+                  {/* <Button variant="ghost" size="icon" onClick={() => onDelete(c.id)}>
                     <TrashIcon className="h-4 w-4 text-red-500" />
-                  </Button>
+                  </Button> */}
                 </div>
               </TableCell>
             </TableRow>
