@@ -13,14 +13,21 @@ export default function CarSizePage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [editing, setEditing] = useState<CarSize | null>(null);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
 
   // Phân trang
   const [page, setPage] = useState(1);
   const [pageSize] = useState(10);
 
   useEffect(() => {
-    getAllCarSizes();
-  }, [getAllCarSizes]);
+    refreshData();
+  }, []);
+
+  const refreshData = async () => {
+    setLoading(true);
+    await getAllCarSizes();
+    setLoading(false);
+  };
 
   const handleEdit = (carSize: CarSize) => {
     setEditing(carSize);
@@ -28,22 +35,30 @@ export default function CarSizePage() {
   };
 
   const handleDelete = async (id: number) => {
+    setLoading(true);
     await deleteCarSize(id);
+    await refreshData();
+    setLoading(false);
   };
 
   const handleSubmit = async (
     form: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">,
     id?: number
   ) => {
-    await updateCarSize(form);
+    setLoading(true);
+    await updateCarSize(form); // nhớ truyền id nếu cần
+    await refreshData();
+    setOpenDialog(false);
+    setEditing(null);
+    setLoading(false);
   };
 
   // Lọc + phân trang
   const filtered = carSizes?.filter(
     (c) =>
-      c.modelCode.toLowerCase().includes(search.toLowerCase()) ||
-      c.brandName.toLowerCase().includes(search.toLowerCase()) ||
-      c.modelName.toLowerCase().includes(search.toLowerCase())
+      c?.modelCode?.toLowerCase().includes(search.toLowerCase()) ||
+      c?.brandName?.toLowerCase().includes(search.toLowerCase()) ||
+      c?.modelName?.toLowerCase().includes(search.toLowerCase())
   ) || [];
 
   const totalPages = Math.ceil(filtered.length / pageSize);
@@ -65,7 +80,11 @@ export default function CarSizePage() {
         />
       </div>
 
-      <CarSizeTable carSizes={paginated} onEdit={handleEdit} onDelete={handleDelete} />
+      {loading ? (
+        <div className="text-center py-10">Đang tải dữ liệu...</div>
+      ) : (
+        <CarSizeTable carSizes={paginated} onEdit={handleEdit} onDelete={handleDelete} />
+      )}
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -90,7 +109,10 @@ export default function CarSizePage() {
 
       <CarSizeDialog
         open={openDialog}
-        onClose={() => setOpenDialog(false)}
+        onClose={() => {
+          setOpenDialog(false);
+          setEditing(null);
+        }}
         onSubmit={handleSubmit}
         initialData={editing}
       />

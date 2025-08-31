@@ -23,14 +23,27 @@ export function ServiceUsedDetailDialog({ data, open, onClose }: Props) {
         <DialogHeader>
           <DialogTitle>Chi tiết xe/dịch vụ</DialogTitle>
         </DialogHeader>
-        <div className="space-y-2">
-          <p><strong>Biển số:</strong> {data.licensePlate}</p>
-          <p><strong>Tên xe:</strong> {data.vehicleName}</p>
-          <p><strong>Số lần SD:</strong> {data.serviceUsage}</p>
-          <p><strong>Ngày vào:</strong> {data.checkinTime || "-"}</p>
-          <p><strong>Tên khách:</strong> {data.customerName}</p>
-          <p><strong>Số ĐT:</strong> {data.phone}</p>
-          <p><strong>Ghi chú:</strong> {data.note || "-"}</p>
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="font-semibold">Biển số</div>
+          <div>{data.licensePlate}</div>
+
+          <div className="font-semibold">Tên xe</div>
+          <div>{data.vehicleName}</div>
+
+          <div className="font-semibold">Số lần SD</div>
+          <div>{data.serviceUsage}</div>
+
+          <div className="font-semibold">Ngày vào</div>
+          <div>{data.checkinTime || "-"}</div>
+
+          <div className="font-semibold">Tên khách</div>
+          <div>{data.customerName}</div>
+
+          <div className="font-semibold">Số ĐT</div>
+          <div>{data.phone}</div>
+
+          <div className="font-semibold">Ghi chú</div>
+          <div>{data.note || "-"}</div>
         </div>
       </DialogContent>
     </Dialog>

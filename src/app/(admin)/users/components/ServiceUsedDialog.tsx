@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,31 +8,33 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 import { ServiceUsedDTO } from "@/types/CarUser";
 
 interface Props {
   data: ServiceUsedDTO | null;
   open: boolean;
   onClose: () => void;
-  onSave: (d: Omit<ServiceUsedDTO, "id">) => void;
+  onSave: (d: any) => void; // schema update
 }
 
 export function ServiceUsedDialog({ data, open, onClose, onSave }: Props) {
-  if (!open) return null;
+  const [form, setForm] = useState({
+    licensePlate: data?.licensePlate || "",
+    brandCode: "",
+    modelCode: "",
+    checkinTime: data?.checkinTime || "",
+    customerName: data?.customerName || "",
+    customerPhone: data?.phone || "",
+    note: data?.note || "",
+  });
 
-  // TODO: thay Input form thực tế vào đây
+  const handleChange = (key: string, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
   const handleSave = () => {
-    const mock: Omit<ServiceUsedDTO, "id"> = {
-      licensePlate: data?.licensePlate || "XX-0000",
-      vehicleName: data?.vehicleName || "Xe mới",
-      customerName: data?.customerName || "Khách mới",
-      customerId: data?.customerId,
-      phone: data?.phone || "",
-      serviceUsage: data?.serviceUsage || 0,
-      note: data?.note,
-      checkinTime: data?.checkinTime,
-    };
-    onSave(mock);
+    onSave(form);
     onClose();
   };
 
@@ -40,12 +43,46 @@ export function ServiceUsedDialog({ data, open, onClose, onSave }: Props) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>{data ? "Cập nhật" : "Thêm mới"} xe/dịch vụ</DialogTitle>
-          <DialogDescription>
-            Nhập thông tin xe và khách hàng
-          </DialogDescription>
+          <DialogDescription>Nhập thông tin xe và khách hàng</DialogDescription>
         </DialogHeader>
 
-        <div className="mt-4">TODO: Form nhập dữ liệu</div>
+        <div className="grid grid-cols-2 gap-3 mt-4">
+          <Input
+            placeholder="Biển số"
+            value={form.licensePlate}
+            onChange={(e) => handleChange("licensePlate", e.target.value)}
+          />
+          <Input
+            placeholder="Brand Code"
+            value={form.brandCode}
+            onChange={(e) => handleChange("brandCode", e.target.value)}
+          />
+          <Input
+            placeholder="Model Code"
+            value={form.modelCode}
+            onChange={(e) => handleChange("modelCode", e.target.value)}
+          />
+          <Input
+            type="datetime-local"
+            value={form.checkinTime}
+            onChange={(e) => handleChange("checkinTime", e.target.value)}
+          />
+          <Input
+            placeholder="Tên khách hàng"
+            value={form.customerName}
+            onChange={(e) => handleChange("customerName", e.target.value)}
+          />
+          <Input
+            placeholder="Số điện thoại"
+            value={form.customerPhone}
+            onChange={(e) => handleChange("customerPhone", e.target.value)}
+          />
+          <Input
+            placeholder="Ghi chú"
+            value={form.note}
+            onChange={(e) => handleChange("note", e.target.value)}
+          />
+        </div>
 
         <button
           className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"

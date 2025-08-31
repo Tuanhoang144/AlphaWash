@@ -33,8 +33,8 @@ export function useServiceUsedManager() {
 
   // UPDATE
   const updateServiceUsed = useCallback(
-    async (id: number, data: Omit<ServiceUsedDTO, "id">) => {
-      const response = await callApi("patch", `/vehicle/services-used/${id}`, data);
+    async ( data: Omit<ServiceUsedDTO, "id">) => {
+      const response = await callApi("patch", `/vehicle/services-used`, data);
       await getAllServicesUsed();
       return response?.data;
     },

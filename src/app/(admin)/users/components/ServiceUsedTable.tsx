@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
   Table,
   TableBody,
@@ -8,9 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { EditIcon, TrashIcon } from "lucide-react";
 import { ServiceUsedDTO } from "@/types/CarUser";
+import { EditIcon, TrashIcon } from "lucide-react";
 
 interface Props {
   data: ServiceUsedDTO[];
@@ -23,10 +23,10 @@ interface Props {
 
 export function ServiceUsedTable({
   data,
-  onEdit,
-  onDelete,
   onViewDetail,
   page,
+  onEdit,
+  onDelete,
   pageSize,
 }: Props) {
   return (
@@ -42,12 +42,11 @@ export function ServiceUsedTable({
             <TableHead className="text-center">Tên khách</TableHead>
             <TableHead className="text-center">Số ĐT</TableHead>
             <TableHead className="text-center">Ghi chú</TableHead>
-            {/* <TableHead className="text-center">Thao tác</TableHead> */}
           </TableRow>
         </TableHeader>
         <TableBody>
           {data.map((c, index) => (
-            <TableRow key={c.id}>
+            <TableRow key={index + 1}>
               <TableCell className="text-center">
                 {(page - 1) * pageSize + index + 1}
               </TableCell>
@@ -72,21 +71,12 @@ export function ServiceUsedTable({
               </TableCell>
               <TableCell className="text-center">{c.phone}</TableCell>
               <TableCell className="text-center">{c.note || "-"}</TableCell>
-              {/* <TableCell className="text-center">
-                <div className="flex justify-center space-x-2">
-                  <Button disabled variant="ghost" size="icon" onClick={() => onEdit(c)}>
-                    <EditIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    disabled
-                    onClick={() => onDelete(c.id)}
-                  >
-                    <TrashIcon className="h-4 w-4 text-red-500" />
-                  </Button>
-                </div>
-              </TableCell> */}
+              <TableCell className="text-center"> 
+                <div className="flex justify-center space-x-2"> 
+                {/* <Button disabled variant="ghost" size="icon" onClick={() => onEdit(c)}> <EditIcon className="h-4 w-4" /> </Button> 
+                <Button variant="ghost" size="icon" disabled onClick={() => onDelete(index + 1)} > <TrashIcon className="h-4 w-4 text-red-500" /> </Button> */}
+                 </div>
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>

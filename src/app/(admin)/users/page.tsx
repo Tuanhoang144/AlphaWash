@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { ServiceUsedDTO } from "@/types/CarUser";
 import { ServiceUsedTable } from "./components/ServiceUsedTable";
 import { ServiceUsedDetailDialog } from "./components/ServiceUsedDetailDialog";
@@ -25,9 +24,8 @@ export default function ServiceUsedPage() {
   const [detailOpen, setDetailOpen] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  // paging state
   const [page, setPage] = useState(1);
-  const pageSize = 5; // số dòng mỗi trang
+  const pageSize = 5;
 
   useEffect(() => {
     getAllServicesUsed();
@@ -40,16 +38,15 @@ export default function ServiceUsedPage() {
         c.customerName.toLowerCase().includes(search.toLowerCase())
     );
     setFiltered(f);
-    setPage(1); // reset về trang 1 khi search
+    setPage(1);
   }, [search, servicesUsed]);
 
-  // dữ liệu hiển thị theo trang
   const pagedData = filtered.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.ceil(filtered.length / pageSize);
 
   return (
     <div className="space-y-4">
-      {/* Thanh tìm kiếm + nút thêm */}
+      {/* Search + add */}
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 w-1/2">
           <Input
@@ -77,7 +74,6 @@ export default function ServiceUsedPage() {
         pageSize={pageSize}
       />
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex justify-center">
           <Pagination
@@ -96,7 +92,7 @@ export default function ServiceUsedPage() {
           setDialogOpen(false);
         }}
         onSave={(d) => {
-          if (selected) updateServiceUsed(selected.id, d);
+          if (selected) updateServiceUsed(d);
           else addServiceUsed(d);
         }}
       />
