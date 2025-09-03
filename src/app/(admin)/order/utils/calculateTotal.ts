@@ -13,8 +13,11 @@ const calculateTotal = (order: OrderResponseDTO) => {
       0
     ) || 0;
   const vatAmount = (serviceTotalBeforeTaxAndDiscount * (order.vat || 0)) / 100;
-  const discountAmount =
-    (serviceTotalBeforeTaxAndDiscount * (order.discount || 0)) / 100;
+  let discountAmount = order.discount;
+  if (order.discount < 100) {
+    discountAmount = 
+      (serviceTotalBeforeTaxAndDiscount * (order.discount || 0)) / 100;
+  }
   return Math.round(
     serviceTotalBeforeTaxAndDiscount + vatAmount - discountAmount
   );

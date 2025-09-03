@@ -48,7 +48,10 @@ export default function PaymentFormContent({
   licensePlate,
 }: PaymentFormContentProps) {
   const vatAmount = Math.round((baseServicePrice * vat) / 100);
-  const discountAmount = Math.round((baseServicePrice * discount) / 100);
+  const discountAmount =
+    discount > 100
+      ? discount
+      : Math.round((baseServicePrice * discount) / 100);
 
   const paymentInfo = {
     amount: totalPrice,
@@ -109,7 +112,7 @@ export default function PaymentFormContent({
             />
           </div> */}
           <div className="space-y-2">
-            <Label>Giảm giá (%)</Label>
+            <Label>Giảm giá (%/VNĐ)</Label>
             <Input
               type="number"
               placeholder="5"
@@ -118,24 +121,18 @@ export default function PaymentFormContent({
               max={100}
               onChange={(e) => {
                 const value = Number.parseInt(e.target.value) || 0;
-                if (value >= 0 && value <= 100) {
-                  onPaymentChange("discount", value);
-                }
+                onPaymentChange("discount", value);
               }}
               onBlur={(e) => {
                 const value = Number.parseInt(e.target.value) || 0;
-                if (value > 100) {
-                  onPaymentChange("discount", 100);
-                } else if (value < 0) {
-                  onPaymentChange("discount", 0);
-                }
+                onPaymentChange("discount", value);
               }}
             />
-            {discount > 100 && (
+            {/* {discount > 100 && (
               <p className="text-sm text-red-500">
                 Giảm giá không được vượt quá 100%
               </p>
-            )}
+            )} */}
           </div>
         </div>
 
@@ -181,8 +178,18 @@ export default function PaymentFormContent({
           )}
           {discount > 0 && (
             <div className="flex justify-between text-sm text-red-600">
-              <span>Giảm giá ({discount}%):</span>
-              <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+              {discount < 100 && (
+                <>
+                  <span>Giảm giá ({discount}%):</span>
+                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                </>
+              )}
+              {discount > 100 && (
+                <>
+                  <span>Giảm giá:</span>
+                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                </>
+              )}
             </div>
           )}
           <div className="flex justify-between font-bold text-lg border-t pt-2">
