@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import useApiService from "@/config/useApi";
-import { ServiceUsedDTO } from "@/types/CarUser";
+import { ServiceDetailResponse, ServiceUsedDTO } from "@/types/CarUser";
 
 export function useServiceUsedManager() {
   const { callApi } = useApiService();
@@ -20,6 +20,22 @@ export function useServiceUsedManager() {
       setLoading(false);
     }
   }, [callApi]);
+
+  // GET DETAIL BY CUSTOMER ID
+  const getServiceUsedDetail = useCallback(
+    async (customerId: string): Promise<ServiceDetailResponse | null> => {
+      setLoading(true);
+      try {
+        const response = await callApi("post", "/vehicle/services-used/detail", {
+          customerId,
+        });
+        return response?.data as ServiceDetailResponse;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [callApi]
+  );
 
   // CREATE
   const addServiceUsed = useCallback(
@@ -51,12 +67,14 @@ export function useServiceUsedManager() {
     [callApi, getAllServicesUsed]
   );
 
+
   return {
     servicesUsed,
     getAllServicesUsed,
     addServiceUsed,
     updateServiceUsed,
     deleteServiceUsed,
+    getServiceUsedDetail,
     loading,
   };
 }
