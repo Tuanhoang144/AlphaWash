@@ -83,7 +83,7 @@ function ManageEmployees() {
 
   const filteredEmployees = useMemo(() => {
     if (!searchTerm) return employees;
-    const lowerSearch = searchTerm.toLowerCase();
+    const lowerSearch = searchTerm?.toLowerCase();
     return employees.filter(
       (emp) =>
         emp.name.toLowerCase().includes(lowerSearch) ||

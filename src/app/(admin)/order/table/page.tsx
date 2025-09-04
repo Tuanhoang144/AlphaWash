@@ -50,27 +50,34 @@ export default function WashServiceTable() {
     let result = [...data];
 
     // Tìm kiếm nếu có
+    // Tìm kiếm nếu có
     if (searchTerm !== "") {
-      result = result.filter(
-        (record) =>
-          record.orderDetails[0]?.vehicle.licensePlate
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          record.customer.name
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          record.orderDetails[0]?.vehicle.brandName
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          record.orderDetails[0]?.vehicle.modelName
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          record.orderDetails[0]?.service?.filter((service) =>
-            service.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-          )?.length ||
-          record.orderDetails[0]?.employees.some((emp) =>
-            emp.name?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
+      const lowerSearch = searchTerm?.toLowerCase() ?? "";
+
+      result = result?.filter((record) =>
+        (record.orderDetails?.[0]?.vehicle?.licensePlate ?? "")
+          .toLowerCase()
+          .includes(lowerSearch) ||
+
+        (record.customer?.name ?? "")
+          .toLowerCase()
+          .includes(lowerSearch) ||
+
+        (record.orderDetails?.[0]?.vehicle?.brandName ?? "")
+          .toLowerCase()
+          .includes(lowerSearch) ||
+
+        (record.orderDetails?.[0]?.vehicle?.modelName ?? "")
+          .toLowerCase()
+          .includes(lowerSearch) ||
+
+        (record.orderDetails?.[0]?.service ?? []).some(
+          (service) => (service?.serviceName ?? "").toLowerCase().includes(lowerSearch)
+        ) ||
+
+        (record.orderDetails?.[0]?.employees ?? []).some(
+          (emp) => (emp?.name ?? "").toLowerCase().includes(lowerSearch)
+        )
       );
     }
 
