@@ -24,13 +24,10 @@ export const generateInvoiceHTML = ({
       : "";
 
   const discountRow =
-    order.discount > 0
-      ? `<div class="total-row"><span>Giảm giá (${
-          order.discount
-        }%):</span><span>-${(
-          (order.discount / 100) *
-          baseServicePrice
-        ).toLocaleString()}đ</span></div>`
+    order.discount > 100
+      ? `<div class="total-row"><span>Giảm giá:</span><span>-${order.discount.toLocaleString()}đ</span></div>`
+      : order.discount < 100 && order.discount > 0
+      ? `<div class="total-row"><span>Giảm giá (${order.discount}%):</span><span>-${((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span></div>`
       : "";
 
   const vehicle = order.orderDetails[0].vehicle;

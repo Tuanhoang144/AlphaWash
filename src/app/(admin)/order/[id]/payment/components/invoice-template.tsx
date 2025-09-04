@@ -140,10 +140,18 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           )}
           {order.discount > 0 && (
             <div className="flex justify-between">
-              <span>Giảm giá ({order.discount}%):</span>
-              <span>
-                -{((order.discount / 100) * baseServicePrice).toLocaleString()}đ
-              </span>
+              {order.discount < 100 && (
+                <>
+                  <span>Giảm giá ({order.discount}%):</span>
+                  <span>-{((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span>
+                </>
+              )}
+              {order.discount > 100 && (
+                <>
+                  <span>Giảm giá:</span>
+                  <span>-order.discountđ</span>
+                </>
+              )}
             </div>
           )}
           <hr className="my-4 border-t-2 border-dashed border-gray-300" />
