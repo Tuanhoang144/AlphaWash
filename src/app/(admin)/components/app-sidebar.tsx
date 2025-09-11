@@ -61,7 +61,7 @@ const data = {
       // ],
     },
     {
-      title: "Bảng theo dõi",
+      title: "Quản Lý Đơn Hàng",
       url: "/order/table",
       icon: FileSpreadsheet ,
       // items: [
@@ -92,11 +92,23 @@ const data = {
       isActive: true,
     },
     {
+      title: "Quản lý Khách Hàng",
+      url: "/users",
+      icon: Users,
+      isActive: true,
+    },
+    {
       title: "Thống kê",
       url: "/statistics",
       icon: ChartArea,
       isActive: true,
-    }
+    },
+    {
+      title: "Quản lý Size Xe",
+      url: "/sizeCar",
+      icon: ShoppingBag,
+      isActive: true,
+    },
   ],
   navSecondary: [
     {
