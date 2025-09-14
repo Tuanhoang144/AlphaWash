@@ -1,109 +1,141 @@
-// File: app/page.tsx
 "use client";
 
-import ServiceManagementHeader from "./components/header";
-import { ServiceTable } from "./components/table";
-import EditDialog from "./components/edit-dialog";
-import ConfirmDialog from "./components/confirm-dialog";
-import { useEffect, useState } from "react";
-import { Service } from "@/types/Service";
-import { getServices, createOrUpdateService } from "@/lib/api";
-import { useService } from "@/services/useService";
+import { useState, useMemo, useEffect } from "react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+} from "@/components/ui/breadcrumb";
+import { Separator } from "@/components/ui/separator";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 
-export default function ManageService() {
+import { ServiceDialog } from "./components/ServiceDialog";
+import { ServiceTable } from "./components/ServiceTable";
+import { ServiceManagementHeader } from "./components/ServiceManagementHeader";
+import { useServiceManager } from "@/services/useServiceAll";
+import { ServiceAll, ServiceFormData } from "@/types/ServiceAll";
+
+function ManageServices() {
+  const [services, setServices] = useState<ServiceAll[]>([]);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [currentService, setCurrentService] = useState<ServiceAll | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [editService, setEditService] = useState<Service | null>(null);
-  const [showDialog, setShowDialog] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
+  const [page, setPage] = useState(1);
+  const pageSize = 5;
 
-   const { getAllService, loading } = useService();
-  const [services, setServices] = useState<any[]>([]);
+  const {
+    getAllService,
+    createService,
+    updateService,
+  } = useServiceManager();
 
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const data = await getAllService();
-        setServices(data || []); // tuỳ theo cấu trúc response
-      } catch (error) {
-        // handle error nếu cần
-      }
+      const data = await getAllService();
+      setServices(data);
     };
     fetchData();
   }, [getAllService]);
 
-  if (loading) return <div>Loading...</div>;
-
-  const handleSave = async (data: Service) => {
-    const payload = {
-      serviceCode: data.serviceCode,
-      serviceName: data.serviceName,
-      serviceTypeCode: data.serviceTypeCode,
-      serviceTypeName: data.serviceTypeName,
-      price: data.price,
-      duration: data.duration.toString(),
-      size: data.size,
-      note: data.note || "",
-    };
-    await createOrUpdateService(payload);
-
-    if (data.id === 0) {
-      const newItem = { ...data, id: Date.now() };
-      setServices((prev) => [...prev, newItem]);
-    } else {
-      setServices((prev) => prev.map((s) => (s.id === data.id ? data : s)));
-    }
-    setShowDialog(false);
+  const handleAddService = () => {
+    setCurrentService(null);
+    setIsDialogOpen(true);
   };
 
-  const handleEdit = (s: Service) => {
-    setEditService({ ...s });
-    setShowDialog(true);
+  const handleEditService = (service: ServiceAll) => {
+    setCurrentService(service);
+    setIsDialogOpen(true);
   };
 
-  const handleAdd = () => {
-    setEditService(null);
-    setShowDialog(true);
-  };
-
-  const confirmDelete = (id: number) => {
-    setConfirmDeleteId(id);
-  };
-
-  const handleConfirmDelete = () => {
-    if (confirmDeleteId !== null) {
-      setServices((prev) => prev.filter((s) => s.id !== confirmDeleteId));
-      setConfirmDeleteId(null);
+  const handleSaveService = async (data: ServiceFormData & { id?: string }) => {
+    try {
+      if (currentService) {
+        await updateService(data);
+      } else {
+        await createService(data);
+      }
+      const updated = await getAllService();
+      setServices(updated);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Lỗi khi lưu dịch vụ:", error);
     }
   };
 
-  const handleCancelDelete = () => {
-    setConfirmDeleteId(null);
-  };
+  const filteredServices = useMemo(() => {
+    if (!searchTerm) return services;
+    const lower = searchTerm.toLowerCase();
+    return services.filter(
+      (s) =>
+        s.serviceName.toLowerCase().includes(lower) ||
+        s.serviceCode.toLowerCase().includes(lower)
+    );
+  }, [services, searchTerm]);
 
-  const filtered = services.filter((s) =>
-    s.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const paginatedServices = useMemo(() => {
+    const start = (page - 1) * pageSize;
+    return filteredServices.slice(start, start + pageSize);
+  }, [filteredServices, page]);
 
   return (
-    <div className="p-6 w-full max-w-[95vw] xl:max-w-[1400px] mx-auto">
-      <h1 className="text-2xl font-semibold mb-4">Quản lý dịch vụ</h1>
-      <ServiceManagementHeader onAddService={handleAdd} onSearch={setSearchTerm} />
-      <div className="overflow-auto rounded-md border">
-        <ServiceTable services={filtered} onEdit={handleEdit} onDelete={confirmDelete} />
+    <SidebarInset>
+      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem className="hidden md:block">
+              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
+
+      <div className="flex flex-1 flex-col gap-4 p-4">
+        <div className="container mx-auto py-8 px-4">
+          <ServiceManagementHeader
+            onAddService={handleAddService}
+            onSearch={setSearchTerm}
+          />
+          <ServiceTable
+            services={paginatedServices}
+            onEditService={handleEditService}
+          />
+          {/* Paging */}
+          <div className="flex justify-center mt-4 gap-2">
+            <button
+              className="px-3 py-1 border rounded"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page === 1}
+            >
+              Trước
+            </button>
+            <span>Trang {page}</span>
+            <button
+              className="px-3 py-1 border rounded"
+              onClick={() =>
+                setPage((p) =>
+                  p * pageSize < filteredServices.length ? p + 1 : p
+                )
+              }
+              disabled={page * pageSize >= filteredServices.length}
+            >
+              Sau
+            </button>
+          </div>
+          <ServiceDialog
+            isOpen={isDialogOpen}
+            // getAllServiceType={getAllServiceType}
+            // getAllServiceCode={getAllServiceCode}
+            onOpenChange={setIsDialogOpen}
+            service={currentService}
+            onSave={handleSaveService}
+          />
+        </div>
       </div>
-      <EditDialog
-        open={showDialog}
-        onClose={() => setShowDialog(false)}
-        onSave={handleSave}
-        initialData={editService}
-        availableServices={services}
-      />
-      <ConfirmDialog
-        open={confirmDeleteId !== null}
-        title="Bạn có chắc chắn muốn xóa dịch vụ này không?"
-        onCancel={handleCancelDelete}
-        onConfirm={handleConfirmDelete}
-      />
-    </div>
+    </SidebarInset>
   );
 }
+
+export default ManageServices;
