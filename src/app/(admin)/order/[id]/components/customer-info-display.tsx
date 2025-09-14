@@ -18,7 +18,7 @@ interface CustomerInfoDisplayProps {
 export default function CustomerInfoDisplay({
   customer,
 }: CustomerInfoDisplayProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="space-y-2">
