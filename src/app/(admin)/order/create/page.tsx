@@ -210,12 +210,12 @@ export default function CreateInvoiceForm() {
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink href="/order/table">
-                Theo dõi xe ra vào xưởng
+                Quản lý hóa đơn
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbPage className="hidden md:block">
-              <BreadcrumbLink href="#">Tạo mới phiếu rửa xe</BreadcrumbLink>
+              <BreadcrumbLink href="#">Tạo mới hóa đơn</BreadcrumbLink>
             </BreadcrumbPage>
           </BreadcrumbList>
         </Breadcrumb>
