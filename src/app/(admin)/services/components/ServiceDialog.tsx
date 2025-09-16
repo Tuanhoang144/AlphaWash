@@ -42,16 +42,8 @@ export function ServiceDialog({ isOpen, onOpenChange, service, onSave }: Props) 
         serviceTypeCode: "",
     });
     const { getAllServiceType, getAllServiceCode } = useServiceManager();
-    const [serviceTypes, setServiceTypes] = useState<any[]>([]);
-    const [serviceCodes, setServiceCodes] = useState<any[]>([]);
 
     useEffect(() => {
-        if (isOpen && !service) {
-            // load dropdown khi thêm mới
-            getAllServiceType().then(setServiceTypes);
-            getAllServiceCode().then(setServiceCodes);
-        }
-
         if (service) {
             setForm({
                 serviceCode: service.serviceCode,
@@ -111,26 +103,7 @@ export function ServiceDialog({ isOpen, onOpenChange, service, onSave }: Props) 
                     {/* Tên loại DV */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">Tên loại DV</Label>
-                        {isEdit ? (
                             <Input value={form.serviceTypeName} disabled className="col-span-3" />
-                        ) : (
-                            <select
-                                className="col-span-3 border rounded p-2"
-                                value={form.serviceTypeCode}
-                                onChange={(e) => {
-                                    const selected = serviceTypes.find((t) => t.code === e.target.value);
-                                    handleChange("serviceTypeCode", selected?.code || "");
-                                    handleChange("serviceTypeName", selected?.serviceTypeName || "");
-                                }}
-                            >
-                                <option value="">-- Chọn loại dịch vụ --</option>
-                                {serviceTypes.map((t) => (
-                                    <option key={t.code} value={t.code}>
-                                        {t.serviceTypeName}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
                     </div>
 
                     {/* Mã loại DV */}
@@ -142,35 +115,13 @@ export function ServiceDialog({ isOpen, onOpenChange, service, onSave }: Props) 
                     {/* Mã DV */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">Mã DV</Label>
-                        {isEdit ? (
                             <Input value={form.serviceCode} disabled className="col-span-3" />
-                        ) : (
-                            <select
-                                className="col-span-3 border rounded p-2"
-                                value={form.serviceCode}
-                                onChange={(e) => {
-                                    const selected = serviceCodes.find((s) => s.code === e.target.value);
-                                    handleChange("serviceCode", selected?.code || "");
-                                    handleChange("serviceName", selected?.serviceName || "");
-                                    handleChange("duration", selected?.duration || "");
-                                    handleChange("note", selected?.note || "");
-                                    handleChange("serviceTypeCode", selected?.serviceTypeCode || "");
-                                }}
-                            >
-                                <option value="">-- Chọn mã dịch vụ --</option>
-                                {serviceCodes.map((s) => (
-                                    <option key={s.id} value={s.code}>
-                                        {s.code} - {s.serviceName}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
                     </div>
 
                     {/* Tên DV */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">Tên DV</Label>
-                        <Input value={form.serviceName} disabled className="col-span-3" />
+                        <Input value={form.serviceName} onChange={(e) => handleChange("serviceName", e.target.value)} className="col-span-3" />
                     </div>
                     
                     {/* Giá tiền */}
