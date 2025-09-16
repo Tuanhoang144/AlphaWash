@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { useRouter } from "next/dist/client/components/navigation";
 
 import Header from "./components/header";
@@ -16,7 +14,7 @@ export default function WashServiceTable() {
   const [data, setData] = useState<OrderResponseDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const { getAllOrders, loading } = useOrderManager();
   const [selectedFilter, setSelectedFilter] = useState<
     "payment" | "time" | null
@@ -27,14 +25,16 @@ export default function WashServiceTable() {
     try {
       const result: OrderResponseDTO[] = await getAllOrders();
 
-      const transformed = result.map((order) => ({
-        ...order,
-        customer: {
-          ...order.customer,
-          customerName: order.customer?.name ?? "Khách lẻ",
-          phone: order.customer?.phone ?? "",
-        },
-      }));
+      const transformed = result
+        .filter((order) => !order.deleteFlag) //hide những order bị hủy (deleteFlag = true)
+        .map((order) => ({
+          ...order,
+          customer: {
+            ...order.customer,
+            customerName: order.customer?.name ?? "Khách lẻ",
+            phone: order.customer?.phone ?? "",
+          },
+        }));
 
       setData(transformed);
     } catch (error) {
@@ -48,44 +48,32 @@ export default function WashServiceTable() {
 
   const filteredData = useMemo(() => {
     let result = [...data];
-
-    // Tìm kiếm nếu có
     // Tìm kiếm nếu có
     if (searchTerm !== "") {
       const lowerSearch = searchTerm?.toLowerCase() ?? "";
 
-      result = result?.filter((record) =>
-        (record.orderDetails?.[0]?.vehicle?.licensePlate ?? "")
-          .toLowerCase()
-          .includes(lowerSearch) ||
-
-        (record.customer?.name ?? "")
-          .toLowerCase()
-          .includes(lowerSearch) ||
-
-        (record.orderDetails?.[0]?.vehicle?.brandName ?? "")
-          .toLowerCase()
-          .includes(lowerSearch) ||
-
-        (record.orderDetails?.[0]?.vehicle?.modelName ?? "")
-          .toLowerCase()
-          .includes(lowerSearch) ||
-
-        (record.orderDetails?.[0]?.service ?? []).some(
-          (service) => (service?.serviceName ?? "").toLowerCase().includes(lowerSearch)
-        ) ||
-
-        (record.orderDetails?.[0]?.employees ?? []).some(
-          (emp) => (emp?.name ?? "").toLowerCase().includes(lowerSearch)
-        )
+      result = result?.filter(
+        (record) =>
+          (record.orderDetails?.[0]?.vehicle?.licensePlate ?? "")
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          (record.customer?.name ?? "").toLowerCase().includes(lowerSearch) ||
+          (record.orderDetails?.[0]?.vehicle?.brandName ?? "")
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          (record.orderDetails?.[0]?.vehicle?.modelName ?? "")
+            .toLowerCase()
+            .includes(lowerSearch) ||
+          (record.orderDetails?.[0]?.service ?? []).some((service) =>
+            (service?.serviceName ?? "").toLowerCase().includes(lowerSearch)
+          ) ||
+          (record.customer?.name ?? "").toLowerCase().includes(lowerSearch)
       );
     }
 
     // Lọc/sắp theo bộ lọc đã chọn
     if (selectedFilter === "payment") {
       result.sort((a, b) => {
-        console.log("Sorting by payment status");
-
         const getPriority = (order: OrderResponseDTO) => {
           const status = order.orderDetails[0]?.status;
           const paymentStatus = order.paymentStatus ?? "";
@@ -129,7 +117,6 @@ export default function WashServiceTable() {
         return timeB - timeA;
       });
     }
-    console.log("Filtered data:", result);
 
     return result;
   }, [data, searchTerm, selectedFilter]);
@@ -140,9 +127,10 @@ export default function WashServiceTable() {
 
   // Calculate pagination
   const totalItems = filteredData.length;
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
+  const safeItemsPerPage = itemsPerPage ?? 5;
+  const totalPages = Math.ceil(totalItems / safeItemsPerPage);
+  const startIndex = (currentPage - 1) * safeItemsPerPage;
+  const endIndex = startIndex + safeItemsPerPage;
   const currentData = filteredData.slice(startIndex, endIndex);
 
   // Reset to first page when search term changes
@@ -199,31 +187,32 @@ export default function WashServiceTable() {
   }
 
   return (
-    <SidebarInset>
+    <div className="w-full absolute">
       <Header></Header>
+      <div className="w-full ">
+        <SearchTable
+          handleNavigate={handleNavigate}
+          isNavigating={isNavigating}
+          searchTerm={searchTerm}
+          handleSearch={handleSearch}
+          selectedFilter={selectedFilter}
+          setSelectedFilter={setSelectedFilter}
+        />
 
-      <SearchTable
-        handleNavigate={handleNavigate}
-        isNavigating={isNavigating}
-        searchTerm={searchTerm}
-        handleSearch={handleSearch}
-        selectedFilter={selectedFilter}
-        setSelectedFilter={setSelectedFilter}
-      />
-
-      <OrderTable
-        data={currentData}
-        itemsPerPage={itemsPerPage}
-        totalPages={totalPages}
-        currentPage={currentPage}
-        handleItemsPerPageChange={handleItemsPerPageChange}
-        goToFirstPage={goToFirstPage}
-        goToPreviousPage={goToPreviousPage}
-        goToNextPage={goToNextPage}
-        goToLastPage={goToLastPage}
-        goToPage={goToPage}
-        getPageNumbers={getPageNumbers}
-      />
-    </SidebarInset>
+        <OrderTable
+          data={currentData}
+          itemsPerPage={itemsPerPage}
+          totalPages={totalPages}
+          currentPage={currentPage}
+          handleItemsPerPageChange={handleItemsPerPageChange}
+          goToFirstPage={goToFirstPage}
+          goToPreviousPage={goToPreviousPage}
+          goToNextPage={goToNextPage}
+          goToLastPage={goToLastPage}
+          goToPage={goToPage}
+          getPageNumbers={getPageNumbers}
+        />
+      </div>
+    </div>
   );
 }

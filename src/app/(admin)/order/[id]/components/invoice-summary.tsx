@@ -28,7 +28,6 @@ export default function InvoiceSummary({
   statusPayment,
 }: InvoiceSummaryProps) {
   const [isOpen, setIsOpen] = useState(true);
-  const { getStatusPaymentColor, getStatusPaymentLabel } = tool();
 
   const totalServices = orderDetails.reduce(
     (sum, detail) => sum + detail.service.length,

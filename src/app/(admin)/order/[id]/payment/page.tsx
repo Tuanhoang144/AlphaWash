@@ -27,7 +27,7 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-} from "@/components/ui/dialog"; // đảm bảo đã có các component này
+} from "@/components/ui/dialog";
 
 export default function PaymentAndInvoicePage() {
   const params = useParams();
@@ -38,6 +38,7 @@ export default function PaymentAndInvoicePage() {
   const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [order, setOrder] = useState<OrderResponseDTO | null>(null);
   const [activeTab, setActiveTab] = useState<"payment" | "invoice">("payment");
+
   useEffect(() => {
     const fetchOrder = async () => {
       try {
@@ -73,41 +74,37 @@ export default function PaymentAndInvoicePage() {
   };
 
   const handleSavePayment = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (!order) return;
-  
-      const updatedOrder: OrderResponseDTO = {
-        ...order,
-        totalPrice: calculateTotal(order as OrderResponseDTO), // Tính toán lại tổng tiền trước khi gửi
-      };
-  
-      console.log("Submitting updated OrderDTO:", updatedOrder);
-      // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
-      updateOrder(updatedOrder, id)
-        .then(async (response) => {
-          console.log("Order updated successfully:", updatedOrder);
-          // Cập nhật order với dữ liệu mới nếu cần
-          setOrder(response);
-          addToast({
-            title: "Thành công",
-            description: "Hóa đơn đã được cập nhật thành công!",
-            color: "success",
-          });
-          let orderData = await getOrderById(id);
-          console.log("Fetched updated order data:", orderData);
-          setOrder(orderData);
-          onPrintInvoice();
-        })
-        .catch((error) => {
-          console.error("Error updating order:", error);
-          // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
-          addToast({
-            title: "Lỗi",
-            description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
-            color: "danger",
-          });
-        });
+    e.preventDefault();
+    if (!order) return;
+
+    const updatedOrder: OrderResponseDTO = {
+      ...order,
+      totalPrice: calculateTotal(order as OrderResponseDTO), // Tính toán lại tổng tiền trước khi gửi
     };
+    // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
+    updateOrder(updatedOrder, id)
+      .then(async (response) => {
+        // Cập nhật order với dữ liệu mới nếu cần
+        setOrder(response);
+        addToast({
+          title: "Thành công",
+          description: "Hóa đơn đã được cập nhật thành công!",
+          color: "success",
+        });
+        let orderData = await getOrderById(id);
+        console.log("Fetched updated order data:", orderData);
+        setOrder(orderData);
+        onPrintInvoice();
+      })
+      .catch((error) => {
+        console.error("Error updating order:", error);
+        addToast({
+          title: "Lỗi",
+          description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+          color: "danger",
+        });
+      });
+  };
 
   const calculateBaseServicePrice = () => {
     if (!order?.orderDetails) return 0;
@@ -176,7 +173,7 @@ export default function PaymentAndInvoicePage() {
         color: "success",
       });
       setTimeout(() => {
-        router.push(`/order/${id}`);
+        router.push(`/order/table`);
       }, 1000);
     } catch (error) {
       console.error("Error printing invoice:", error);
@@ -197,13 +194,7 @@ export default function PaymentAndInvoicePage() {
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink href="/order/table">
-                Theo dõi xe ra vào xưởng
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbLink href={`/order/${id}`}>
-                Chi tiết phiếu rửa xe
+                Quản lý hóa đơn
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
@@ -226,24 +217,45 @@ export default function PaymentAndInvoicePage() {
             </div>
           </div>
 
-          {/* Tab Navigation */}
-          <div className="flex space-x-1 mb-6">
-            <Button
-              variant={activeTab === "payment" ? "default" : "outline"}
-              onClick={() => setActiveTab("payment")}
-              className={activeTab === "payment" ? "" : "bg-transparent"}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Thanh Toán
-            </Button>
-            <Button
-              variant={activeTab === "invoice" ? "default" : "outline"}
-              onClick={() => setActiveTab("invoice")}
-              className={activeTab === "invoice" ? "" : "bg-transparent"}
-            >
-              <Printer className="h-4 w-4 mr-2" />
-              Xem Trước Hóa Đơn
-            </Button>
+          {/* Tab Navigation với Save Button */}
+          <div className="mb-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
+              <div className="flex gap-2 overflow-x-auto">
+                <Button
+                  variant={activeTab === "payment" ? "default" : "outline"}
+                  onClick={() => setActiveTab("payment")}
+                  className={`whitespace-nowrap ${
+                    activeTab === "payment" ? "" : "bg-transparent"
+                  }`}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Thanh Toán
+                </Button>
+                <Button
+                  variant={activeTab === "invoice" ? "default" : "outline"}
+                  onClick={() => setActiveTab("invoice")}
+                  className={`whitespace-nowrap ${
+                    activeTab === "invoice" ? "" : "bg-transparent"
+                  }`}
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  Xem Trước Hóa Đơn
+                </Button>
+              </div>
+
+              {/* Save Button - sticky và chỉ hiển thị khi activeTab === "payment" */}
+              {activeTab === "payment" && (
+                <div className="">
+                  <Button
+                    onClick={handleSavePayment}
+                    className="bg-blue-600 hover:bg-blue-700 shadow-lg w-full sm:w-auto"
+                  >
+                    <Save className="h-4 w-4 mr-2" />
+                    Lưu Thông Tin Thanh Toán
+                  </Button>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Content */}
@@ -269,15 +281,6 @@ export default function PaymentAndInvoicePage() {
                   customer={order.customer}
                   licensePlate={firstVehicleLicensePlate}
                 />
-                <div className="flex justify-end mt-6 space-x-4">
-                  <Button
-                    onClick={handleSavePayment}
-                    className="bg-blue-600 hover:bg-blue-700"
-                  >
-                    <Save className="h-4 w-4 mr-2" />
-                    Lưu Thông Tin Thanh Toán
-                  </Button>
-                </div>
               </CardContent>
             </Card>
           )}

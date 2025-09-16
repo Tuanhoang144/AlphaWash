@@ -26,7 +26,7 @@ const Header: React.FC<HeaderProps> = ({ }) => {
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbPage className="flex items-center gap-2">
-                Theo dõi xe ra vào xưởng
+                Quản lý đơn hàng
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>

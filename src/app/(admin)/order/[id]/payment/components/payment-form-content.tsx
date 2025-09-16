@@ -34,6 +34,31 @@ const paymentConfig = {
   accountName: process.env.NEXT_PUBLIC_ACCOUNTNAME || "CONG TY RUA XE",
 };
 
+//Công cụ cho fotmat số tiền
+const formatNumber = (value: number): string => {
+  return value.toLocaleString('vi-VN');
+};
+
+const parseFormattedNumber = (value: string): number => {
+  const cleaned = value.replace(/\./g, '');
+  return parseInt(cleaned) || 0;
+};
+
+const validateNumericInput = (value: string): boolean => {
+  // Chỉ cho phép số và dấu chấm
+  return /^[\d.]*$/.test(value);
+};
+
+const handleNumericInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Chặn các ký tự không phải số, dấu chấm, Backspace, Delete, Tab, Enter, Arrow keys
+  if (
+    !/[\d.]/.test(e.key) &&
+    !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+};
+
 export default function PaymentFormContent({
   paymentType,
   paymentStatus,
@@ -49,9 +74,7 @@ export default function PaymentFormContent({
 }: PaymentFormContentProps) {
   const vatAmount = Math.round((baseServicePrice * vat) / 100);
   const discountAmount =
-    discount > 100
-      ? discount
-      : Math.round((baseServicePrice * discount) / 100);
+    discount > 100 ? discount : Math.round((baseServicePrice * discount) / 100);
 
   const paymentInfo = {
     amount: totalPrice,
@@ -102,49 +125,72 @@ export default function PaymentFormContent({
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          {/* <div className="space-y-2">
+          <div className="space-y-2">
             <Label>VAT (%)</Label>
             <Input
               type="number"
               placeholder="10"
               value={vat}
-              onChange={(e) => onPaymentChange("vat", Number.parseInt(e.target.value) || 0)}
+              onChange={(e) =>
+                onPaymentChange("vat", Number.parseInt(e.target.value) || 0)
+              }
             />
-          </div> */}
+          </div>
           <div className="space-y-2">
             <Label>Giảm giá (%/VNĐ)</Label>
             <Input
-              type="number"
-              placeholder="5"
-              value={discount}
-              min={0}
-              max={100}
+              type="text"
+              placeholder="5 hoặc 100.000"
+              value={discount > 100 ? formatNumber(discount) : discount}
+              onKeyDown={handleNumericInput}
               onChange={(e) => {
-                const value = Number.parseInt(e.target.value) || 0;
-                onPaymentChange("discount", value);
+                const inputValue = e.target.value;
+
+                // Validate chỉ cho phép số và dấu chấm
+                if (!validateNumericInput(inputValue)) {
+                  return;
+                }
+
+                // If input contains dots, treat as VND amount
+                if (inputValue.includes(".")) {
+                  const value = parseFormattedNumber(inputValue);
+                  onPaymentChange("discount", value);
+                } else {
+                  // Treat as percentage
+                  const value = Number.parseInt(inputValue) || 0;
+                  onPaymentChange("discount", value);
+                }
               }}
               onBlur={(e) => {
-                const value = Number.parseInt(e.target.value) || 0;
-                onPaymentChange("discount", value);
+                const inputValue = e.target.value;
+                if (inputValue.includes(".")) {
+                  const value = parseFormattedNumber(inputValue);
+                  onPaymentChange("discount", value);
+                } else {
+                  const value = Number.parseInt(inputValue) || 0;
+                  onPaymentChange("discount", value);
+                }
               }}
             />
-            {/* {discount > 100 && (
-              <p className="text-sm text-red-500">
-                Giảm giá không được vượt quá 100%
-              </p>
-            )} */}
           </div>
         </div>
 
         <div className="space-y-2">
           <Label>Tiền tip (VNĐ)</Label>
           <Input
-            type="number"
-            placeholder="50000"
-            value={tip}
-            min={0}
+            type="text"
+            placeholder="50.000"
+            value={formatNumber(tip)}
+            onKeyDown={handleNumericInput}
             onChange={(e) => {
-              const value = Number.parseInt(e.target.value) || 0;
+              const inputValue = e.target.value;
+
+              // Validate chỉ cho phép số và dấu chấm
+              if (!validateNumericInput(inputValue)) {
+                return;
+              }
+
+              const value = parseFormattedNumber(inputValue);
               // Chỉ cho phép số dương hoặc 0
               if (value >= 0) {
                 onPaymentChange("tip", value);
@@ -152,7 +198,7 @@ export default function PaymentFormContent({
             }}
             onBlur={(e) => {
               // Double check khi blur
-              const value = Number.parseInt(e.target.value) || 0;
+              const value = parseFormattedNumber(e.target.value);
               if (value < 0) {
                 onPaymentChange("tip", 0);
               }
