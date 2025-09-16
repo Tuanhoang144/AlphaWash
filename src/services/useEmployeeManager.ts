@@ -19,7 +19,6 @@ export function useEmployeeManager() {
     }
   }, [callApi, setIsLoading]);
 
-  // ✅ GET: Lấy nhân viên theo ID
   const getEmployeeById = useCallback(async (id: number) => {
     setIsLoading(true);
     try {
@@ -32,29 +31,39 @@ export function useEmployeeManager() {
     }
   }, [callApi, setIsLoading]);
 
-  const insertEmployee = useCallback(async (employee: Omit<Employee, "id">) => {
-    setIsLoading(true);
-    try {
-      const response = await callApi("post", "employee/insert", employee);
-      return response?.data;
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [callApi, setIsLoading]);
+  const insertEmployee = useCallback(
+    async (employee: Omit<Employee, "id">) => {
+      setIsLoading(true);
+      try {
+        const response = await callApi("post", "employee/insert", employee);
+        return response?.data;
+      } catch (error) {
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
 
-  const updateEmployee = useCallback(async (id: number, updatedData: Partial<Employee>) => {
-    setIsLoading(true);
-    try {
-      const response = await callApi("patch", `employee/update/${id}`, updatedData);
-      return response?.data;
-    } catch (error) {
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [callApi, setIsLoading]);
+  const updateEmployee = useCallback(
+    async (id: number, updatedData: Partial<Employee>) => {
+      setIsLoading(true);
+      try {
+        const response = await callApi(
+          "patch",
+          `employee/update/${id}`,
+          updatedData
+        );
+        return response?.data;
+      } catch (error) {
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
 
   return {
     getAllEmployees,
