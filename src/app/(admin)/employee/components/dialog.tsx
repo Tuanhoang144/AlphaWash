@@ -38,7 +38,7 @@ export function EmployeeDialog({
   const [joinDate, setJoinDate] = useState("");
   const [workStatus, setWorkStatus] = useState("");
   const [note, setNote] = useState<string | null>("");
-
+  const [error, setError] = useState("");
   useEffect(() => {
     if (employee) {
       setName(employee.name ?? "");
@@ -78,13 +78,13 @@ export function EmployeeDialog({
       phone,
       bankName,
       bankAccount,
-      dateOfBirth: dateOfBirth || "",   // ép về string
+      dateOfBirth,   // ép về string
       identityNumber,
-      joinDate: joinDate || "",         // ép về string
+      joinDate,         // ép về string
       workStatus,
       note: note || "",
     };
-    
+
     onSave(newEmployeeData);
     onOpenChange(false);
   };
@@ -122,6 +122,7 @@ export function EmployeeDialog({
               className="col-span-3"
               type="tel"
               required
+
             />
           </div>
           {/* Bank */}
