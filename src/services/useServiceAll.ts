@@ -48,7 +48,7 @@ export function useServiceManager() {
     async (data: ServiceFormData) => {
       setLoading(true);
       try {
-        const response = await callApi("post", "/service/insert", data);
+        const response = await callApi("post", "/service/create", data);
         await getAllService(); // refresh list
         return response?.data;
       } finally {
