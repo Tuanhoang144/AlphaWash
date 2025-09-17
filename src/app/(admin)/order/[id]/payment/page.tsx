@@ -19,7 +19,12 @@ import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { addToast } from "@heroui/react";
 import PaymentFormContent from "./components/payment-form-content";
 import InvoiceTemplate from "./components/invoice-template";
-import calculateTotal from "../../utils/calculateTotal";
+import {
+  calculateTotal,
+  calculateBaseServicePrice,
+  calculateVatFromOrder,
+  calculateDiscountFromOrder,
+} from "../../utils/calculateTotal";
 import { handleInvoicePrint } from "./utils/handle-invoice-print";
 import {
   Dialog,
@@ -73,12 +78,24 @@ export default function PaymentAndInvoicePage() {
     setOrder((prev) => (prev ? { ...prev, [field]: value } : null));
   };
 
+  const createDateTimeString = (dateStr: string, timeStr?: string): string => {
+    // Nếu dateStr đã có format đầy đủ (có T và timezone), chỉ lấy phần date
+    if (dateStr.includes('T')) {
+      const datePart = dateStr.split('T')[0]; 
+      const time = timeStr || "00:00:00";
+      return `${datePart}T${time}`;
+    }
+    const time = timeStr || "00:00:00";
+    return `${dateStr}T${time}`;
+  };
+
   const handleSavePayment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!order) return;
 
     const updatedOrder: OrderResponseDTO = {
       ...order,
+      date: createDateTimeString(order.date), // Format date theo LocalDateTime
       totalPrice: calculateTotal(order as OrderResponseDTO), // Tính toán lại tổng tiền trước khi gửi
     };
     // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
@@ -106,20 +123,6 @@ export default function PaymentAndInvoicePage() {
       });
   };
 
-  const calculateBaseServicePrice = () => {
-    if (!order?.orderDetails) return 0;
-    return order.orderDetails.reduce(
-      (sum, detail) =>
-        sum +
-        detail.service.reduce(
-          (serviceSum, service) =>
-            serviceSum + (service.serviceCatalog?.price || 0),
-          0
-        ),
-      0
-    );
-  };
-
   if (loading || !order) {
     return (
       <SidebarInset>
@@ -135,9 +138,12 @@ export default function PaymentAndInvoicePage() {
     );
   }
 
-  const baseServicePrice = calculateBaseServicePrice();
+  //Tính toán tiền
+  const baseServicePrice = calculateBaseServicePrice(order);
   const totalPrice = calculateTotal(order);
-  order.totalPrice = totalPrice; // Cập nhật tổng tiền vào order
+  const vatAmount = calculateVatFromOrder(order);
+  const discountAmount = calculateDiscountFromOrder(order);
+  order.totalPrice = totalPrice;
   const firstVehicleLicensePlate =
     order.orderDetails?.[0]?.vehicle.licensePlate || null;
 
@@ -269,7 +275,7 @@ export default function PaymentAndInvoicePage() {
               </CardHeader>
               <CardContent>
                 <PaymentFormContent
-                  paymentType={order.paymentType || ""}
+                  paymentType={order.paymentType || "Transfer"}
                   paymentStatus={order.paymentStatus || ""}
                   vat={order.vat || 0}
                   discount={order.discount || 0}
@@ -277,6 +283,8 @@ export default function PaymentAndInvoicePage() {
                   note={order.note ?? null}
                   totalPrice={totalPrice}
                   baseServicePrice={baseServicePrice}
+                  vatAmount={vatAmount}
+                  discountAmount={discountAmount}
                   onPaymentChange={handlePaymentChange}
                   customer={order.customer}
                   licensePlate={firstVehicleLicensePlate}

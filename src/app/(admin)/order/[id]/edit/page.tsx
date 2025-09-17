@@ -36,8 +36,8 @@ import {
 } from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { addToast } from "@heroui/react";
-import calculateTotal from "../../utils/calculateTotal";
 import InformationPayment from "./components/information-payment";
+import { calculateTotal } from "../../utils/calculateTotal";
 
 export default function EditInvoicePage() {
   const params = useParams();
@@ -56,13 +56,10 @@ export default function EditInvoicePage() {
   useEffect(() => {
     const fetchOrderData = async () => {
       const data = await getOrderById(id);
-      console.log("Fetched order data:", data);
-
       if (!data) {
         console.error("Order data not found for ID:", id);
         return;
       }
-
       let matchedCustomer: CustomerDTO | null = null;
       if (data.customer?.phone) {
         const found = await getCustomersByPhone(data.customer.phone);
@@ -80,7 +77,12 @@ export default function EditInvoicePage() {
       // Khởi tạo formData với fetchedOrder, đảm bảo tất cả các trường đều có mặt
       setFormData({
         ...fetchedOrder,
-        // Đảm bảo các đối tượng lồng nhau không phải là null/undefined nếu form mong đợi chúng
+        // Đảm bảo thời gian truyền lên trùng với backend
+        date: fetchedOrder.date
+          ? fetchedOrder.date.includes('T') 
+            ? fetchedOrder.date.split('T')[0] 
+            : fetchedOrder.date
+          : new Date().toISOString().split("T")[0],
         customer: customerData
           ? {
               id: customerData.id || "",
@@ -129,17 +131,22 @@ export default function EditInvoicePage() {
     e.preventDefault();
     if (!formData) return;
 
+    // Tạo datetime string từ date và time, tránh timezone conversion
+    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
+      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
+      const time = timeStr || "00:00:00";
+      return `${dateStr}T${time}`;
+    };
+
     const updatedOrder: OrderResponseDTO = {
       ...formData,
-      date: new Date(formData.date).toISOString(), //Chỉnh sửa ngày tháng năm tạo hóa đơn
+      date: createDateTimeString(formData.date), // Chỉnh sửa ngày tháng năm tạo hóa đơn
       totalPrice: total, // Tính toán lại tổng tiền trước khi gửi
     };
 
-    console.log("Submitting updated OrderDTO:", updatedOrder);
     // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
     updateOrder(updatedOrder, id)
       .then((response) => {
-        console.log("Order updated successfully:", response);
         // Cập nhật formData với dữ liệu mới nếu cần
         setFormData(response);
         addToast({
@@ -150,7 +157,6 @@ export default function EditInvoicePage() {
         router.push(`/order/table`);
       })
       .catch((error) => {
-        console.error("Error updating order:", error);
         // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
         addToast({
           title: "Lỗi",
@@ -198,13 +204,20 @@ export default function EditInvoicePage() {
   const handlePayment = async () => {
     if (!formData) return;
 
+    // Tạo datetime string từ date và time, tránh timezone conversion
+    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
+      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
+      const time = timeStr || "00:00:00";
+      return `${dateStr}T${time}`;
+    };
+
     const updatedOrder: OrderResponseDTO = {
       ...formData,
+      date: createDateTimeString(formData.date),
       totalPrice: total,
     };
 
     try {
-      console.log("Submitting updated OrderDTO:", updatedOrder);
       const response = await updateOrder(updatedOrder, id);
 
       setFormData(response);

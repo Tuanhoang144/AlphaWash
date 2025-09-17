@@ -13,6 +13,7 @@ import { Calendar, Clock } from "lucide-react";
 import { Input, DatePicker } from "antd";
 import dayjs from "dayjs";
 import "dayjs/locale/vi";
+import { tool } from "@/utils/tool";
 
 interface OrderInfoFormProps {
   orderDate: string;
@@ -35,6 +36,31 @@ export default function OrderInfoForm({
   };
   dayjs.locale("vi");
   console.log("Ngày được truyền vào input:", orderDate);
+  
+  // Xử lý date để tránh vấn đề timezone - lấy phần date từ ISO string
+  const getDateOnly = (dateString: string): dayjs.Dayjs | null => {
+    if (!dateString) return null;
+    
+    // Nếu là ISO string với timezone, lấy phần date
+    if (dateString.includes('T')) {
+      const datePart = dateString.split('T')[0];
+      console.log("Extracted date part from ISO:", datePart);
+      
+      // Parse từng thành phần để tránh timezone conversion
+      const [year, month, day] = datePart.split('-').map(Number);
+      const dayjsDate = dayjs().year(year).month(month - 1).date(day);
+      console.log("Created dayjs from components:", dayjsDate.format("YYYY-MM-DD"));
+      return dayjsDate;
+    }
+    
+    // Nếu đã là format YYYY-MM-DD, parse với format cụ thể
+    return dayjs(dateString, "YYYY-MM-DD", true);
+  };
+  
+  const parsedDate = getDateOnly(orderDate);
+  console.log("Final parsed date:", parsedDate?.format("YYYY-MM-DD"));
+  console.log("Final parsed date formatted:", parsedDate?.format("DD/MM/YYYY"));
+
   return (
     <Card>
       <CardHeader>
@@ -50,7 +76,7 @@ export default function OrderInfoForm({
         <div className="space-y-2">
           <Label htmlFor="orderDate">Ngày đặt</Label>
           <DatePicker
-            value={orderDate ? dayjs(orderDate) : null}
+            value={parsedDate}
             onChange={(date: dayjs.Dayjs | null) => {
               console.log("DatePicker onChange:", date?.format("YYYY-MM-DD"));
               const isoDate = date?.format("YYYY-MM-DD") || "";
