@@ -23,6 +23,8 @@ interface PaymentFormContentProps {
   note: string | null;
   totalPrice: number;
   baseServicePrice: number;
+  vatAmount: number;
+  discountAmount: number;
   onPaymentChange: (field: string, value: string | number) => void;
   customer?: CustomerDTO | null;
   licensePlate?: string | null;
@@ -68,14 +70,12 @@ export default function PaymentFormContent({
   note,
   totalPrice,
   baseServicePrice,
+  vatAmount,
+  discountAmount,
   onPaymentChange,
   customer,
   licensePlate,
 }: PaymentFormContentProps) {
-  const vatAmount = Math.round((baseServicePrice * vat) / 100);
-  const discountAmount =
-    discount > 100 ? discount : Math.round((baseServicePrice * discount) / 100);
-
   const paymentInfo = {
     amount: totalPrice,
     bankName: paymentConfig.bankName,
@@ -101,8 +101,8 @@ export default function PaymentFormContent({
                 <SelectValue placeholder="Chọn phương thức" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cash">Tiền mặt</SelectItem>
                 <SelectItem value="Transfer">Chuyển khoản</SelectItem>
+                <SelectItem value="Cash">Tiền mặt</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -131,10 +131,24 @@ export default function PaymentFormContent({
               type="number"
               placeholder="10"
               value={vat}
-              onChange={(e) =>
-                onPaymentChange("vat", Number.parseInt(e.target.value) || 0)
-              }
+              onChange={(e) => {
+                const value = Number.parseInt(e.target.value) || 0;
+                // Chỉ cho phép VAT >= 0
+                if (value >= 0) {
+                  onPaymentChange("vat", value);
+                }
+              }}
+              onBlur={(e) => {
+                // Double check khi blur
+                const value = Number.parseInt(e.target.value) || 0;
+                if (value < 0) {
+                  onPaymentChange("vat", 0);
+                }
+              }}
             />
+            {vat < 0 && (
+              <p className="text-sm text-red-500">VAT không được âm</p>
+            )}
           </div>
           <div className="space-y-2">
             <Label>Giảm giá (%/VNĐ)</Label>
@@ -154,24 +168,37 @@ export default function PaymentFormContent({
                 // If input contains dots, treat as VND amount
                 if (inputValue.includes(".")) {
                   const value = parseFormattedNumber(inputValue);
-                  onPaymentChange("discount", value);
+                  // Chỉ cho phép giảm giá >= 0
+                  if (value >= 0) {
+                    onPaymentChange("discount", value);
+                  }
                 } else {
                   // Treat as percentage
                   const value = Number.parseInt(inputValue) || 0;
-                  onPaymentChange("discount", value);
+                  // Chỉ cho phép giảm giá >= 0
+                  if (value >= 0) {
+                    onPaymentChange("discount", value);
+                  }
                 }
               }}
               onBlur={(e) => {
                 const inputValue = e.target.value;
                 if (inputValue.includes(".")) {
                   const value = parseFormattedNumber(inputValue);
-                  onPaymentChange("discount", value);
+                  if (value < 0) {
+                    onPaymentChange("discount", 0);
+                  }
                 } else {
                   const value = Number.parseInt(inputValue) || 0;
-                  onPaymentChange("discount", value);
+                  if (value < 0) {
+                    onPaymentChange("discount", 0);
+                  }
                 }
               }}
             />
+            {discount < 0 && (
+              <p className="text-sm text-red-500">Giảm giá không được âm</p>
+            )}
           </div>
         </div>
 
@@ -216,26 +243,32 @@ export default function PaymentFormContent({
             <span>Tổng dịch vụ:</span>
             <span>{Math.round(baseServicePrice).toLocaleString("vi-VN")}đ</span>
           </div>
-          {vat > 0 && (
-            <div className="flex justify-between text-sm">
-              <span>VAT ({vat}%):</span>
-              <span>+{vatAmount.toLocaleString("vi-VN")}đ</span>
-            </div>
-          )}
           {discount > 0 && (
             <div className="flex justify-between text-sm text-red-600">
               {discount < 100 && (
                 <>
                   <span>Giảm giá ({discount}%):</span>
-                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                  <span>{discountAmount.toLocaleString("vi-VN")}đ</span>
                 </>
               )}
               {discount > 100 && (
                 <>
                   <span>Giảm giá:</span>
-                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                  <span>{discountAmount.toLocaleString("vi-VN")}đ</span>
                 </>
               )}
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="flex justify-between text-sm font-medium border-t pt-2">
+              <span>Tổng tiền sau giảm giá:</span>
+              <span>{(Math.round(baseServicePrice) - discountAmount).toLocaleString("vi-VN")}đ</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>VAT ({vat}%):</span>
+              <span>{vatAmount.toLocaleString("vi-VN")}đ</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg border-t pt-2">

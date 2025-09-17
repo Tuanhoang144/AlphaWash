@@ -6,6 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, QrCode, Save, X } from "lucide-react";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
+import { 
+  calculateBaseServicePrice, 
+  calculateVatFromOrder, 
+  calculateDiscountFromOrder 
+} from "../../../utils/calculateTotal";
 
 interface InformationPaymentProps {
   orderData: OrderResponseDTO;
@@ -25,26 +30,13 @@ export default function InformationPayment({
   const { getStatusPaymentColor, getStatusPaymentLabel } = tool();
 
   // Calculate base price (used multiple times)
-  const basePrice =
-    orderData.orderDetails?.reduce(
-      (sum, detail) =>
-        sum +
-        detail.service.reduce(
-          (serviceSum, service) =>
-            serviceSum + (service.serviceCatalog?.price || 0),
-          0
-        ),
-      0
-    ) || 0;
+  const basePrice = calculateBaseServicePrice(orderData);
 
   // Tính toán VAT
-  const vatAmount = (basePrice * orderData.vat) / 100;
+  const vatAmount = calculateVatFromOrder(orderData);
 
   // Tính toán số tiền giảm giá
-  const discountAmount =
-    orderData.discount < 100
-      ? (basePrice * orderData.discount) / 100
-      : orderData.discount;
+  const discountAmount = calculateDiscountFromOrder(orderData);
 
   const isOrderDeleted = orderData.deleteFlag || false;
   const isPaid = orderData.paymentStatus === 'PAID';
@@ -61,11 +53,70 @@ export default function InformationPayment({
         {/* Thông tin thanh toán */}
         <div className="space-y-3">
           {/* Service Base Price */}
-          <div className="flex justify-between items-center text-sm text-gray-600 pb-2 border-b border-dashed">
+          <div className="flex justify-between items-center text-sm text-gray-600">
             <span>Tạm tính dịch vụ:</span>
             <span>{basePrice.toLocaleString("vi-VN")}đ</span>
           </div>
 
+          {/* Discount Information */}
+          {orderData.discount > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                Giảm giá{" "}
+                {orderData.discount < 100 ? `(${orderData.discount}%)` : ""}:
+              </span>
+              <span className="text-sm font-medium text-red-600">
+                -{discountAmount.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          )}
+
+          {/* Total after discount with separator line */}
+          {orderData.discount > 0 && (
+            <div className="border-t border-dashed pt-2">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-600">Tổng tiền sau giảm giá:</span>
+                <span className="text-sm font-medium">
+                  {(basePrice - discountAmount).toLocaleString("vi-VN")}đ
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* VAT Information */}
+          {orderData.vat > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">
+                VAT ({orderData.vat}%):
+              </span>
+              <span className="text-sm font-medium">
+                {vatAmount.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          )}
+
+          {/* Tip Information */}
+          {orderData.tip > 0 && (
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Tiền tip:</span>
+              <span className="text-sm font-medium text-blue-600">
+                +{orderData.tip.toLocaleString("vi-VN")}đ
+              </span>
+            </div>
+          )}
+
+          {/* Warning if order is deleted */}
+          {isOrderDeleted && (
+            <div className="p-2 bg-red-50 border border-red-200 rounded-md">
+              <span className="text-sm text-red-600 font-medium">
+                Hóa đơn này đã bị hủy
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Payment Status and Method - Moved outside calculation section */}
+        <div className="space-y-3 border-t pt-4">
           {/* Payment Status */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Trạng thái:</span>
@@ -89,50 +140,6 @@ export default function InformationPayment({
                 : orderData.paymentType || "Chưa chọn"}
             </span>
           </div>
-
-          {/* VAT Information */}
-          {orderData.vat > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                VAT ({orderData.vat}%):
-              </span>
-              <span className="text-sm font-medium">
-                {vatAmount.toLocaleString("vi-VN")}đ
-              </span>
-            </div>
-          )}
-
-          {/* Discount Information */}
-          {orderData.discount > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Giảm giá{" "}
-                {orderData.discount < 100 ? `(${orderData.discount}%)` : ""}:
-              </span>
-              <span className="text-sm font-medium text-red-600">
-                -{discountAmount.toLocaleString("vi-VN")}đ
-              </span>
-            </div>
-          )}
-
-          {/* Tip Information */}
-          {orderData.tip > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Tiền tip:</span>
-              <span className="text-sm font-medium text-blue-600">
-                +{orderData.tip.toLocaleString("vi-VN")}đ
-              </span>
-            </div>
-          )}
-
-          {/* Warning if order is deleted */}
-          {isOrderDeleted && (
-            <div className="p-2 bg-red-50 border border-red-200 rounded-md">
-              <span className="text-sm text-red-600 font-medium">
-                Hóa đơn này đã bị hủy
-              </span>
-            </div>
-          )}
         </div>
 
         {/* Total Amount */}

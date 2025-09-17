@@ -1,5 +1,6 @@
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
+import { calculateVatFromOrder, calculateDiscountFromOrder } from "../../../utils/calculateTotal";
 
 export const generateInvoiceHTML = ({
   order,
@@ -15,19 +16,29 @@ export const generateInvoiceHTML = ({
   qrUrl: string;
 }) => {
   const { formatTime } = tool();
-  const vatRow =
-    order.vat > 0
-      ? `<div class="total-row"><span>VAT (${order.vat}%):</span><span>${(
-          (order.vat / 100) *
-          baseServicePrice
-        ).toLocaleString()}đ</span></div>`
+  
+  // Tính toán VAT và discount theo logic mới
+  const vatAmount = calculateVatFromOrder(order);
+  const discountAmount = calculateDiscountFromOrder(order);
+  
+  // Tạo row cho discount (hiển thị trước VAT)
+  const discountRow =
+    order.discount > 0
+      ? order.discount < 100
+        ? `<div class="total-row"><span>Giảm giá (${order.discount}%):</span><span>${discountAmount.toLocaleString()}đ</span></div>`
+        : `<div class="total-row"><span>Giảm giá:</span><span>${discountAmount.toLocaleString()}đ</span></div>`
       : "";
 
-  const discountRow =
-    order.discount > 100
-      ? `<div class="total-row"><span>Giảm giá:</span><span>-${order.discount.toLocaleString()}đ</span></div>`
-      : order.discount < 100 && order.discount > 0
-      ? `<div class="total-row"><span>Giảm giá (${order.discount}%):</span><span>-${((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span></div>`
+  // Tạo row cho tổng tiền sau giảm giá
+  const afterDiscountRow =
+    order.discount > 0
+      ? `<div class="total-row total-after-discount after-discount-border"><span>Tổng tiền sau giảm giá:</span><span>${(baseServicePrice - discountAmount).toLocaleString()}đ</span></div>`
+      : "";
+
+  // Tạo row cho VAT (bỏ border-top)
+  const vatRow =
+    order.vat > 0
+      ? `<div class="total-row"><span>VAT (${order.vat}%):</span><span>${vatAmount.toLocaleString()}đ</span></div>`
       : "";
 
   const vehicle = order.orderDetails[0].vehicle;
@@ -183,6 +194,15 @@ export const generateInvoiceHTML = ({
                 margin-bottom: 3px;
               }
               
+              .total-after-discount {
+                font-weight: bold;
+              }
+              
+              .after-discount-border {
+                border-top: 1px solid #000;
+                padding-top: 3px;
+              }
+              
               .total-divider {
                 border-top: 1px dashed #000;
                 margin: 8px 0 5px 0;
@@ -328,8 +348,9 @@ export const generateInvoiceHTML = ({
           <span>Tạm tính:</span>
           <span>${baseServicePrice.toLocaleString()}đ</span>
         </div>
-        ${vatRow}
         ${discountRow}
+        ${afterDiscountRow}
+        ${vatRow}
         <div class="total-divider"></div>
         <div class="total-row final-total">
           <span>TỔNG THANH TOÁN:</span>

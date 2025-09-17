@@ -36,8 +36,8 @@ import {
 } from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { addToast } from "@heroui/react";
-import calculateTotal from "../../utils/calculateTotal";
 import InformationPayment from "./components/information-payment";
+import { calculateTotal } from "../../utils/calculateTotal";
 
 export default function EditInvoicePage() {
   const params = useParams();

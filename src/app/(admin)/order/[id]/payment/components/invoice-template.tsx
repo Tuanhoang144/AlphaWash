@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
+import { calculateVatFromOrder, calculateDiscountFromOrder } from "../../../utils/calculateTotal";
 
 type InvoiceTemplateProps = {
   order: OrderResponseDTO;
@@ -17,6 +18,10 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
 
   const vehicle = order.orderDetails[0].vehicle;
   const services = order.orderDetails.flatMap((detail) => detail.service);
+
+  // Tính toán VAT và discount theo logic mới
+  const vatAmount = calculateVatFromOrder(order);
+  const discountAmount = calculateDiscountFromOrder(order);
 
   const paymentConfig = {
     bankName: process.env.NEXT_PUBLIC_NAMEBANK || "TPBANK",
@@ -130,28 +135,31 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
             <span>Tạm tính:</span>
             <span>{baseServicePrice.toLocaleString()}đ</span>
           </div>
-          {order.vat > 0 && (
+          {order.discount > 0 && (
             <div className="flex justify-between">
-              <span>VAT ({order.vat}%):</span>
-              <span>
-                {((order.vat / 100) * baseServicePrice).toLocaleString()}đ
-              </span>
+              {order.discount < 100 ? (
+                <>
+                  <span>Giảm giá ({order.discount}%):</span>
+                  <span>{discountAmount.toLocaleString()}đ</span>
+                </>
+              ) : (
+                <>
+                  <span>Giảm giá:</span>
+                  <span>{discountAmount.toLocaleString()}đ</span>
+                </>
+              )}
             </div>
           )}
           {order.discount > 0 && (
+            <div className="flex justify-between font-medium border-t pt-2">
+              <span>Tổng tiền sau giảm giá:</span>
+              <span>{(baseServicePrice - discountAmount).toLocaleString()}đ</span>
+            </div>
+          )}
+          {order.vat > 0 && (
             <div className="flex justify-between">
-              {order.discount < 100 && (
-                <>
-                  <span>Giảm giá ({order.discount}%):</span>
-                  <span>-{((order.discount / 100) * baseServicePrice).toLocaleString()}đ</span>
-                </>
-              )}
-              {order.discount > 100 && (
-                <>
-                  <span>Giảm giá:</span>
-                  <span>-order.discountđ</span>
-                </>
-              )}
+              <span>VAT ({order.vat}%):</span>
+              <span>{vatAmount.toLocaleString()}đ</span>
             </div>
           )}
           <hr className="my-4 border-t-2 border-dashed border-gray-300" />
