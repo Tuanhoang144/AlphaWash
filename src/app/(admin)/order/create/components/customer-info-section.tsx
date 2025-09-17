@@ -29,7 +29,7 @@ export default function CustomerInfoSection({
   const [editingCustomer, setEditingCustomer] = useState<Partial<CustomerDTO>>(
     {}
   );
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
   const [phoneError, setPhoneError] = useState<string | null>(null);
   const { updateCustomer } = useCustomerManager();
 

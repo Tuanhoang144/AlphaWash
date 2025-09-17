@@ -7,6 +7,9 @@ import { CarSize } from "@/types/CarSize";
 import { useEffect, useState } from "react";
 import { CarSizeDialog } from "./car-sze/CarSizeDialog";
 import { CarSizeTable } from "./car-sze/CarTable";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@radix-ui/react-separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb";
 
 export default function CarSizePage() {
   const { carSizes, getAllCarSizes, updateCarSize, deleteCarSize } = useCarSizeManager();
@@ -65,6 +68,18 @@ export default function CarSizePage() {
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   return (
+    <SidebarInset>
+      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem className="hidden md:block">
+              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
     <div className="p-6 space-y-4">
       <h1 className="text-xl font-bold">Quản lý Size xe</h1>
 
@@ -117,5 +132,6 @@ export default function CarSizePage() {
         initialData={editing}
       />
     </div>
+      </SidebarInset>
   );
 }

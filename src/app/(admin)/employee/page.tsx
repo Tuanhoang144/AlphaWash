@@ -8,10 +8,7 @@ import {
   BreadcrumbList,
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { EmployeeDialog } from "./components/dialog";
 import { EmployeeTable } from "./components/table";
 import { EmployeeManagementHeader } from "./components/header";
@@ -21,16 +18,12 @@ import { Employee } from "@/types/Employee";
 function ManageEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentEmployee, setCurrentEmployee] = useState  <Employee | null>(null);
+  const [currentEmployee, setCurrentEmployee] = useState<Employee | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const {
-    getAllEmployees,
-    insertEmployee,
-    updateEmployee,
-  } = useEmployeeManager();
+  const { getAllEmployees, insertEmployee, updateEmployee } =
+    useEmployeeManager();
 
-  // ✅ Load danh sách nhân viên khi mở trang
   useEffect(() => {
     const fetchEmployees = async () => {
       try {
@@ -44,12 +37,12 @@ function ManageEmployees() {
   }, [getAllEmployees]);
 
   const handleAddEmployee = () => {
-    setCurrentEmployee(null); 
+    setCurrentEmployee(null);
     setIsDialogOpen(true);
   };
 
   const handleEditEmployee = (employee: Employee) => {
-    setCurrentEmployee(employee); // Sửa
+    setCurrentEmployee(employee);
     setIsDialogOpen(true);
   };
 
@@ -58,21 +51,10 @@ function ManageEmployees() {
   ) => {
     try {
       if (employeeData.id) {
-        // ✅ Cập nhật
-        await updateEmployee(
-          employeeData.id!,
-          { ...employeeData, id: employeeData.id!.toString() }
-        );
+        await updateEmployee(employeeData.id, employeeData);
       } else {
-        // ✅ Thêm mới
-        await insertEmployee({
-          name: employeeData.name,
-          phone: employeeData.phone,
-          note: employeeData.note,
-        });
+        await insertEmployee(employeeData);
       }
-
-      // Sau khi thêm/sửa thì load lại danh sách
       const updated = await getAllEmployees();
       setEmployees(updated);
       setIsDialogOpen(false);
@@ -83,11 +65,13 @@ function ManageEmployees() {
 
   const filteredEmployees = useMemo(() => {
     if (!searchTerm) return employees;
-    const lowerSearch = searchTerm?.toLowerCase();
+    const lowerSearch = searchTerm.toLowerCase();
     return employees.filter(
       (emp) =>
         emp.name.toLowerCase().includes(lowerSearch) ||
-        emp.phone.includes(lowerSearch)
+        emp.phone.includes(lowerSearch) ||
+        emp.identityNumber?.includes(lowerSearch) ||
+        emp.workStatus?.toLowerCase().includes(lowerSearch)
     );
   }, [employees, searchTerm]);
 

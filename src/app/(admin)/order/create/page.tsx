@@ -25,9 +25,9 @@ import {
   OrderResponseDTO,
   VehicleDTO,
 } from "@/types/OrderResponse";
-import calculateTotal from "../utils/calculateTotal";
 import { addToast } from "@heroui/toast";
 import LoadingPage from "@/app/loading";
+import { calculateTotal } from "../utils/calculateTotal";
 
 export default function CreateInvoiceForm() {
   const [formData, setFormData] = useState<Partial<OrderResponseDTO>>({
@@ -35,7 +35,7 @@ export default function CreateInvoiceForm() {
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
     checkOut: "",
     tip: 0,
-    paymentType: "Cash",
+    paymentType: "Transfer",
     paymentStatus: "PENDING",
     vat: 0,
     discount: 0,
@@ -112,7 +112,7 @@ export default function CreateInvoiceForm() {
         : new Date().toISOString(),
       checkIn: formData.checkIn as string,
       checkOut: formData.checkOut as string,
-      paymentType: formData.paymentType ?? "Cash",
+      paymentType: formData.paymentType ?? "Transfer",
       paymentStatus: formData.paymentStatus ?? "PENDING",
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
@@ -210,12 +210,12 @@ export default function CreateInvoiceForm() {
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink href="/order/table">
-                Theo dõi xe ra vào xưởng
+                Quản lý hóa đơn
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbPage className="hidden md:block">
-              <BreadcrumbLink href="#">Tạo mới phiếu rửa xe</BreadcrumbLink>
+              <BreadcrumbLink href="#">Tạo mới hóa đơn</BreadcrumbLink>
             </BreadcrumbPage>
           </BreadcrumbList>
         </Breadcrumb>

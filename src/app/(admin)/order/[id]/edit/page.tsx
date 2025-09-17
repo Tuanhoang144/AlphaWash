@@ -28,7 +28,7 @@ import CustomerInfoSection from "../../create/components/customer-info-section";
 import OrderDetailForm from "../../create/components/order-detail-form";
 import OrderInfoForm from "../../create/components/order-info-form";
 import InvoiceSummary from "../../create/components/invoice-summary";
-import { SidebarInset } from "@/components/ui/sidebar";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import {
   CustomerDTO,
   OrderDetailDTO,
@@ -36,16 +36,15 @@ import {
 } from "@/types/OrderResponse";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { addToast } from "@heroui/react";
-import calculateTotal from "../../utils/calculateTotal";
+import InformationPayment from "./components/information-payment";
+import { calculateTotal } from "../../utils/calculateTotal";
 
 export default function EditInvoicePage() {
   const params = useParams();
   const id = params.id as string;
   const { loading, getOrderById } = useOrderManager();
-  // State để giữ dữ liệu form, được khởi tạo từ fetchedOrder
   const [customerData, setCustomerData] = useState<CustomerDTO | null>(null);
   const [formData, setFormData] = useState<OrderResponseDTO | null>(null);
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
   const [fetchedOrder, setFetchedOrder] = useState<OrderResponseDTO | null>(
     null
   );
@@ -57,13 +56,10 @@ export default function EditInvoicePage() {
   useEffect(() => {
     const fetchOrderData = async () => {
       const data = await getOrderById(id);
-      console.log("Fetched order data:", data);
-
       if (!data) {
         console.error("Order data not found for ID:", id);
         return;
       }
-
       let matchedCustomer: CustomerDTO | null = null;
       if (data.customer?.phone) {
         const found = await getCustomersByPhone(data.customer.phone);
@@ -81,7 +77,12 @@ export default function EditInvoicePage() {
       // Khởi tạo formData với fetchedOrder, đảm bảo tất cả các trường đều có mặt
       setFormData({
         ...fetchedOrder,
-        // Đảm bảo các đối tượng lồng nhau không phải là null/undefined nếu form mong đợi chúng
+        // Đảm bảo thời gian truyền lên trùng với backend
+        date: fetchedOrder.date
+          ? fetchedOrder.date.includes('T') 
+            ? fetchedOrder.date.split('T')[0] 
+            : fetchedOrder.date
+          : new Date().toISOString().split("T")[0],
         customer: customerData
           ? {
               id: customerData.id || "",
@@ -117,9 +118,6 @@ export default function EditInvoicePage() {
     );
   };
 
-  console.log("Fetched order data:", fetchedOrder);
-  console.log("Form data state:", formData);
-
   // Hàm chung để cập nhật các trường trực tiếp của OrderDTO
   const handleOrderInfoChange = (field: string, value: string) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
@@ -129,25 +127,26 @@ export default function EditInvoicePage() {
     setFormData((prev) => (prev ? { ...prev, orderDetails } : null));
   };
 
-  // Hàm chung để cập nhật các trường thanh toán của OrderDTO
-  const handlePaymentChange = (field: string, value: string | number) => {
-    setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData) return;
 
+    // Tạo datetime string từ date và time, tránh timezone conversion
+    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
+      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
+      const time = timeStr || "00:00:00";
+      return `${dateStr}T${time}`;
+    };
+
     const updatedOrder: OrderResponseDTO = {
       ...formData,
+      date: createDateTimeString(formData.date), // Chỉnh sửa ngày tháng năm tạo hóa đơn
       totalPrice: total, // Tính toán lại tổng tiền trước khi gửi
     };
 
-    console.log("Submitting updated OrderDTO:", updatedOrder);
     // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
     updateOrder(updatedOrder, id)
       .then((response) => {
-        console.log("Order updated successfully:", response);
         // Cập nhật formData với dữ liệu mới nếu cần
         setFormData(response);
         addToast({
@@ -155,10 +154,9 @@ export default function EditInvoicePage() {
           description: "Hóa đơn đã được cập nhật thành công!",
           color: "success",
         });
-        router.push(`/order/${id}`);
+        router.push(`/order/table`);
       })
       .catch((error) => {
-        console.error("Error updating order:", error);
         // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
         addToast({
           title: "Lỗi",
@@ -183,19 +181,6 @@ export default function EditInvoicePage() {
 
   const total = calculateTotal(formData as OrderResponseDTO);
   const currentTotalPrice = total;
-  const baseServicePrice =
-    formData.orderDetails?.reduce(
-      (sum, detail) =>
-        sum +
-        detail.service.reduce(
-          (serviceSum, service) =>
-            serviceSum + (service.serviceCatalog?.price || 0),
-          0
-        ),
-      0
-    ) || 0;
-  const firstVehicleLicensePlate =
-    formData.orderDetails?.[0]?.vehicle.licensePlate || null;
 
   const handleCancel = async (id: string): Promise<void> => {
     try {
@@ -205,7 +190,7 @@ export default function EditInvoicePage() {
         description: "Đơn hàng đã được hủy thành công!",
         color: "success",
       });
-      router.push(`/order/${id}`);
+      router.push(`/order/table`);
     } catch (error) {
       addToast({
         title: "Lỗi",
@@ -215,27 +200,53 @@ export default function EditInvoicePage() {
       console.error("Error canceling order:", error);
     }
   };
-  
-  const handleNavigateToPayment = () => {
-  //   setIsNavigating(true);
-    router.push(`/order/${id}/payment`);
+
+  const handlePayment = async () => {
+    if (!formData) return;
+
+    // Tạo datetime string từ date và time, tránh timezone conversion
+    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
+      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
+      const time = timeStr || "00:00:00";
+      return `${dateStr}T${time}`;
+    };
+
+    const updatedOrder: OrderResponseDTO = {
+      ...formData,
+      date: createDateTimeString(formData.date),
+      totalPrice: total,
+    };
+
+    try {
+      const response = await updateOrder(updatedOrder, id);
+
+      setFormData(response);
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được cập nhật thành công!",
+        color: "success",
+      });
+      router.push(`/order/${id}/payment`);
+    } catch (error) {
+      console.error("Error updating order:", error);
+      addToast({
+        title: "Lỗi",
+        description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+        color: "danger",
+      });
+    }
   };
 
   return (
     <SidebarInset>
       <header className="sticky z-10 top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+        <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink href="/order/table">
-                Theo dõi xe ra vào xưởng
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbLink href={`/order/${id}`}>
-                Chi tiết phiếu rửa xe
+                Quản lý hóa đơn
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
@@ -285,6 +296,17 @@ export default function EditInvoicePage() {
 
               {/* Cột phải - Thông tin hóa đơn & Thanh toán */}
               <div className="lg:col-span-1 space-y-6">
+                <InformationPayment
+                  orderData={formData}
+                  currentTotalPrice={currentTotalPrice}
+                  onSave={() =>
+                    handleSubmit(
+                      new Event("submit") as unknown as React.FormEvent
+                    )
+                  }
+                  onCancel={() => handleCancel(id)}
+                  onPayment={handlePayment}
+                />
                 <OrderInfoForm
                   orderDate={formData.date}
                   checkIn={formData.checkIn}
@@ -297,45 +319,6 @@ export default function EditInvoicePage() {
                   orderDetails={formData.orderDetails}
                   totalPrice={currentTotalPrice}
                 />
-
-                {/* Nút gửi - Sticky */}
-                <div className="sticky top-6 bg-white rounded-lg border p-4 shadow-sm">
-                  <div className="space-y-4">
-                    <div className="text-center">
-                      <div className="text-sm text-gray-500">Tổng tiền</div>
-                      <div className="text-2xl font-bold text-green-600">
-                        {currentTotalPrice.toLocaleString("vi-VN")} VNĐ
-                      </div>
-                    </div>
-                    <div className="flex flex-col space-y-2">
-                      <Button
-                        type="submit"
-                        className="w-full bg-blue-600 hover:bg-blue-700"
-                      >
-                        <Save className="h-4 w-4 mr-2" />
-                        Lưu Thay Đổi
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full bg-transparent"
-                        onClick={() => handleCancel(id)}
-                      >
-                        Hủy Hóa Đơn
-                      </Button>
-                      {currentTotalPrice > 0 && (
-                        <Button
-                          onClick={handleNavigateToPayment}
-                          className="w-full bg-green-600 hover:bg-green-700"
-                          disabled={fetchedOrder?.deleteFlag || false}
-                        >
-                          <QrCode className="h-4 w-4 mr-2" />
-                          Thanh Toán & In Hóa Đơn
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
               </div>
             </div>
           </form>

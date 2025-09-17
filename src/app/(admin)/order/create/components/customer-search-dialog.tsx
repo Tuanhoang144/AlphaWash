@@ -19,7 +19,6 @@ import { Search, User, Phone, MapPin, UserPlus, X, Save } from "lucide-react";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { CustomerDTO } from "@/types/OrderResponse";
 import { addToast } from "@heroui/react";
-import { add } from "date-fns";
 
 interface CustomerSearchDialogProps {
   onCustomerSelect: (customer: CustomerDTO | null) => void;
@@ -43,6 +42,7 @@ export default function CustomerSearchDialog({
   });
   const [isCreating, setIsCreating] = useState(false);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [totalSearchResults, setTotalSearchResults] = useState<number>(0); // Track total results
   const isValidVietnamesePhone = (phone: string) => {
     const regex = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/;
     return regex.test(phone.trim());
@@ -55,15 +55,42 @@ export default function CustomerSearchDialog({
     try {
       const results = await getCustomersByPhone(searchTerm.trim());
 
-      setSearchResults(results);
-    } catch (error) {
+      let processedResults = results;
+      
+      if (Array.isArray(results) && results.length > 0 && Array.isArray(results[0])) {
+        processedResults = results[0];
+      }
+      if (!Array.isArray(processedResults)) {
+        setSearchResults([]);
+        setTotalSearchResults(0);
+        return;
+      }
+      
+      // Giới hạn kết quả hiển thị để tránh UI quá tải
+      const limitedResults = processedResults.slice(0, 20); // Hiển thị tối đa 20 kết quả
+      
+      setTotalSearchResults(processedResults.length);
+      setSearchResults(limitedResults);
+      
+    } catch (error: any) {
       console.error("Error searching customers:", error);
+      
+      // Hiển thị message từ server nếu có lỗi 400
+      if (error.name === 'BadRequest' && error.message) {
+        addToast({
+          title: "Lỗi tìm kiếm",
+          description: error.message,
+          color: "danger",
+        });
+      }
+      
       setSearchResults([]);
+      setTotalSearchResults(0);
     } finally {
       setIsSearching(false);
     }
   };
-
+  console.log("Search results:", searchResults);
   const handleCustomerSelect = (customer: CustomerDTO) => {
     onCustomerSelect(customer);
     setOpen(false);
@@ -104,7 +131,11 @@ export default function CustomerSearchDialog({
       });
 
       if (!createdCustomer) {
-        alert("Không thể tạo khách hàng. Vui lòng thử lại.");
+        addToast({
+          title: "Không thể tạo khách hàng",
+          description: "Vui lòng thử lại.",
+          color: "danger",
+        });
         return;
       }
 
@@ -122,11 +153,18 @@ export default function CustomerSearchDialog({
         description: `Khách hàng ${newCustomer.name} đã được tạo và chọn.`,
         color: "success",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Lỗi khi tạo khách hàng:", error);
+      
+      // Hiển thị message từ server nếu có
+      let errorMessage = "Vui lòng kiểm tra lại thông tin và thử lại.";
+      if (error.name === 'BadRequest' && error.message) {
+        errorMessage = error.message;
+      }
+      
       addToast({
         title: "Lỗi khi tạo khách hàng",
-        description: "Vui lòng kiểm tra lại thông tin và thử lại.",
+        description: errorMessage,
         color: "danger",
       });
     } finally {
@@ -137,6 +175,7 @@ export default function CustomerSearchDialog({
   const resetDialog = () => {
     setSearchTerm("");
     setSearchResults([]);
+    setTotalSearchResults(0);
     setNewCustomer({
       id: "",
       name: "",
@@ -243,10 +282,21 @@ export default function CustomerSearchDialog({
 
                       {searchResults.length > 0 && (
                         <div className="space-y-2 max-h-60 overflow-y-auto">
-                          <h4 className="font-medium">Kết quả tìm kiếm:</h4>
-                          {searchResults.map((customer) => (
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-medium">
+                              Kết quả tìm kiếm: ({searchResults.length}/{totalSearchResults} khách hàng)
+                            </h4>
+                            {totalSearchResults > searchResults.length && (
+                              <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                                Hiển thị {searchResults.length} trong số {totalSearchResults} kết quả
+                              </span>
+                            )}
+                          </div>
+                          {searchResults.map((customer, index) => {
+                            console.log(`Rendering customer ${index}:`, customer);
+                            return (
                             <div
-                              key={customer.name}
+                              key={customer.id || `customer-${index}`} // Fallback key nếu id không có
                               className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
                               onClick={() => handleCustomerSelect(customer)}
                             >
@@ -255,22 +305,34 @@ export default function CustomerSearchDialog({
                                   <div className="flex items-center gap-2">
                                     <User className="h-4 w-4" />
                                     <span className="font-medium">
-                                      {customer.name}
+                                      {customer.name || 'Không có tên'}
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-2 text-sm text-gray-600">
                                     <Phone className="h-3 w-3" />
-                                    <span>{customer.phone}</span>
+                                    <span>{customer.phone || 'Không có SĐT'}</span>
                                   </div>
                                   <div className="text-xs text-blue-600">
                                     {customer.vehicles?.length || 0} xe đã đăng
                                     ký
                                   </div>
+                                  {/* Hiển thị danh sách xe nếu có */}
+                                  {customer.vehicles && customer.vehicles.length > 0 && (
+                                    <div className="text-xs text-gray-500 mt-1">
+                                      Xe: {customer.vehicles.map((v, vIndex) => v.licensePlate).join(', ')}
+                                    </div>
+                                  )}
                                 </div>
                                 <Button size="sm">Chọn</Button>
                               </div>
                             </div>
-                          ))}
+                            );
+                          })}
+                          {totalSearchResults > searchResults.length && (
+                            <div className="text-center py-2 text-sm text-gray-500 border-t">
+                              Nhập từ khóa cụ thể hơn để thu hẹp kết quả tìm kiếm
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -336,7 +398,7 @@ export default function CustomerSearchDialog({
                                 updateNewCustomer("phone", value);
 
                                 if (!value || isValidVietnamesePhone(value)) {
-                                  setPhoneError(null); // hợp lệ
+                                  setPhoneError(null); 
                                 } else {
                                   setPhoneError("Số điện thoại không hợp lệ");
                                 }
@@ -466,10 +528,19 @@ export default function CustomerSearchDialog({
 
                     {searchResults.length > 0 && (
                       <div className="space-y-2 max-h-60 overflow-y-auto">
-                        <h4 className="font-medium">Kết quả tìm kiếm:</h4>
-                        {searchResults.map((customer) => (
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-medium">
+                            Kết quả tìm kiếm: ({searchResults.length}/{totalSearchResults} khách hàng)
+                          </h4>
+                          {totalSearchResults > searchResults.length && (
+                            <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded">
+                              Hiển thị {searchResults.length} trong số {totalSearchResults} kết quả
+                            </span>
+                          )}
+                        </div>
+                        {searchResults.map((customer, index) => (
                           <div
-                            key={customer.id}
+                            key={customer.id || `customer-${index}`} // Fallback key nếu id không có
                             className="border rounded-lg p-3 hover:bg-gray-50 cursor-pointer"
                             onClick={() => handleCustomerSelect(customer)}
                           >
@@ -488,11 +559,22 @@ export default function CustomerSearchDialog({
                                 <div className="text-xs text-blue-600">
                                   {customer.vehicles?.length || 0} xe đã đăng ký
                                 </div>
+                                {/* Hiển thị danh sách xe nếu có */}
+                                {customer.vehicles && customer.vehicles.length > 0 && (
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    Xe: {customer.vehicles.map(v => v.licensePlate).join(', ')}
+                                  </div>
+                                )}
                               </div>
                               <Button size="sm">Chọn</Button>
                             </div>
                           </div>
                         ))}
+                        {totalSearchResults > searchResults.length && (
+                          <div className="text-center py-2 text-sm text-gray-500 border-t">
+                            Nhập từ khóa cụ thể hơn để thu hẹp kết quả tìm kiếm
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -553,9 +635,23 @@ export default function CustomerSearchDialog({
                             value={newCustomer.phone || ""}
                             onChange={(
                               e: React.ChangeEvent<HTMLInputElement>
-                            ) => updateNewCustomer("phone", e.target.value)}
+                            ) => {
+                              const value = e.target.value;
+                              updateNewCustomer("phone", value);
+
+                              if (!value || isValidVietnamesePhone(value)) {
+                                setPhoneError(null); 
+                              } else {
+                                setPhoneError("Số điện thoại không hợp lệ");
+                              }
+                            }}
                             required
                           />
+                          {phoneError && (
+                            <p className="text-sm text-red-600 mt-1">
+                              {phoneError}
+                            </p>
+                          )}
                         </div>
                       </div>
 

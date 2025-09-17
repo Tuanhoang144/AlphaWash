@@ -41,24 +41,10 @@ const data = {
   },
   navMain: [
     {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: SquareTerminal,
+      title: "Thống kê",
+      url: "/statistics",
+      icon: ChartArea,
       isActive: true,
-      // items: [
-      //   {
-      //     title: "History",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Starred",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Settings",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Quản Lý Đơn Hàng",
@@ -95,12 +81,6 @@ const data = {
       title: "Quản lý Khách Hàng",
       url: "/users",
       icon: Users,
-      isActive: true,
-    },
-    {
-      title: "Thống kê",
-      url: "/statistics",
-      icon: ChartArea,
       isActive: true,
     },
     {

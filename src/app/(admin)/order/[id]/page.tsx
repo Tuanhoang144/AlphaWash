@@ -12,20 +12,11 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
-import { Button } from "@/components/ui/button";
-import { CreditCard, Printer, QrCode } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog"; // Reusing PaymentFormContent for display
 import InvoiceSummary from "./components/invoice-summary";
 import CustomerInfoDisplay from "./components/customer-info-display";
 import OrderInfoDisplay from "./components/order-info-display";
 import OrderDetailDisplay from "./components/order-detail-display";
+import InformationPayment from "./components/information-payment";
 import LoadingPage from "../../../loading";
 import { useRouter } from "next/navigation";
 import { OrderResponseDTO } from "@/types/OrderResponse";
@@ -107,13 +98,13 @@ export default function InvoiceClientPage({
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
               <BreadcrumbLink href="/order/table">
-                Theo dõi xe ra vào xưởng
+                Quản lý hóa đơn
               </BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator className="hidden md:block" />
             <BreadcrumbItem>
               <BreadcrumbPage className="hidden md:block">
-                <BreadcrumbLink href="#">Chi tiết phiếu rửa xe</BreadcrumbLink>
+                <BreadcrumbLink href="#">Chi tiết hóa đơn</BreadcrumbLink>
               </BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
@@ -146,6 +137,11 @@ export default function InvoiceClientPage({
 
             {/* Right Column - Invoice Info & Payment Display */}
             <div className="lg:col-span-1 space-y-6">
+              <InformationPayment
+                orderData={orderData}
+                onNavigateToPayment={handleNavigateToPayment}
+                onNavigateToEdit={handleNavigate}
+              />
               <OrderInfoDisplay
                 orderDate={orderData.date}
                 checkIn={orderData.checkIn}
@@ -157,40 +153,6 @@ export default function InvoiceClientPage({
                 orderDetails={orderData.orderDetails}
                 totalPrice={orderData.totalPrice}
               />
-
-              {/* Payment Info & Actions - Sticky */}
-              <div className="sticky top-6 bg-white rounded-lg border p-4 shadow-sm">
-                <div className="space-y-4">
-                  <div className="text-center">
-                    <div className="text-sm text-gray-500">
-                      Tổng tiền hóa đơn
-                    </div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {orderData.totalPrice.toLocaleString("vi-VN")} VNĐ
-                    </div>
-                  </div>
-                  <div className="flex flex-col space-y-2">
-                    {/* Reusing PaymentFormContent for display in a dialog */}
-                    <Button
-                      onClick={handleNavigateToPayment}
-                      className="w-full bg-green-600 hover:bg-green-700"
-                      disabled={orderData.deleteFlag}
-                    >
-                      <QrCode className="h-4 w-4 mr-2" />
-                      Thanh Toán & In Hóa Đơn
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full bg-transparent text-blue-600 hover:text-blue-700"
-                      onClick={handleNavigate}
-                      disabled={orderData.deleteFlag}
-                    >
-                      Chỉnh Sửa Hóa Đơn
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>

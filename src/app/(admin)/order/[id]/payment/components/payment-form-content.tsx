@@ -23,6 +23,8 @@ interface PaymentFormContentProps {
   note: string | null;
   totalPrice: number;
   baseServicePrice: number;
+  vatAmount: number;
+  discountAmount: number;
   onPaymentChange: (field: string, value: string | number) => void;
   customer?: CustomerDTO | null;
   licensePlate?: string | null;
@@ -34,6 +36,31 @@ const paymentConfig = {
   accountName: process.env.NEXT_PUBLIC_ACCOUNTNAME || "CONG TY RUA XE",
 };
 
+//Công cụ cho fotmat số tiền
+const formatNumber = (value: number): string => {
+  return value.toLocaleString('vi-VN');
+};
+
+const parseFormattedNumber = (value: string): number => {
+  const cleaned = value.replace(/\./g, '');
+  return parseInt(cleaned) || 0;
+};
+
+const validateNumericInput = (value: string): boolean => {
+  // Chỉ cho phép số và dấu chấm
+  return /^[\d.]*$/.test(value);
+};
+
+const handleNumericInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  // Chặn các ký tự không phải số, dấu chấm, Backspace, Delete, Tab, Enter, Arrow keys
+  if (
+    !/[\d.]/.test(e.key) &&
+    !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)
+  ) {
+    e.preventDefault();
+  }
+};
+
 export default function PaymentFormContent({
   paymentType,
   paymentStatus,
@@ -43,16 +70,12 @@ export default function PaymentFormContent({
   note,
   totalPrice,
   baseServicePrice,
+  vatAmount,
+  discountAmount,
   onPaymentChange,
   customer,
   licensePlate,
 }: PaymentFormContentProps) {
-  const vatAmount = Math.round((baseServicePrice * vat) / 100);
-  const discountAmount =
-    discount > 100
-      ? discount
-      : Math.round((baseServicePrice * discount) / 100);
-
   const paymentInfo = {
     amount: totalPrice,
     bankName: paymentConfig.bankName,
@@ -78,8 +101,8 @@ export default function PaymentFormContent({
                 <SelectValue placeholder="Chọn phương thức" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Cash">Tiền mặt</SelectItem>
                 <SelectItem value="Transfer">Chuyển khoản</SelectItem>
+                <SelectItem value="Cash">Tiền mặt</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -102,49 +125,99 @@ export default function PaymentFormContent({
         </div>
 
         <div className="grid grid-cols-1 gap-4">
-          {/* <div className="space-y-2">
+          <div className="space-y-2">
             <Label>VAT (%)</Label>
             <Input
               type="number"
               placeholder="10"
               value={vat}
-              onChange={(e) => onPaymentChange("vat", Number.parseInt(e.target.value) || 0)}
+              onChange={(e) => {
+                const value = Number.parseInt(e.target.value) || 0;
+                // Chỉ cho phép VAT >= 0
+                if (value >= 0) {
+                  onPaymentChange("vat", value);
+                }
+              }}
+              onBlur={(e) => {
+                // Double check khi blur
+                const value = Number.parseInt(e.target.value) || 0;
+                if (value < 0) {
+                  onPaymentChange("vat", 0);
+                }
+              }}
             />
-          </div> */}
+            {vat < 0 && (
+              <p className="text-sm text-red-500">VAT không được âm</p>
+            )}
+          </div>
           <div className="space-y-2">
             <Label>Giảm giá (%/VNĐ)</Label>
             <Input
-              type="number"
-              placeholder="5"
-              value={discount}
-              min={0}
-              max={100}
+              type="text"
+              placeholder="5 hoặc 100.000"
+              value={discount > 100 ? formatNumber(discount) : discount}
+              onKeyDown={handleNumericInput}
               onChange={(e) => {
-                const value = Number.parseInt(e.target.value) || 0;
-                onPaymentChange("discount", value);
+                const inputValue = e.target.value;
+
+                // Validate chỉ cho phép số và dấu chấm
+                if (!validateNumericInput(inputValue)) {
+                  return;
+                }
+
+                // If input contains dots, treat as VND amount
+                if (inputValue.includes(".")) {
+                  const value = parseFormattedNumber(inputValue);
+                  // Chỉ cho phép giảm giá >= 0
+                  if (value >= 0) {
+                    onPaymentChange("discount", value);
+                  }
+                } else {
+                  // Treat as percentage
+                  const value = Number.parseInt(inputValue) || 0;
+                  // Chỉ cho phép giảm giá >= 0
+                  if (value >= 0) {
+                    onPaymentChange("discount", value);
+                  }
+                }
               }}
               onBlur={(e) => {
-                const value = Number.parseInt(e.target.value) || 0;
-                onPaymentChange("discount", value);
+                const inputValue = e.target.value;
+                if (inputValue.includes(".")) {
+                  const value = parseFormattedNumber(inputValue);
+                  if (value < 0) {
+                    onPaymentChange("discount", 0);
+                  }
+                } else {
+                  const value = Number.parseInt(inputValue) || 0;
+                  if (value < 0) {
+                    onPaymentChange("discount", 0);
+                  }
+                }
               }}
             />
-            {/* {discount > 100 && (
-              <p className="text-sm text-red-500">
-                Giảm giá không được vượt quá 100%
-              </p>
-            )} */}
+            {discount < 0 && (
+              <p className="text-sm text-red-500">Giảm giá không được âm</p>
+            )}
           </div>
         </div>
 
         <div className="space-y-2">
           <Label>Tiền tip (VNĐ)</Label>
           <Input
-            type="number"
-            placeholder="50000"
-            value={tip}
-            min={0}
+            type="text"
+            placeholder="50.000"
+            value={formatNumber(tip)}
+            onKeyDown={handleNumericInput}
             onChange={(e) => {
-              const value = Number.parseInt(e.target.value) || 0;
+              const inputValue = e.target.value;
+
+              // Validate chỉ cho phép số và dấu chấm
+              if (!validateNumericInput(inputValue)) {
+                return;
+              }
+
+              const value = parseFormattedNumber(inputValue);
               // Chỉ cho phép số dương hoặc 0
               if (value >= 0) {
                 onPaymentChange("tip", value);
@@ -152,7 +225,7 @@ export default function PaymentFormContent({
             }}
             onBlur={(e) => {
               // Double check khi blur
-              const value = Number.parseInt(e.target.value) || 0;
+              const value = parseFormattedNumber(e.target.value);
               if (value < 0) {
                 onPaymentChange("tip", 0);
               }
@@ -170,26 +243,32 @@ export default function PaymentFormContent({
             <span>Tổng dịch vụ:</span>
             <span>{Math.round(baseServicePrice).toLocaleString("vi-VN")}đ</span>
           </div>
-          {vat > 0 && (
-            <div className="flex justify-between text-sm">
-              <span>VAT ({vat}%):</span>
-              <span>+{vatAmount.toLocaleString("vi-VN")}đ</span>
-            </div>
-          )}
           {discount > 0 && (
             <div className="flex justify-between text-sm text-red-600">
               {discount < 100 && (
                 <>
                   <span>Giảm giá ({discount}%):</span>
-                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                  <span>{discountAmount.toLocaleString("vi-VN")}đ</span>
                 </>
               )}
               {discount > 100 && (
                 <>
                   <span>Giảm giá:</span>
-                  <span>-{discountAmount.toLocaleString("vi-VN")}đ</span>
+                  <span>{discountAmount.toLocaleString("vi-VN")}đ</span>
                 </>
               )}
+            </div>
+          )}
+          {discount > 0 && (
+            <div className="flex justify-between text-sm font-medium border-t pt-2">
+              <span>Tổng tiền sau giảm giá:</span>
+              <span>{(Math.round(baseServicePrice) - discountAmount).toLocaleString("vi-VN")}đ</span>
+            </div>
+          )}
+          {vat > 0 && (
+            <div className="flex justify-between text-sm">
+              <span>VAT ({vat}%):</span>
+              <span>{vatAmount.toLocaleString("vi-VN")}đ</span>
             </div>
           )}
           <div className="flex justify-between font-bold text-lg border-t pt-2">

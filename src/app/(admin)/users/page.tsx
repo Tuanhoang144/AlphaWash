@@ -8,6 +8,9 @@ import { ServiceUsedDetailDialog } from "./components/ServiceUsedDetailDialog";
 import { ServiceUsedDialog } from "./components/ServiceUsedDialog";
 import { useServiceUsedManager } from "@/services/userCarManager";
 import { Pagination } from "./components/pagination";
+import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@radix-ui/react-separator";
+import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb";
 
 export default function ServiceUsedPage() {
   const {
@@ -45,66 +48,80 @@ export default function ServiceUsedPage() {
   const totalPages = Math.ceil(filtered.length / pageSize);
 
   const handleViewDetail = async (c: ServiceUsedDTO) => {
-  if (!c.customerId) {
-    alert("Không có thông tin user"); // ❌ hoặc toast.error("Không có thông tin user")
-    return;
-  }
+    if (!c.customerId) {
+      alert("Không có thông tin user"); // ❌ hoặc toast.error("Không có thông tin user")
+      return;
+    }
 
-  const detailData = await getServiceUsedDetail(c.customerId);
-  if (detailData) {
-    setSelected(detailData);   // state riêng cho detail
-    setDetailOpen(true);
-  } else {
-    alert("Không tìm thấy thông tin chi tiết của user");
-  }
-};
+    const detailData = await getServiceUsedDetail(c.customerId);
+    if (detailData) {
+      setSelected(detailData);   // state riêng cho detail
+      setDetailOpen(true);
+    } else {
+      alert("Không tìm thấy thông tin chi tiết của user");
+    }
+  };
 
 
   return (
-    <div className="space-y-4">
-      {/* Search */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 w-1/2">
-          <Input
-            placeholder="Tìm theo biển số hoặc tên khách..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full"
-          />
+    <SidebarInset>
+      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+        <SidebarTrigger className="-ml-1" />
+        <Separator orientation="vertical" className="mr-2 h-4" />
+        <Breadcrumb>
+          <BreadcrumbList>
+            <BreadcrumbItem className="hidden md:block">
+              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
+      </header>
+      <div className="space-y-4">
+        {/* Search */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 w-1/2">
+            <Input
+              placeholder="Tìm theo biển số hoặc tên khách..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full"
+            />
+          </div>
         </div>
+
+        <ServiceUsedTable
+          data={pagedData}
+          onEdit={() => { }}
+          onDelete={deleteServiceUsed}
+          onViewDetail={handleViewDetail}
+          page={page}
+          pageSize={pageSize}
+        />
+
+        {totalPages > 1 && (
+          <div className="flex justify-center">
+            <Pagination
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        )}
+
+        <ServiceUsedDialog
+          data={null}
+          open={dialogOpen}
+          onClose={() => setDialogOpen(false)}
+          onSave={(d) => addServiceUsed(d)}
+        />
+
+        <ServiceUsedDetailDialog
+          data={selected}
+          open={detailOpen}
+          onClose={() => setDetailOpen(false)}
+        />
       </div>
 
-      <ServiceUsedTable
-        data={pagedData}
-        onEdit={() => { }}
-        onDelete={deleteServiceUsed}
-        onViewDetail={handleViewDetail}
-        page={page}
-        pageSize={pageSize}
-      />
-
-      {totalPages > 1 && (
-        <div className="flex justify-center">
-          <Pagination
-            currentPage={page}
-            totalPages={totalPages}
-            onPageChange={setPage}
-          />
-        </div>
-      )}
-
-      <ServiceUsedDialog
-        data={null}
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        onSave={(d) => addServiceUsed(d)}
-      />
-
-      <ServiceUsedDetailDialog
-        data={selected}
-        open={detailOpen}
-        onClose={() => setDetailOpen(false)}
-      />
-    </div>
+    </SidebarInset>
   );
 }
