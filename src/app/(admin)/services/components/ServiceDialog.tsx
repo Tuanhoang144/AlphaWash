@@ -121,7 +121,7 @@ export function ServiceDialog({ isOpen, onOpenChange, service, onSave }: Props) 
                     {/* Tên DV */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label className="text-right">Tên DV</Label>
-                        <Input value={form.serviceName} onChange={(e) => handleChange("serviceName", e.target.value)} className="col-span-3" />
+                        <Input value={form.serviceName} onChange={(e) => handleChange("serviceName", e.target.value)} disabled className="col-span-3" />
                     </div>
                     
                     {/* Giá tiền */}

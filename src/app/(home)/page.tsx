@@ -37,7 +37,7 @@ export default function WelcomePage() {
         <Button
           size="lg"
           className="w-full max-w-xs h-12 text-base font-medium"
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.push("/statistics")}
         >
           Đi đến trang làm việc
         </Button>
