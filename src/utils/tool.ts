@@ -81,6 +81,15 @@ export function tool() {
   function formatDate(dateStr: any): string {
     if (!dateStr) return "";
 
+    // Xử lý ISO string với timezone để tránh chuyển đổi múi giờ
+    if (typeof dateStr === 'string' && dateStr.includes('T')) {
+      // Lấy phần date từ ISO string: 2025-09-09T17:00:00.000+00:00 -> 2025-09-09
+      const datePart = dateStr.split('T')[0];
+      const [year, month, day] = datePart.split('-');
+      return `${day}/${month}/${year}`;
+    }
+
+    // Fallback cho các format khác
     const date = new Date(dateStr);
     if (isNaN(date.getTime())) {
       return "Không hợp lệ";
@@ -94,6 +103,16 @@ export function tool() {
 
   const formatDateToDDMMYYYY = (isoDate: string) => {
     if (!isoDate) return "";
+    
+    // Xử lý ISO string với timezone để tránh chuyển đổi múi giờ
+    if (isoDate.includes('T')) {
+      // Lấy phần date từ ISO string: 2025-09-09T17:00:00.000+00:00 -> 2025-09-09
+      const datePart = isoDate.split('T')[0];
+      const [year, month, day] = datePart.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    
+    // Fallback cho các format khác
     const date = new Date(isoDate);
     const day = date.getDate().toString().padStart(2, "0");
     const month = (date.getMonth() + 1).toString().padStart(2, "0");
