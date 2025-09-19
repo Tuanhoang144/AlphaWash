@@ -14,6 +14,8 @@ import { EmployeeTable } from "./components/table";
 import { EmployeeManagementHeader } from "./components/header";
 import { useEmployeeManager } from "@/services/useEmployeeManager";
 import { Employee } from "@/types/Employee";
+import { add } from "date-fns";
+import { addToast } from "@heroui/toast";
 
 function ManageEmployees() {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -52,14 +54,32 @@ function ManageEmployees() {
     try {
       if (employeeData.id) {
         await updateEmployee(employeeData.id, employeeData);
+        addToast({
+          title: "Thành công",
+          description: "Cập nhật nhân viên thành công.",
+          color: "success",
+        });
       } else {
         await insertEmployee(employeeData);
+        addToast({
+          title: "Thành công",
+          description: "Tạo mới nhân viên thành công.",
+          color: "success",
+        });
       }
       const updated = await getAllEmployees();
       setEmployees(updated);
-      setIsDialogOpen(false);
-    } catch (error) {
+      setIsDialogOpen(false); // Đóng dialog sau khi save thành công
+    } catch (error: any) {
       console.error("Lỗi khi lưu nhân viên:", error);
+      
+      // Hiển thị lỗi lên toast
+      const errorMessage = error.message || "Có lỗi xảy ra khi lưu nhân viên";
+      addToast({
+        title: "Lỗi",
+        description: errorMessage,
+        color: "danger",
+      });
     }
   };
 
@@ -77,13 +97,13 @@ function ManageEmployees() {
 
   return (
     <SidebarInset>
-      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4 z-100">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink href="#">Quản lý nhân viên</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
