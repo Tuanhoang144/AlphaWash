@@ -23,32 +23,7 @@ import {
 import { useServiceManager } from "@/services/useServiceAll";
 import { ServiceType } from "@/types/ServiceAll";
 import { addToast } from "@heroui/toast";
-
-//Công cụ cho format số tiền
-const formatNumber = (value: number): string => {
-  return value.toLocaleString('vi-VN');
-};
-
-const parseFormattedNumber = (value: string): number => {
-  const cleaned = value.replace(/\./g, '');
-  return parseInt(cleaned) || 0;
-};
-
-const validateNumericInput = (value: string): boolean => {
-  // Chỉ cho phép số và dấu chấm
-  return /^[\d.]*$/.test(value);
-};
-
-const handleNumericInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-  // Chặn các ký tự không phải số, dấu chấm, Backspace, Delete, Tab, Enter, Arrow keys
-  if (
-    !/[\d.]/.test(e.key) &&
-    !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)
-  ) {
-    e.preventDefault();
-  }
-};
-
+import { tool } from "@/utils/tool";
 interface CreateServiceRequest {
   serviceTypeCode: string;
   serviceName: string;
@@ -77,6 +52,7 @@ export function CreateServiceDialog({ isOpen, onOpenChange, onSave }: Props) {
   const { getAllServiceType } = useServiceManager();
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const { formatNumber, parseFormattedNumber, validateNumericInput, handleNumericInput } = tool();
 
   useEffect(() => {
     if (isOpen) {
@@ -162,7 +138,7 @@ export function CreateServiceDialog({ isOpen, onOpenChange, onSave }: Props) {
               onValueChange={(value) => handleChange("serviceTypeCode", value)}
               disabled={isLoading}
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 w-full">
                 <SelectValue
                   placeholder={
                     isLoading ? "Đang tải..." : "-- Chọn loại dịch vụ --"
@@ -214,7 +190,7 @@ export function CreateServiceDialog({ isOpen, onOpenChange, onSave }: Props) {
               value={form.size}
               onValueChange={(value) => handleChange("size", value)}
             >
-              <SelectTrigger className="col-span-3">
+              <SelectTrigger className="col-span-3 w-full">
                 <SelectValue placeholder="-- Chọn kích thước xe --" />
               </SelectTrigger>
               <SelectContent>
