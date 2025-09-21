@@ -12,8 +12,15 @@ export function useEmployeeManager() {
     try {
       const response = await callApi("get", "employee/");
       return response?.data ?? [];
-    } catch (error) {
-      throw error;
+    } catch (error : any) {
+        console.error("Lỗi khi lấy tất cả thông tin nhân viên:", error);
+
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
     } finally {
       setIsLoading(false);
     }
@@ -24,8 +31,15 @@ export function useEmployeeManager() {
     try {
       const response = await callApi("get", `employee/${id}`);
       return response?.data;
-    } catch (error) {
-      throw error;
+    } catch (error : any) {
+        console.error("Lỗi khi lấy thông tin nhân viên:", error);
+
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
     } finally {
       setIsLoading(false);
     }
@@ -36,8 +50,16 @@ export function useEmployeeManager() {
       setIsLoading(true);
       try {
         const response = await callApi("post", "employee/insert", employee);
-        return response?.data;
-      } catch (error) {
+        return response;
+      } catch (error : any) {
+        console.error("Lỗi khi tạo mới nhân viên:", error);
+
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
         throw error;
       } finally {
         setIsLoading(false);
@@ -55,8 +77,16 @@ export function useEmployeeManager() {
           `employee/update/${id}`,
           updatedData
         );
-        return response?.data;
-      } catch (error) {
+        return response;
+      } catch (error: any) {
+        console.error("Lỗi khi cập nhật nhân viên:", error);
+
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
         throw error;
       } finally {
         setIsLoading(false);

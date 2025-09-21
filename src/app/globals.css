@@ -123,3 +123,10 @@
     @apply bg-background text-foreground;
   }
 }
+
+@media (min-height: 700px) {
+  .center-conditional {
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+}
