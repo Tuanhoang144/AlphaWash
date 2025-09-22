@@ -117,7 +117,7 @@ function ManageEmployees() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Quản lý nhân viên</BreadcrumbLink>
+              <BreadcrumbLink href="#">Quản lý Nhân Viên</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
