@@ -28,6 +28,9 @@ export interface ServiceCatalogDTO {
   code: string;
   price: number;
   size: string;
+  isException?: boolean;
+  exceptionPrice?: number;
+  exceptionReason?: string;
   service?: ServiceDTO;
 }
 

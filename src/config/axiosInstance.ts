@@ -14,7 +14,6 @@ api.interceptors.request.use(
 
     if (typeof window !== "undefined") {
       token = Cookies.get("jwtToken"); 
-      console.log("Client side cookies: ", token);
     }
 
     if (token) {

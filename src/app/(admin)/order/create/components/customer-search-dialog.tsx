@@ -90,7 +90,6 @@ export default function CustomerSearchDialog({
       setIsSearching(false);
     }
   };
-  console.log("Search results:", searchResults);
   const handleCustomerSelect = (customer: CustomerDTO) => {
     onCustomerSelect(customer);
     setOpen(false);

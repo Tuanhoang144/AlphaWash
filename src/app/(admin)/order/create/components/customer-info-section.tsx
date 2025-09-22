@@ -17,7 +17,7 @@ import { CustomerDTO } from "@/types/OrderResponse";
 import { addToast } from "@heroui/toast";
 
 interface CustomerInfoSectionProps {
-  customer: CustomerDTO | null;
+  customer: CustomerDTO;
   onCustomerChange: (customer: CustomerDTO | null) => void;
 }
 

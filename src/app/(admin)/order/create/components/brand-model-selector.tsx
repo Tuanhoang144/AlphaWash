@@ -42,8 +42,6 @@ export default function BrandModelSelector({
   }, []);
 
   useEffect(() => {
-    console.log("Selected vehicle:", vehicle);
-    console.log("Customer vehicles:", customer?.vehicles);
     if (!customer?.vehicles || !vehicle?.licensePlate) return;
 
     const matched = customer.vehicles.find(

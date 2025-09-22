@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Clock, FileText } from "lucide-react";
+import { AlertTriangle, DollarSign } from "lucide-react";
 import { Select } from "antd";
 import { useServiceManager } from "@/services/useServiceManager";
 import { useServiceCatalogManager } from "@/services/userServiceCatalogManager";
-import { ServiceCatalogDTO, ServiceDTO } from "@/types/OrderResponse";
+import type { ServiceCatalogDTO, ServiceDTO } from "@/types/OrderResponse";
 
 const { Option } = Select;
 
@@ -70,11 +73,10 @@ export default function ServiceCatalogSelector({
     }
   };
 
-  // Changed to accept serviceId (number)
   const loadServiceCatalogs = async (id: number) => {
     setLoadingCatalogs(true);
     try {
-      const catalogsData = await getServiceCatalogByServiceId(id); // Call apiService directly
+      const catalogsData = await getServiceCatalogByServiceId(id);
       setCatalogs(catalogsData);
     } catch (error) {
       console.error("Error loading service catalogs:", error);
@@ -85,8 +87,6 @@ export default function ServiceCatalogSelector({
 
   const handleServiceSelect = (serviceId: number) => {
     const selectedService = services.find((s) => s.id === serviceId);
-    console.log("Selected Service:", selectedService);
-
     if (selectedService) {
       onServiceChange(selectedService);
     }
@@ -99,8 +99,31 @@ export default function ServiceCatalogSelector({
     }
   };
 
-  const selectPredefinedService = (selectedService: ServiceDTO) => {
-    onServiceChange(selectedService);
+  const handleExceptionToggle = (checked: boolean) => {
+    const updatedCatalog = {
+      ...serviceCatalog,
+      isException: checked,
+      exceptionPrice: checked ? serviceCatalog.price : undefined,
+      exceptionReason: checked ? "" : undefined,
+    };
+    onServiceCatalogChange(updatedCatalog);
+  };
+
+  const handleExceptionPriceChange = (value: string) => {
+    const price = Number.parseFloat(value) || 0;
+    const updatedCatalog = {
+      ...serviceCatalog,
+      exceptionPrice: price,
+    };
+    onServiceCatalogChange(updatedCatalog);
+  };
+
+  const handleExceptionReasonChange = (value: string) => {
+    const updatedCatalog = {
+      ...serviceCatalog,
+      exceptionReason: value,
+    };
+    onServiceCatalogChange(updatedCatalog);
   };
 
   const filterServiceOption = (input: string, option: any) => {
@@ -111,8 +134,13 @@ export default function ServiceCatalogSelector({
     return (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
   };
 
+  const priceDifference =
+    serviceCatalog?.isException && serviceCatalog?.exceptionPrice
+      ? serviceCatalog.exceptionPrice - serviceCatalog.price
+      : 0;
+
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       {/* Service Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
@@ -120,7 +148,7 @@ export default function ServiceCatalogSelector({
           <Select
             showSearch
             placeholder={loadingServices ? "Đang tải..." : "Chọn dịch vụ"}
-            optionFilterProp="label" // Changed to label
+            optionFilterProp="label"
             filterOption={filterServiceOption}
             value={service.id || undefined}
             onChange={handleServiceSelect}
@@ -178,7 +206,7 @@ export default function ServiceCatalogSelector({
               <Option
                 key={catalog.id}
                 value={catalog.id}
-                label={`Kích thước ${catalog.size}`} // Added label prop
+                label={`Kích thước ${catalog.size}`}
               >
                 <div className="flex justify-between items-center w-full">
                   <span>Kích thước {catalog.size}</span>
@@ -192,29 +220,123 @@ export default function ServiceCatalogSelector({
         </div>
       </div>
 
-      {/* Price Display
       {serviceCatalog?.id > 0 && (
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label>Kích thước xe</Label>
-            <div className="p-2 bg-gray-50 rounded-md font-medium border">
-              {vehicleSize || "Chưa xác định"}
+        <div className="border rounded-lg p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <Label className="font-medium">Chỉnh sửa giá ngoại lệ</Label>
             </div>
+            <Switch
+              checked={serviceCatalog.isException || false}
+              onCheckedChange={handleExceptionToggle}
+            />
           </div>
-          <div className="space-y-2">
-            <Label>Giá dịch vụ</Label>
-            <div className="p-2 bg-green-50 rounded-md font-semibold text-green-600 border border-green-200">
-              {serviceCatalog.price.toLocaleString("vi-VN")} VNĐ
+
+          {serviceCatalog.isException && (
+            <div className="space-y-4 bg-orange-50 p-4 rounded-md border border-orange-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Giá gốc</Label>
+                  <div className="p-2 bg-gray-100 rounded-md font-medium text-gray-600">
+                    {serviceCatalog.price.toLocaleString("vi-VN")} VNĐ
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Giá ngoại lệ *</Label>
+                  <Input
+                    type="number"
+                    value={serviceCatalog.exceptionPrice || ""}
+                    onChange={(e) => handleExceptionPriceChange(e.target.value)}
+                    placeholder="Nhập giá mới"
+                    className="border-orange-300 focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Lý do chỉnh sửa giá *</Label>
+                <Textarea
+                  value={serviceCatalog.exceptionReason || ""}
+                  onChange={(e) => handleExceptionReasonChange(e.target.value)}
+                  placeholder="Nhập lý do chỉnh sửa giá (VD: Khuyến mãi, khách VIP, tình trạng xe đặc biệt...)"
+                  className="border-orange-300 focus:border-orange-500"
+                  rows={3}
+                />
+              </div>
+
+              {serviceCatalog.exceptionPrice && (
+                <div className="flex items-center justify-between p-3 bg-white rounded-md border">
+                  <span className="text-sm font-medium">Chênh lệch giá:</span>
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    <span
+                      className={`font-bold ${
+                        priceDifference >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    >
+                      {priceDifference >= 0 ? "+" : ""}
+                      {priceDifference.toLocaleString("vi-VN")} VNĐ
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
-      )} */}
-      {/* Auto-pricing notification */}
-      {vehicleSize && serviceCatalog?.size === vehicleSize && (
-        <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
-          Giá đã được tự động cập nhật theo kích thước xe ({vehicleSize})
+          )}
         </div>
       )}
+
+      {serviceCatalog?.id > 0 && (
+        <div
+          className={`p-3 rounded-md border ${
+            serviceCatalog.isException
+              ? "bg-orange-50 border-orange-200"
+              : "bg-green-50 border-green-200"
+          }`}
+        >
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-2">
+              {serviceCatalog.isException && (
+                <Badge
+                  variant="secondary"
+                  className="bg-orange-100 text-orange-800"
+                >
+                  <AlertTriangle className="h-3 w-3 mr-1" />
+                  Ngoại lệ
+                </Badge>
+              )}
+              <span className="text-sm font-medium">Giá áp dụng:</span>
+            </div>
+            <span
+              className={`text-lg font-bold ${
+                serviceCatalog.isException
+                  ? "text-orange-600"
+                  : "text-green-600"
+              }`}
+            >
+              {(serviceCatalog.isException
+                ? serviceCatalog.exceptionPrice
+                : serviceCatalog.price
+              )?.toLocaleString("vi-VN")}{" "}
+              VNĐ
+            </span>
+          </div>
+          {serviceCatalog.isException && serviceCatalog.exceptionReason && (
+            <div className="mt-2 text-xs text-orange-700 bg-orange-100 p-2 rounded">
+              <strong>Lý do:</strong> {serviceCatalog.exceptionReason}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Auto-pricing notification */}
+      {vehicleSize &&
+        serviceCatalog?.size === vehicleSize &&
+        !serviceCatalog.isException && (
+          <div className="text-sm text-green-600 bg-green-50 p-3 rounded-md border border-green-200">
+            Giá đã được tự động cập nhật theo kích thước xe ({vehicleSize})
+          </div>
+        )}
     </div>
   );
 }

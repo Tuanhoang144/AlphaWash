@@ -11,10 +11,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, FileText } from "lucide-react";
+import { Plus, FileText, AlertTriangle } from "lucide-react";
 import EmployeeSelector from "./employee-selector";
 import ServiceInfoBlock from "./service-info-block";
-import type { OrderDetailDTO } from "@/types/OrderResponse";
+import type { OrderDetailDTO, ServiceDTO } from "@/types/OrderResponse";
 
 interface OrderDetailBlockProps {
   orderDetail: OrderDetailDTO;
@@ -35,7 +35,7 @@ export default function OrderDetailBlock({
   };
 
   const addService = () => {
-    const newService = {
+    const newService: ServiceDTO = {
       id: 0,
       serviceCode: "",
       serviceName: "",
@@ -55,11 +55,26 @@ export default function OrderDetailBlock({
     updateOrderDetail("service", newServices);
   };
 
-  const updateService = (index: number, service: any) => {
+  const updateService = (index: number, service: ServiceDTO) => {
     const newServices = [...orderDetail.service];
     newServices[index] = service;
     updateOrderDetail("service", newServices);
   };
+
+  const calculateTotal = () => {
+    return orderDetail.service.reduce((sum, service) => {
+      const price =
+        service.serviceCatalog?.isException &&
+        service.serviceCatalog?.exceptionPrice
+          ? service.serviceCatalog.exceptionPrice
+          : service.serviceCatalog?.price || 0;
+      return sum + price;
+    }, 0);
+  };
+
+  const hasExceptions = orderDetail.service.some(
+    (service) => service.serviceCatalog?.isException
+  );
 
   return (
     <Card>
@@ -67,6 +82,12 @@ export default function OrderDetailBlock({
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Thông Tin Dịch Vụ & Nhân Viên
+          {hasExceptions && (
+            <div className="flex items-center gap-1 text-orange-600 text-sm">
+              <AlertTriangle className="h-4 w-4" />
+              <span>Có ngoại lệ</span>
+            </div>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -159,22 +180,34 @@ export default function OrderDetailBlock({
           </div>
         </div>
 
-        {/* Total Price for this order detail */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+        <div
+          className={`border rounded-lg p-3 ${
+            hasExceptions
+              ? "bg-orange-50 border-orange-200"
+              : "bg-blue-50 border-blue-200"
+          }`}
+        >
           <div className="flex justify-between items-center">
-            <span className="text-sm text-blue-700">
-              Tổng tiền các dịch vụ:
+            <span
+              className={`text-sm ${
+                hasExceptions ? "text-orange-700" : "text-blue-700"
+              }`}
+            >
+              Tổng tiền các dịch vụ {hasExceptions ? "(Có chỉnh sửa)" : ""}:
             </span>
-            <span className="font-semibold text-blue-800">
-              {orderDetail.service
-                .reduce(
-                  (sum, service) => sum + (service.serviceCatalog?.price || 0),
-                  0
-                )
-                .toLocaleString("vi-VN")}{" "}
-              VNĐ
+            <span
+              className={`font-semibold ${
+                hasExceptions ? "text-orange-800" : "text-blue-800"
+              }`}
+            >
+              {calculateTotal().toLocaleString("vi-VN")} VNĐ
             </span>
           </div>
+          {hasExceptions && (
+            <div className="mt-2 text-xs text-orange-600">
+              * Một số dịch vụ đã được chỉnh sửa giá
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

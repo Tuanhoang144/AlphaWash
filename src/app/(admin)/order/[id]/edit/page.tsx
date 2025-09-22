@@ -1,8 +1,7 @@
 "use client";
 
 import type React from "react";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -14,16 +13,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
-import { Button } from "@/components/ui/button";
-import { CreditCard, QrCode, Save } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import CustomerInfoSection from "../../create/components/customer-info-section";
 import OrderDetailForm from "../../create/components/order-detail-form";
 import OrderInfoForm from "../../create/components/order-info-form";
@@ -38,87 +27,57 @@ import { useCustomerManager } from "@/services/useCustomerManager";
 import { addToast } from "@heroui/react";
 import InformationPayment from "./components/information-payment";
 import { calculateTotal } from "../../utils/calculateTotal";
+import Loading from "@/components/common/loading";
 
 export default function EditInvoicePage() {
   const params = useParams();
   const id = params.id as string;
-  const { loading, getOrderById } = useOrderManager();
-  const [customerData, setCustomerData] = useState<CustomerDTO | null>(null);
-  const [formData, setFormData] = useState<OrderResponseDTO | null>(null);
-  const [fetchedOrder, setFetchedOrder] = useState<OrderResponseDTO | null>(
-    null
-  );
-
-  const { updateOrder, cancelOrderById } = useOrderManager();
+  const { getOrderById, updateOrder, cancelOrderById } = useOrderManager();
+  const [loading, setLoading] = useState(true);
   const { getCustomersByPhone } = useCustomerManager();
+  const [formData, setFormData] = useState<OrderResponseDTO | null>(null);
   const router = useRouter();
+
+  const mapCustomer = (c?: CustomerDTO | CustomerDTO[] | null): CustomerDTO => {
+    const customer = Array.isArray(c) ? c[0] : c;
+    return {
+      id: customer?.id || "",
+      name: customer?.name || "Khách lẻ",
+      phone: customer?.phone || "Chưa có",
+      vehicles: customer?.vehicles || [],
+    };
+  };
 
   useEffect(() => {
     const fetchOrderData = async () => {
-      const data = await getOrderById(id);
-      if (!data) {
-        console.error("Order data not found for ID:", id);
-        return;
-      }
-      let matchedCustomer: CustomerDTO | null = null;
-      if (data.customer?.phone) {
-        const found = await getCustomersByPhone(data.customer.phone);
-        matchedCustomer = found?.[0] ?? null;
-      }
+      setLoading(true);
+      try {
+        const data = await getOrderById(id);
+        if (!data) return;
 
-      setFetchedOrder(data);
-      setCustomerData(matchedCustomer);
+        let matchedCustomer: CustomerDTO | null = null;
+        if (data.customer?.phone) {
+          const found = await getCustomersByPhone(data.customer.phone);
+          matchedCustomer = found && found.length > 0 ? found[0] : null;
+        }
+        const mappedData: OrderResponseDTO = {
+          ...data,
+          customer: await mapCustomer(matchedCustomer || data.customer),
+        };
+        setFormData(mappedData);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchOrderData();
-  }, [id, getOrderById]);
-
-  useEffect(() => {
-    if (fetchedOrder) {
-      // Khởi tạo formData với fetchedOrder, đảm bảo tất cả các trường đều có mặt
-      setFormData({
-        ...fetchedOrder,
-        // Đảm bảo thời gian truyền lên trùng với backend
-        date: fetchedOrder.date
-          ? fetchedOrder.date.includes('T') 
-            ? fetchedOrder.date.split('T')[0] 
-            : fetchedOrder.date
-          : new Date().toISOString().split("T")[0],
-        customer: customerData
-          ? {
-              id: customerData.id || "",
-              name: customerData.name || "Khách lẻ",
-              phone: customerData.phone || "Chưa có",
-              vehicles: customerData.vehicles || [],
-            }
-          : fetchedOrder.customer
-          ? {
-              id: fetchedOrder.customer.id || "",
-              name: fetchedOrder.customer.name || "Khách lẻ",
-              phone: fetchedOrder.customer.phone || "Chưa có",
-              vehicles: fetchedOrder.customer.vehicles || [],
-            }
-          : fetchedOrder.customer,
-        orderDetails: fetchedOrder.orderDetails || [],
-      });
-    }
-  }, [fetchedOrder]);
+  }, [id, getOrderById, getCustomersByPhone]);
 
   const handleCustomerChange = (customer: CustomerDTO | null) => {
     setFormData((prev) =>
-      prev
-        ? {
-            ...prev,
-            customer: customer || {
-              id: "",
-              name: "",
-              phone: "",
-            },
-          }
-        : null
+      prev ? { ...prev, customer: mapCustomer(customer) } : null
     );
   };
 
-  // Hàm chung để cập nhật các trường trực tiếp của OrderDTO
   const handleOrderInfoChange = (field: string, value: string) => {
     setFormData((prev) => (prev ? { ...prev, [field]: value } : null));
   };
@@ -127,62 +86,39 @@ export default function EditInvoicePage() {
     setFormData((prev) => (prev ? { ...prev, orderDetails } : null));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const createDateTimeString = (dateStr: string, timeStr = "00:00:00") =>
+    `${dateStr}T${timeStr}`;
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     if (!formData) return;
 
-    // Tạo datetime string từ date và time, tránh timezone conversion
-    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
-      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
-      const time = timeStr || "00:00:00";
-      return `${dateStr}T${time}`;
-    };
+    try {
+      const updatedOrder: OrderResponseDTO = {
+        ...formData,
+        date: createDateTimeString(formData.date),
+        totalPrice: calculateTotal(formData),
+      };
 
-    const updatedOrder: OrderResponseDTO = {
-      ...formData,
-      date: createDateTimeString(formData.date), // Chỉnh sửa ngày tháng năm tạo hóa đơn
-      totalPrice: total, // Tính toán lại tổng tiền trước khi gửi
-    };
+      const response = await updateOrder(updatedOrder, id);
+      setFormData(response);
 
-    // Gọi hàm updateOrder từ useOrderManager để gửi dữ liệu cập nhật
-    updateOrder(updatedOrder, id)
-      .then((response) => {
-        // Cập nhật formData với dữ liệu mới nếu cần
-        setFormData(response);
-        addToast({
-          title: "Thành công",
-          description: "Hóa đơn đã được cập nhật thành công!",
-          color: "success",
-        });
-        router.push(`/order/table`);
-      })
-      .catch((error) => {
-        // alert("Đã xảy ra lỗi khi cập nhật hóa đơn. Vui lòng thử lại.");
-        addToast({
-          title: "Lỗi",
-          description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
-          color: "danger",
-        });
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được cập nhật thành công!",
+        color: "success",
       });
+      router.push(`/order/table`);
+    } catch {
+      addToast({
+        title: "Lỗi",
+        description: "Không thể cập nhật hóa đơn. Vui lòng thử lại sau.",
+        color: "danger",
+      });
+    }
   };
 
-  if (loading || !formData) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center p-8 bg-white rounded-lg shadow-md">
-          <h1 className="text-2xl font-bold text-blue-600 mb-4">
-            Đang tải hóa đơn để chỉnh sửa...
-          </h1>
-          <p className="text-gray-700">Vui lòng chờ trong giây lát.</p>
-        </div>
-      </div>
-    );
-  }
-
-  const total = calculateTotal(formData as OrderResponseDTO);
-  const currentTotalPrice = total;
-
-  const handleCancel = async (id: string): Promise<void> => {
+  const handleCancel = async () => {
     try {
       await cancelOrderById(id);
       addToast({
@@ -204,23 +140,16 @@ export default function EditInvoicePage() {
   const handlePayment = async () => {
     if (!formData) return;
 
-    // Tạo datetime string từ date và time, tránh timezone conversion
-    const createDateTimeString = (dateStr: string, timeStr?: string): string => {
-      // LocalDateTime format không cần timezone, chỉ cần yyyy-MM-ddTHH:mm:ss
-      const time = timeStr || "00:00:00";
-      return `${dateStr}T${time}`;
-    };
-
-    const updatedOrder: OrderResponseDTO = {
-      ...formData,
-      date: createDateTimeString(formData.date),
-      totalPrice: total,
-    };
-
     try {
-      const response = await updateOrder(updatedOrder, id);
+      const updatedOrder: OrderResponseDTO = {
+        ...formData,
+        date: createDateTimeString(formData.date),
+        totalPrice: calculateTotal(formData),
+      };
 
+      const response = await updateOrder(updatedOrder, id);
       setFormData(response);
+
       addToast({
         title: "Thành công",
         description: "Hóa đơn đã được cập nhật thành công!",
@@ -237,9 +166,15 @@ export default function EditInvoicePage() {
     }
   };
 
+  if (loading || !formData) {
+    return <Loading />;
+  }
+
+  const total = calculateTotal(formData);
+
   return (
     <SidebarInset>
-      <header className="sticky z-10 top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+      <header className="sticky z-10 top-0 flex items-center gap-2 border-b bg-background p-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
@@ -272,39 +207,26 @@ export default function EditInvoicePage() {
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Cột trái - Chi tiết đơn hàng */}
+              {/* Cột trái */}
               <div className="lg:col-span-2 space-y-6">
                 <CustomerInfoSection
-                  customer={
-                    !formData.customer.id
-                      ? null
-                      : {
-                          id: formData.customer.id || "",
-                          name: formData.customer.name,
-                          phone: formData.customer.phone || "",
-                          vehicles: (formData.customer as any).vehicles,
-                        }
-                  }
+                  customer={mapCustomer(formData.customer)}
                   onCustomerChange={handleCustomerChange}
                 />
                 <OrderDetailForm
                   orderDetails={formData.orderDetails || []}
                   onOrderDetailsChange={handleOrderDetailsChange}
-                  customer={formData.customer || undefined}
+                  customer={formData.customer}
                 />
               </div>
 
-              {/* Cột phải - Thông tin hóa đơn & Thanh toán */}
+              {/* Cột phải */}
               <div className="lg:col-span-1 space-y-6">
                 <InformationPayment
                   orderData={formData}
-                  currentTotalPrice={currentTotalPrice}
-                  onSave={() =>
-                    handleSubmit(
-                      new Event("submit") as unknown as React.FormEvent
-                    )
-                  }
-                  onCancel={() => handleCancel(id)}
+                  currentTotalPrice={total}
+                  onSave={() => handleSubmit()}
+                  onCancel={handleCancel}
                   onPayment={handlePayment}
                 />
                 <OrderInfoForm
@@ -317,7 +239,7 @@ export default function EditInvoicePage() {
                   deleteFlag={formData.deleteFlag || false}
                   statusPayment={formData.paymentStatus || ""}
                   orderDetails={formData.orderDetails}
-                  totalPrice={currentTotalPrice}
+                  totalPrice={total}
                 />
               </div>
             </div>
