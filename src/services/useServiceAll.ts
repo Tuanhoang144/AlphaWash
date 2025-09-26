@@ -2,7 +2,7 @@
 
 import { useCallback, useState } from "react";
 import useApiService from "@/config/useApi";
-import { ServiceAll, ServiceFormData } from "@/types/ServiceAll";
+import { ServiceAll, ServiceFormData, ServiceUpdateFormData } from "@/types/ServiceAll";
 
 export function useServiceManager() {
   const { callApi } = useApiService();
@@ -60,7 +60,7 @@ export function useServiceManager() {
 
   // UPDATE SERVICE
   const updateService = useCallback(
-    async (data: ServiceFormData) => {
+    async (data: ServiceUpdateFormData) => {
       setLoading(true);
       try {
         const response = await callApi("post", "/service/update", data);
