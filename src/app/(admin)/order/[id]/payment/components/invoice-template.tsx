@@ -5,7 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import { calculateVatFromOrder, calculateDiscountFromOrder } from "../../../utils/calculateTotal";
+import {
+  calculateVatFromOrder,
+  calculateDiscountFromOrder,
+} from "../../../utils/calculateTotal";
 
 type InvoiceTemplateProps = {
   order: OrderResponseDTO;
@@ -45,7 +48,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         style={{ padding: "1px 0.5cm" }}
       >
         <div className="flex justify-between mt-4  w-full">
-          <div><p className="font-bold text-sm" >Mã HĐ: {order.code}</p></div>
+          <div>
+            <p className="font-bold text-sm">Mã HĐ: {order.code}</p>
+          </div>
           <div className="font-italic text-sm">
             In lúc: {new Date().toLocaleString("vi-VN")}
           </div>
@@ -123,7 +128,11 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                   {service.serviceCatalog.size}
                 </td>
                 <td className="p-2 text-right">
-                  {service.serviceCatalog.price.toLocaleString()}đ
+                  {(service.adjustedPriceFlag == true &&
+                  service.adjustedPriceReason
+                    ? service.adjustedPrice
+                    : service.serviceCatalog?.listedPrice)!.toLocaleString()}
+                  đ
                 </td>
               </tr>
             ))}
@@ -153,7 +162,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           {order.discount > 0 && (
             <div className="flex justify-between font-medium border-t pt-2">
               <span>Tổng tiền sau giảm giá:</span>
-              <span>{(baseServicePrice - discountAmount).toLocaleString()}đ</span>
+              <span>
+                {(baseServicePrice - discountAmount).toLocaleString()}đ
+              </span>
             </div>
           )}
           {order.vat > 0 && (

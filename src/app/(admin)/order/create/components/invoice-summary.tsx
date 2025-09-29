@@ -123,16 +123,23 @@ export default function InvoiceSummary({
                     <div className="text-sm text-gray-600">
                       <div className="space-y-1">
                         {detail.service?.map((service) => (
-                          <div className="flex justify-between items-center" key={service.id}>
+                          <div
+                            className="flex justify-between items-center"
+                            key={service.id}
+                          >
                             <div>
-                              <span className="font-medium">{service.serviceName || "Không rõ dịch vụ"}</span>
+                              <span className="font-medium">
+                                {service.serviceName || "Không rõ dịch vụ"}
+                              </span>
                             </div>
                             <div className="text-xs text-gray-500">
                               {service.serviceCatalog ? (
                                 <div className="price">
-                                  {service.serviceCatalog.price.toLocaleString(
-                                    "vi-VN"
-                                  )}{" "}
+                                  {(service.adjustedPriceFlag == true &&
+                                  service.adjustedPriceReason
+                                    ? service.adjustedPrice
+                                    : service.serviceCatalog
+                                        ?.listedPrice)!.toLocaleString()}
                                   VNĐ
                                 </div>
                               ) : (
@@ -161,18 +168,19 @@ export default function InvoiceSummary({
                     <div className="flex justify-between items-center pt-2 border-t">
                       <span className="text-sm">Tổng tiền:</span>
                       <span className="font-medium text-green-600">
-                        {detail.service?.reduce(
-                          (acc, curr) =>
-                            acc + (curr.serviceCatalog?.price || 0),
-                          0
-                        ) != null
-                          ? detail.service
-                              .reduce(
-                                (acc, curr) =>
-                                  acc + (curr.serviceCatalog?.price || 0),
-                                0
-                              )
-                              .toLocaleString("vi-VN") + "đ"
+                        {detail.service && detail.service.length > 0
+                          ? (() => {
+                              const total = detail.service.reduce((acc, curr) => {
+                                const price =
+                                  curr.adjustedPriceFlag === true &&
+                                  curr.adjustedPriceReason
+                                    ? curr.adjustedPrice ?? 0
+                                    : curr.serviceCatalog?.listedPrice ?? 0;
+                                return acc + (price ?? 0);
+                              }, 0);
+
+                              return total.toLocaleString("vi-VN") + "đ";
+                            })()
                           : "N/A"}
                       </span>
                     </div>

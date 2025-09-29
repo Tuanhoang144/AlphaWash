@@ -41,26 +41,16 @@ export default function ServiceInfoBlock({
     }
   };
 
-  const finalPrice =
-    service.serviceCatalog?.isException &&
-    service.serviceCatalog?.exceptionPrice
-      ? service.serviceCatalog.exceptionPrice
-      : service.serviceCatalog?.price || 0;
-
   return (
     <Card
-      className={
-        service.serviceCatalog?.isException
-          ? "border-orange-200 bg-orange-50"
-          : ""
-      }
+      className={service.adjustedPriceFlag ? "border-orange-200 bg-orange-50" : ""}
     >
       <CardHeader>
         <div className="flex justify-between items-center">
           <CardTitle className="flex items-center gap-2">
             <Wrench className="h-5 w-5" />
             Dịch Vụ #{serviceIndex + 1}
-            {service.serviceCatalog?.isException && (
+            {service.adjustedPriceFlag && (
               <AlertTriangle className="h-4 w-4 text-orange-500" />
             )}
           </CardTitle>
@@ -88,18 +78,6 @@ export default function ServiceInfoBlock({
           }
           selectedServiceIds={selectedServiceIds}
         />
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-blue-700">
-              Giá dịch vụ{" "}
-              {service.serviceCatalog?.isException ? "(Đã chỉnh sửa)" : ""}:
-            </span>
-            <span className="font-semibold text-blue-800">
-              {finalPrice.toLocaleString("vi-VN")} VNĐ
-            </span>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );

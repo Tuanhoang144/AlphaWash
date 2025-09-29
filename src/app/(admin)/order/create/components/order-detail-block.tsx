@@ -40,11 +40,14 @@ export default function OrderDetailBlock({
       serviceCode: "",
       serviceName: "",
       serviceTypeCode: "",
+      adjustedPrice: 0,
+      adjustedPriceFlag: false,
+      adjustedPriceReason: "",
       serviceCatalog: {
         id: 0,
         code: "",
         size: "",
-        price: 0,
+        listedPrice: 0,
       },
     };
     updateOrderDetail("service", [...orderDetail.service, newService]);
@@ -61,33 +64,12 @@ export default function OrderDetailBlock({
     updateOrderDetail("service", newServices);
   };
 
-  const calculateTotal = () => {
-    return orderDetail.service.reduce((sum, service) => {
-      const price =
-        service.serviceCatalog?.isException &&
-        service.serviceCatalog?.exceptionPrice
-          ? service.serviceCatalog.exceptionPrice
-          : service.serviceCatalog?.price || 0;
-      return sum + price;
-    }, 0);
-  };
-
-  const hasExceptions = orderDetail.service.some(
-    (service) => service.serviceCatalog?.isException
-  );
-
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <FileText className="h-5 w-5" />
           Thông Tin Dịch Vụ & Nhân Viên
-          {hasExceptions && (
-            <div className="flex items-center gap-1 text-orange-600 text-sm">
-              <AlertTriangle className="h-4 w-4" />
-              <span>Có ngoại lệ</span>
-            </div>
-          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -178,36 +160,6 @@ export default function OrderDetailBlock({
               onChange={(e) => updateOrderDetail("note", e.target.value)}
             />
           </div>
-        </div>
-
-        <div
-          className={`border rounded-lg p-3 ${
-            hasExceptions
-              ? "bg-orange-50 border-orange-200"
-              : "bg-blue-50 border-blue-200"
-          }`}
-        >
-          <div className="flex justify-between items-center">
-            <span
-              className={`text-sm ${
-                hasExceptions ? "text-orange-700" : "text-blue-700"
-              }`}
-            >
-              Tổng tiền các dịch vụ {hasExceptions ? "(Có chỉnh sửa)" : ""}:
-            </span>
-            <span
-              className={`font-semibold ${
-                hasExceptions ? "text-orange-800" : "text-blue-800"
-              }`}
-            >
-              {calculateTotal().toLocaleString("vi-VN")} VNĐ
-            </span>
-          </div>
-          {hasExceptions && (
-            <div className="mt-2 text-xs text-orange-600">
-              * Một số dịch vụ đã được chỉnh sửa giá
-            </div>
-          )}
         </div>
       </CardContent>
     </Card>

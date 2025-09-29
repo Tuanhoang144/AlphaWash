@@ -3,7 +3,7 @@
 import type React from "react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { FileText, CreditCard, QrCode } from "lucide-react"; // Import CreditCard and QrCode
+import { FileText, QrCode } from "lucide-react";
 import CustomerInfoSection from "./components/customer-info-section";
 import OrderInfoForm from "./components/order-info-form";
 import OrderDetailForm from "./components/order-detail-form";
@@ -70,11 +70,14 @@ export default function CreateInvoiceForm() {
             serviceCode: "",
             serviceName: "",
             serviceTypeCode: "",
+            adjustedPrice: 0,
+            adjustedPriceFlag: false,
+            adjustedPriceReason: "",
             serviceCatalog: {
               id: 0,
               code: "",
               size: "",
-              price: 0,
+              listedPrice: 0,
             },
           },
         ],
@@ -125,10 +128,11 @@ export default function CreateInvoiceForm() {
           service:
             detail.service?.map((service) => ({
               ...service,
+
               serviceCatalog: {
                 ...service.serviceCatalog,
                 code: service.serviceCatalog?.code ?? "",
-                price: service.serviceCatalog?.price ?? 0,
+                listedPrice: service.serviceCatalog?.listedPrice ?? 0,
               },
             })) || [],
           note: detail.note ?? null,
@@ -140,19 +144,12 @@ export default function CreateInvoiceForm() {
 
     try {
       const response = await createOrder(finalData);
-      console.log("Order created successfully:", response);
-
-      const orderId = response;
-
-      console.log("Order ID:", orderId);
-
       addToast({
         title: "Thành công",
         description: "Hóa đơn đã được tạo thành công!",
         color: "success",
       });
-
-      return orderId;
+      return response;
     } catch (error) {
       console.error("Lỗi khi tạo hóa đơn:", error);
       addToast({
@@ -169,13 +166,12 @@ export default function CreateInvoiceForm() {
       e.preventDefault();
     }
     setIsNavigating(true);
-
     try {
       await createNewOrder();
       route.push("/order/table");
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-      setIsNavigating(false); 
+      setIsNavigating(false);
     }
   };
 
@@ -184,8 +180,6 @@ export default function CreateInvoiceForm() {
 
     try {
       const orderId = await createNewOrder();
-      console.log("Navigating to payment with ID:", orderId);
-
       if (orderId) {
         route.push(`/order/${orderId}/payment`);
       } else {
@@ -228,7 +222,14 @@ export default function CreateInvoiceForm() {
               <div className="lg:col-span-2 space-y-6">
                 {/* Customer Information */}
                 <CustomerInfoSection
-                  customer={selectedCustomer}
+                  customer={
+                    selectedCustomer ?? {
+                      id: "",
+                      name: "",
+                      phone: "",
+                      vehicles: [],
+                    }
+                  }
                   onCustomerChange={handleCustomerChange}
                 />
 
