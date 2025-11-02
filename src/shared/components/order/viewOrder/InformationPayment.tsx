@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, QrCode } from "lucide-react";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import { 
-  calculateBaseServicePrice, 
-  calculateVatFromOrder, 
-  calculateDiscountFromOrder 
-} from "../../utils/calculateTotal";
+import {
+  calculateBaseServicePrice,
+  calculateVatFromOrder,
+  calculateDiscountFromOrder,
+} from "@/shared/utils/order/calculatePrice"; // ✅ đường dẫn & hàm chuẩn
 
 interface InformationPaymentProps {
   orderData: OrderResponseDTO;
@@ -25,70 +25,62 @@ export default function InformationPayment({
 }: InformationPaymentProps) {
   const { getStatusPaymentColor, getStatusPaymentLabel } = tool();
 
-  // Calculate base price (used multiple times)
   const basePrice = calculateBaseServicePrice(orderData);
-
-  // Calculate VAT amount
   const vatAmount = calculateVatFromOrder(orderData);
-
-  // Calculate discount amount
   const discountAmount = calculateDiscountFromOrder(orderData);
+
+  const paymentLabel =
+    orderData.paymentType === "Cash"
+      ? "Tiền mặt"
+      : orderData.paymentType === "Transfer" || orderData.paymentType === "Bank"
+      ? "Chuyển khoản"
+      : orderData.paymentType || "—";
 
   return (
     <Card className="shadow-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-            <CreditCard className="h-5 w-5" /> 
+          <CreditCard className="h-5 w-5" />
           Thông tin thanh toán
         </CardTitle>
       </CardHeader>
+
       <CardContent className="space-y-4">
-        {/* Payment Information Details */}
         <div className="space-y-3">
-          {/* Service Base Price - Moved to top */}
           <div className="flex justify-between items-center text-sm text-gray-600">
             <span>Tạm tính dịch vụ:</span>
             <span>{basePrice.toLocaleString("vi-VN")}đ</span>
           </div>
 
-          {/* Discount Information */}
           {orderData.discount > 0 && (
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                Giảm giá{" "}
-                {orderData.discount < 100 ? `(${orderData.discount}%)` : ""}:
-              </span>
-              <span className="text-sm font-medium text-red-600">
-                -{discountAmount.toLocaleString("vi-VN")}đ
-              </span>
-            </div>
-          )}
-
-          {/* Total after discount with separator line */}
-          {orderData.discount > 0 && (
-            <div className="border-t border-dashed pt-2">
+            <>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Tổng tiền sau giảm giá:</span>
-                <span className="text-sm font-medium">
-                  {(basePrice - discountAmount).toLocaleString("vi-VN")}đ
+                <span className="text-sm text-gray-600">
+                  Giảm giá {orderData.discount < 100 ? `(${orderData.discount}%)` : ""}:
+                </span>
+                <span className="text-sm font-medium text-red-600">
+                  -{discountAmount.toLocaleString("vi-VN")}đ
                 </span>
               </div>
-            </div>
+
+              <div className="border-t border-dashed pt-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">Tổng sau giảm giá:</span>
+                  <span className="text-sm font-medium">
+                    {(basePrice - discountAmount).toLocaleString("vi-VN")}đ
+                  </span>
+                </div>
+              </div>
+            </>
           )}
 
-          {/* VAT Information */}
           {orderData.vat > 0 && (
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">
-                VAT ({orderData.vat}%):
-              </span>
-              <span className="text-sm font-medium">
-                {vatAmount.toLocaleString("vi-VN")}đ
-              </span>
+              <span className="text-sm text-gray-600">VAT ({orderData.vat}%):</span>
+              <span className="text-sm font-medium">{vatAmount.toLocaleString("vi-VN")}đ</span>
             </div>
           )}
 
-          {/* Tip Information */}
           {orderData.tip > 0 && (
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Tiền tip:</span>
@@ -99,9 +91,7 @@ export default function InformationPayment({
           )}
         </div>
 
-        {/* Payment Status and Method - Moved outside calculation section */}
         <div className="space-y-3 border-t pt-4">
-          {/* Payment Status */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Trạng thái:</span>
             <span
@@ -113,20 +103,12 @@ export default function InformationPayment({
             </span>
           </div>
 
-          {/* Payment Method */}
           <div className="flex justify-between items-center">
             <span className="text-sm text-gray-600">Phương thức:</span>
-            <span className="text-sm font-medium">
-              {orderData.paymentType === "Cash"
-                ? "Tiền mặt"
-                : orderData.paymentType === "Bank"
-                ? "Chuyển khoản"
-                : orderData.paymentType}
-            </span>
+            <span className="text-sm font-medium">{paymentLabel}</span>
           </div>
         </div>
 
-        {/* Total Amount - Moved to bottom */}
         <div className="text-center border-t pt-4">
           <div className="text-sm text-gray-500">Tổng tiền hóa đơn</div>
           <div className="text-2xl font-bold text-green-600">
@@ -134,7 +116,6 @@ export default function InformationPayment({
           </div>
         </div>
 
-        {/* Action Buttons */}
         <div className="flex flex-col space-y-2">
           <Button
             onClick={onNavigateToPayment}

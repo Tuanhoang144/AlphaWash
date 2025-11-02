@@ -19,12 +19,6 @@ import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { addToast } from "@heroui/react";
 import PaymentFormContent from "./components/payment-form-content";
 import InvoiceTemplate from "./components/invoice-template";
-import {
-  calculateTotal,
-  calculateBaseServicePrice,
-  calculateVatFromOrder,
-  calculateDiscountFromOrder,
-} from "../../utils/calculateTotal";
 import { handleInvoicePrint } from "./utils/handle-invoice-print";
 import {
   Dialog,
@@ -33,6 +27,7 @@ import {
   DialogFooter,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { calculateBaseServicePrice, calculateDiscountFromOrder, calculateTotal, calculateVatFromOrder } from "@/shared/utils/order/calculatePrice";
 
 export default function PaymentAndInvoicePage() {
   const params = useParams();
@@ -108,7 +103,7 @@ export default function PaymentAndInvoicePage() {
           description: "Hóa đơn đã được cập nhật thành công!",
           color: "success",
         });
-        let orderData = await getOrderById(id);
+        let orderData = await getOrderById(id); // đồng bộ lại để chắc chắn
         console.log("Fetched updated order data:", orderData);
         setOrder(orderData);
         onPrintInvoice();

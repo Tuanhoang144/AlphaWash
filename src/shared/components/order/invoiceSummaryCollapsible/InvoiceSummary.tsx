@@ -95,7 +95,14 @@ export default function InvoiceSummary({
 
             {/* Service Details */}
             {orderDetails && orderDetails.length > 0 && (
-              <div className="space-y-3">
+              <div
+                key={
+                  orderDetails[0].vehicle?.id
+                    ? `detail-${orderDetails[0].vehicle.id}`
+                    : `detail-${0}`
+                }
+                className="border rounded-lg p-3 space-y-2"
+              >
                 <h4 className="font-medium text-sm">Chi tiết dịch vụ:</h4>
                 {orderDetails.map((detail, index) => (
                   <div key={index} className="border rounded-lg p-3 space-y-2">
@@ -119,35 +126,51 @@ export default function InvoiceSummary({
                         {getStatusVehicleLabel(statusPayment)}
                       </div>
                     </div>
-
                     <div className="text-sm text-gray-600">
                       <div className="space-y-1">
-                        {detail.service?.map((service) => (
-                          <div
-                            className="flex justify-between items-center"
-                            key={service.id}
-                          >
-                            <div>
-                              <span className="font-medium">
-                                {service.serviceName || "Không rõ dịch vụ"}
-                              </span>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {service.serviceCatalog ? (
-                                <div className="price">
-                                  {(service.adjustedPriceFlag == true &&
-                                  service.adjustedPriceReason
-                                    ? service.adjustedPrice
-                                    : service.serviceCatalog
-                                        ?.listedPrice)!.toLocaleString()}
-                                  VNĐ
+                        {detail.service && detail.service.length > 0
+                          ? detail.service.map((service, serviceIndex) => {
+                              const safeName = (
+                                service.serviceName || "no-name"
+                              )
+                                .toString()
+                                .replace(/\s+/g, "_")
+                                .replace(/[^a-zA-Z0-9_\-]/g, "");
+                              const serviceKey = `${service.id ?? "s"}-${
+                                service.serviceCatalog?.id ?? "c"
+                              }-${safeName}-${serviceIndex}`;
+
+                              return (
+                                <div
+                                  className="flex justify-between items-center"
+                                  key={serviceKey}
+                                >
+                                  <div>
+                                    <span className="font-medium">
+                                      {service.serviceName ||
+                                        "Không rõ dịch vụ"}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-500">
+                                    {service.serviceCatalog ? (
+                                      <div className="price">
+                                        {(service.adjustedPriceFlag === true &&
+                                        service.adjustedPriceReason
+                                          ? service.adjustedPrice
+                                          : service.serviceCatalog
+                                              ?.listedPrice)!.toLocaleString(
+                                          "vi-VN"
+                                        )}
+                                        VNĐ
+                                      </div>
+                                    ) : (
+                                      "Không rõ giá"
+                                    )}
+                                  </div>
                                 </div>
-                              ) : (
-                                "Không rõ giá"
-                              )}
-                            </div>
-                          </div>
-                        )) || "Không rõ dịch vụ"}
+                              );
+                            })
+                          : "Không rõ dịch vụ"}
                       </div>
                     </div>
 
@@ -170,14 +193,17 @@ export default function InvoiceSummary({
                       <span className="font-medium text-green-600">
                         {detail.service && detail.service.length > 0
                           ? (() => {
-                              const total = detail.service.reduce((acc, curr) => {
-                                const price =
-                                  curr.adjustedPriceFlag === true &&
-                                  curr.adjustedPriceReason
-                                    ? curr.adjustedPrice ?? 0
-                                    : curr.serviceCatalog?.listedPrice ?? 0;
-                                return acc + (price ?? 0);
-                              }, 0);
+                              const total = detail.service.reduce(
+                                (acc, curr) => {
+                                  const price =
+                                    curr.adjustedPriceFlag === true &&
+                                    curr.adjustedPriceReason
+                                      ? curr.adjustedPrice ?? 0
+                                      : curr.serviceCatalog?.listedPrice ?? 0;
+                                  return acc + (price ?? 0);
+                                },
+                                0
+                              );
 
                               return total.toLocaleString("vi-VN") + "đ";
                             })()

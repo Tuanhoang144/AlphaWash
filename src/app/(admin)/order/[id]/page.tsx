@@ -1,72 +1,56 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Separator } from "@/components/ui/separator";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
 import { useOrderManager } from "@/services/useOrderManager";
-import InvoiceSummary from "./components/invoice-summary";
-import CustomerInfoDisplay from "./components/customer-info-display";
-import OrderInfoDisplay from "./components/order-info-display";
-import OrderDetailDisplay from "./components/order-detail-display";
-import InformationPayment from "./components/information-payment";
 import LoadingPage from "../../../loading";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { OrderResponseDTO } from "@/types/OrderResponse";
+import InvoiceSummary from "@/shared/components/order/viewOrder/InvoiceSummary";
+import OrderDetailDisplay from "@/shared/components/order/viewOrder/OrderDetailDisplay";
+import InformationPayment from "@/shared/components/order/viewOrder/InformationPayment";
+import CustomerInfoDisplay from "@/shared/components/order/viewOrder/CustomerInfo";
+import OrderInfoDisplay from "@/shared/components/order/viewOrder/OrderInfoDisplay";
+import HeaderBreadcrumb from "@/shared/components/layout/Header";
 
-export default function InvoiceClientPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = use(params);
+export default function InvoiceClientPage() {
+  const params = useParams();
+  const id = params.id as string;
   const { getOrderById } = useOrderManager();
+
   const [loading, setLoading] = useState(true);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [orderData, setOrderData] = useState<OrderResponseDTO | null>(null);
-  // const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+
   useEffect(() => {
-    const fetchOrderData = async () => {
+    let mounted = true;
+    (async () => {
       try {
         setLoading(true);
         const data = await getOrderById(id);
-        if (!data) {
-          console.error("Order data not found for ID:", id);
-          return;
-        }
-        // const mapper = mapRawApiToOrderDTO(data);
-        setOrderData(data);
-      } catch (error) {
-        console.error("Lỗi khi tải dữ liệu hóa đơn:", error);
+        if (mounted) setOrderData(data || null);
+      } catch (e) {
+        console.error("Lỗi khi tải dữ liệu hóa đơn:", e);
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
+    })();
+    return () => {
+      mounted = false;
     };
-
-    fetchOrderData();
   }, [id, getOrderById]);
 
-  const [isNavigating, setIsNavigating] = useState(false);
   const router = useRouter();
   const handleNavigate = () => {
     setIsNavigating(true);
     router.push(`/order/${id}/edit`);
   };
-
   const handleNavigateToPayment = () => {
     setIsNavigating(true);
     router.push(`/order/${id}/payment`);
   };
 
-  if (loading || isNavigating) {
-    return <LoadingPage />;
-  }
+  if (loading || isNavigating) return <LoadingPage />;
 
   if (!orderData) {
     return (
@@ -91,25 +75,10 @@ export default function InvoiceClientPage({
 
   return (
     <SidebarInset>
-      <header className="sticky z-10 top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
-        <SidebarTrigger className="-ml-1" />
-        <Separator orientation="vertical" className="mr-2 h-4" />
-        <Breadcrumb>
-          <BreadcrumbList>
-            <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="/order/table">
-                Quản lý hóa đơn
-              </BreadcrumbLink>
-            </BreadcrumbItem>
-            <BreadcrumbSeparator className="hidden md:block" />
-            <BreadcrumbItem>
-              <BreadcrumbPage className="hidden md:block">
-                <BreadcrumbLink href="#">Chi tiết hóa đơn</BreadcrumbLink>
-              </BreadcrumbPage>
-            </BreadcrumbItem>
-          </BreadcrumbList>
-        </Breadcrumb>
-      </header>
+      <HeaderBreadcrumb
+        title="Chi Tiết Hóa Đơn"
+        parents={[{ label: "Quản lý hóa đơn", href: "/order/table" }]}
+      />
 
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
@@ -123,7 +92,6 @@ export default function InvoiceClientPage({
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column - Order Details Display */}
             <div className="lg:col-span-2 space-y-6">
               <CustomerInfoDisplay
                 customer={
@@ -135,7 +103,6 @@ export default function InvoiceClientPage({
               <OrderDetailDisplay orderDetails={orderData.orderDetails} />
             </div>
 
-            {/* Right Column - Invoice Info & Payment Display */}
             <div className="lg:col-span-1 space-y-6">
               <InformationPayment
                 orderData={orderData}

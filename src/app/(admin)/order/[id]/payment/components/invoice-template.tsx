@@ -5,10 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import {
-  calculateVatFromOrder,
-  calculateDiscountFromOrder,
-} from "../../../utils/calculateTotal";
+import { calculateDiscountFromOrder, calculateVatFromOrder } from "@/shared/utils/order/calculatePrice";
 
 type InvoiceTemplateProps = {
   order: OrderResponseDTO;

@@ -3,8 +3,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wrench, Trash2, AlertTriangle } from "lucide-react";
-import ServiceCatalogSelector from "./service-catalog-selector";
 import type { ServiceDTO } from "@/types/OrderResponse";
+import ServiceCatalogSelector from "./ServiceCatalogSelector";
+import { useServiceManager } from "@/shared/hooks/order/useService";
 
 interface ServiceInfoBlockProps {
   service: ServiceDTO;
@@ -14,6 +15,7 @@ interface ServiceInfoBlockProps {
   canRemove?: boolean;
   serviceIndex: number;
   selectedServiceIds?: number[];
+  onValidationChange?: (isValid: boolean) => void;
 }
 
 export default function ServiceInfoBlock({
@@ -24,26 +26,31 @@ export default function ServiceInfoBlock({
   canRemove = false,
   serviceIndex,
   selectedServiceIds,
+  onValidationChange,
 }: ServiceInfoBlockProps) {
-  const updateService = (field: string, value: any) => {
-    if (field === "service") {
-      onServiceChange(value);
-    } else if (field === "serviceCatalog") {
-      onServiceChange({
-        ...service,
-        serviceCatalog: value,
-      });
-    } else {
-      onServiceChange({
-        ...service,
-        [field]: value,
-      });
-    }
-  };
+  const {
+    serviceOptions,
+    catalogOptions,
+    loadingServices,
+    loadingCatalogs,
+    priceDiff,
+    priceValidationError,
+    isPriceChangeValid,
+    updateService,
+    toggleAdjustedPrice,
+    setAdjustedPrice,
+    setAdjustedPriceReason,
+  } = useServiceManager(service, onServiceChange, vehicleSize);
+
+  useEffect(() => {
+    onValidationChange?.(isPriceChangeValid);
+  }, [isPriceChangeValid, onValidationChange]);
 
   return (
     <Card
-      className={service.adjustedPriceFlag ? "border-orange-200 bg-orange-50" : ""}
+      className={`${
+        service.adjustedPriceFlag ? "border-orange-200 bg-orange-50" : ""
+      } ${!isPriceChangeValid ? "border-red-200" : ""}`}
     >
       <CardHeader>
         <div className="flex justify-between items-center">
@@ -53,7 +60,11 @@ export default function ServiceInfoBlock({
             {service.adjustedPriceFlag && (
               <AlertTriangle className="h-4 w-4 text-orange-500" />
             )}
+            {!isPriceChangeValid && (
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+            )}
           </CardTitle>
+
           {canRemove && onRemove && (
             <Button
               type="button"
@@ -61,24 +72,34 @@ export default function ServiceInfoBlock({
               size="sm"
               onClick={onRemove}
               className="text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+              aria-label={`Xóa dịch vụ #${serviceIndex + 1}`}
             >
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
       </CardHeader>
+
       <CardContent className="space-y-4">
         <ServiceCatalogSelector
           service={service}
-          serviceCatalog={service.serviceCatalog}
           vehicleSize={vehicleSize}
-          onServiceChange={(newService) => updateService("service", newService)}
-          onServiceCatalogChange={(catalog) =>
-            updateService("serviceCatalog", catalog)
-          }
-          selectedServiceIds={selectedServiceIds}
+          selectedServiceIds={selectedServiceIds ?? []}
+          onServiceChange={updateService}
+          onToggleAdjustedPrice={toggleAdjustedPrice}
+          onSetAdjustedPrice={setAdjustedPrice}
+          onSetAdjustedPriceReason={setAdjustedPriceReason}
+          serviceOptions={serviceOptions}
+          catalogOptions={catalogOptions}
+          loadingServices={loadingServices}
+          loadingCatalogs={loadingCatalogs}
+          priceDiff={priceDiff}
+          priceValidationError={priceValidationError}
+          isPriceChangeValid={isPriceChangeValid}
         />
       </CardContent>
     </Card>
   );
 }
+
+import React, { useEffect } from "react";

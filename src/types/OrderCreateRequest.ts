@@ -20,7 +20,14 @@ export interface OrderCreateRequest {
 
 export interface OrderDetail {
   employeeIds: number[] 
-  serviceCatalogCodes: string[]
+  services: ServiceAdjust[]
   status: string
   note: string
+}
+
+export interface ServiceAdjust {
+  serviceCatalogCode: string
+  adjustedPrice: number
+  adjustedPriceFlag: boolean
+  adjustedPriceReason: string
 }

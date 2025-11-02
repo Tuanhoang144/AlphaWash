@@ -23,7 +23,7 @@ import {
 import { useServiceManager } from "@/services/useServiceAll";
 import { ServiceType } from "@/types/ServiceAll";
 import { addToast } from "@heroui/toast";
-import { tool } from "@/utils/tool";
+import { formatNumber, handleNumericInput, parseFormattedNumber, validateNumericInput } from "@/shared/utils/formatMoney";
 interface CreateServiceRequest {
   serviceTypeCode: string;
   serviceName: string;
@@ -52,7 +52,6 @@ export function CreateServiceDialog({ isOpen, onOpenChange, onSave }: Props) {
   const { getAllServiceType } = useServiceManager();
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { formatNumber, parseFormattedNumber, validateNumericInput, handleNumericInput } = tool();
 
   useEffect(() => {
     if (isOpen) {

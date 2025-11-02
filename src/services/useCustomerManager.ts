@@ -7,7 +7,7 @@ import { CustomerDTO } from "@/types/OrderResponse";
 export function useCustomerManager() {
   const { callApi, loading, setIsLoading } = useApiService();
 
-  const getCustomersByPhone = useCallback(
+  const getCustomersByPhoneOrPlate = useCallback(
     async (phone: string): Promise<CustomerDTO[]> => {
       if (!phone.trim()) return [];
 
@@ -90,7 +90,7 @@ export function useCustomerManager() {
     [callApi, setIsLoading]
   );
   return {
-    getCustomersByPhone,
+    getCustomersByPhoneOrPlate,
     createCustomer,
     updateCustomer,
     loading,

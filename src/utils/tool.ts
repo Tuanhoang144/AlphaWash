@@ -136,31 +136,6 @@ export function tool() {
     return `${hour}:${minute}`;
   }
 
-  //Công cụ cho format số tiền
-  const formatNumber = (value: number): string => {
-    return value.toLocaleString('vi-VN');
-  };
-  
-  const parseFormattedNumber = (value: string): number => {
-    const cleaned = value.replace(/\./g, '');
-    return parseInt(cleaned) || 0;
-  };
-  
-  const validateNumericInput = (value: string): boolean => {
-    // Chỉ cho phép số và dấu chấm
-    return /^[\d.]*$/.test(value);
-  };
-  
-  const handleNumericInput = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    // Chặn các ký tự không phải số, dấu chấm, Backspace, Delete, Tab, Enter, Arrow keys
-    if (
-      !/[\d.]/.test(e.key) &&
-      !['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)
-    ) {
-      e.preventDefault();
-    }
-  };
-
   return {
     getStatusVehicleColor,
     getStatusVehicleLabel,
@@ -171,9 +146,5 @@ export function tool() {
     convertToISO,
     formatDate,
     formatTime,
-    formatNumber,
-    parseFormattedNumber,
-    validateNumericInput,
-    handleNumericInput,
   };
 }

@@ -1,5 +1,5 @@
 import { OrderCreateRequest } from "@/types/OrderCreateRequest";
-import { OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 
 export function mapFullOrderToRequest(
   order: OrderResponseDTO
@@ -22,10 +22,15 @@ export function mapFullOrderToRequest(
     discount: order.discount || 0,
     totalPrice: order.totalPrice || 0,
     note: order.note || "",
-    vehicleNote: "", 
+    vehicleNote: "",
     orderDetails: order.orderDetails?.map((detail) => ({
       employeeIds: (detail.employees || []).map((employee) => employee.id),
-      serviceCatalogCodes: (detail.service || []).map((service) => service.serviceCatalog?.code || ""),
+      services: (detail.service || []).map((service) => ({
+        serviceCatalogCode: service.serviceCatalog?.code || "",
+        adjustedPrice: service.adjustedPrice || 0,
+        adjustedPriceFlag: service.adjustedPriceFlag || false,
+        adjustedPriceReason: service.adjustedPriceReason || "",
+      })),
       note: detail.note || "",
       status: detail.status || "",
     })),

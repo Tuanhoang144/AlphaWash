@@ -1,4 +1,8 @@
-import type { OrderResponseDTO } from "@/types/OrderResponse";
+import type {
+  OrderResponseDTO,
+  ServiceCatalogDTO,
+  ServiceDTO,
+} from "@/types/OrderResponse";
 
 const calculateDiscountFromOrder = (order: OrderResponseDTO): number => {
   const serviceTotalBeforeTaxAndDiscount =
@@ -92,14 +96,33 @@ const calculateBaseServicePrice = (order: OrderResponseDTO) => {
     (sum, detail) =>
       sum +
       detail.service.reduce((serviceSum, service) => {
-        const price =
-          service.adjustedPriceFlag //Chỉ cần check cờ
-            ? service.adjustedPrice
-            : service.serviceCatalog?.listedPrice || 0;
+        const price = service.adjustedPriceFlag //Chỉ cần check cờ
+          ? service.adjustedPrice
+          : service.serviceCatalog?.listedPrice || 0;
         return serviceSum + price;
       }, 0),
     0
   );
+};
+
+const calculatePriceDifference = (
+  service: ServiceDTO,
+  catalog: ServiceCatalogDTO | undefined
+): number => {
+  if (!service.adjustedPriceFlag || !service.adjustedPriceReason) {
+    return 0;
+  }
+  return (service.adjustedPrice ?? 0) - (catalog?.listedPrice ?? 0);
+};
+
+const getAppliedPrice = (
+  service: ServiceDTO,
+  catalog: ServiceCatalogDTO | undefined
+): number => {
+  if (service.adjustedPriceFlag && service.adjustedPriceReason) {
+    return service.adjustedPrice ?? 0;
+  }
+  return catalog?.listedPrice ?? 0;
 };
 
 export {
@@ -107,4 +130,6 @@ export {
   calculateBaseServicePrice,
   calculateVatFromOrder,
   calculateDiscountFromOrder,
+  calculatePriceDifference,
+  getAppliedPrice,
 };

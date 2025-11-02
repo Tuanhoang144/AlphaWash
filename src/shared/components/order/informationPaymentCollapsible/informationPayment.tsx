@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, QrCode, Save, X } from "lucide-react";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import { 
-  calculateBaseServicePrice, 
-  calculateVatFromOrder, 
-  calculateDiscountFromOrder 
-} from "../../../utils/calculateTotal";
+import {
+  calculateBaseServicePrice,
+  calculateDiscountFromOrder,
+  calculateVatFromOrder,
+} from "@/shared/utils/order/calculatePrice";
 
 interface InformationPaymentProps {
   orderData: OrderResponseDTO;
@@ -39,7 +39,7 @@ export default function InformationPayment({
   const discountAmount = calculateDiscountFromOrder(orderData);
 
   const isOrderDeleted = orderData.deleteFlag || false;
-  const isPaid = orderData.paymentStatus === 'PAID';
+  const isPaid = orderData.paymentStatus === "PAID";
 
   return (
     <Card className="shadow-sm">
@@ -75,7 +75,9 @@ export default function InformationPayment({
           {orderData.discount > 0 && (
             <div className="border-t border-dashed pt-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Tổng tiền sau giảm giá:</span>
+                <span className="text-sm text-gray-600">
+                  Tổng tiền sau giảm giá:
+                </span>
                 <span className="text-sm font-medium">
                   {(basePrice - discountAmount).toLocaleString("vi-VN")}đ
                 </span>
