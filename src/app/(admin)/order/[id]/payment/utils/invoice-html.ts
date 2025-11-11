@@ -188,7 +188,7 @@ export const generateInvoiceHTML = ({
             : ""
         }
         <div class="company-info-container">
-          <div class="company-name">ALPHA WASH</div>
+          <div class="company-name">SHINE AUTOWERKZ</div>
           <div class="company-info">297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh</div>
           <div class="company-info">SĐT: 0966291909</div>
         </div>

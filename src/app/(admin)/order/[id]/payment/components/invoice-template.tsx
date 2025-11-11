@@ -55,11 +55,11 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         <div className="flex items-start mb-6 pb-4 border-b border-gray-200">
           <img
             src="/logo.png?height=80&width=80"
-            alt="Logo"
+            alt="Shine Autowerkz Logo"
             className="w-40 h-40 object-contain mr-3 flex-shrink-0"
           />
           <div className="flex-1 text-start justify-center my-auto">
-            <p className="text-lg font-bold text-gray-800">ALPHA WASH</p>
+            <p className="text-lg font-bold text-gray-800">SHINE AUTOWERKZ</p>
             <p className="text-xs text-gray-600 mt-1">
               297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh
             </p>

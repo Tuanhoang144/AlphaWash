@@ -16,17 +16,17 @@ export default function WelcomePage() {
         <div className="flex flex-col items-center space-y-6">
           <Image
             src="/logo.png"
-            alt="Alpha Wash Logo"
-            width={300}
-            height={300}
-            className="object-contain"
+            alt="Shine Autowerkz Logo"
+            width={400}
+            height={400}
+            className="object-contain m-0"
             priority
           />
 
           {/* Welcome Text */}
           <div className="text-center space-y-2">
             <h1 className="text-2xl font-bold text-gray-900">
-              Chào mừng đến với Alpha Wash
+              Chào mừng đến với Shine Autowerkz
             </h1>
             <p className="text-gray-600 text-sm">
               Hệ thống quản lý rửa xe chuyên nghiệp
