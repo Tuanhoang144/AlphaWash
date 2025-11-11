@@ -22,7 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatNumber, handleNumericInput, parseFormattedNumber, validateNumericInput } from "@/shared/utils/formatMoney";
+import {
+  formatNumber,
+  handleNumericInput,
+  parseFormattedNumber,
+  validateNumericInput,
+} from "@/shared/utils/formatMoney";
 
 interface Props {
   isOpen: boolean;
@@ -40,6 +45,7 @@ interface Props {
       L?: { price: number };
     };
   }) => void;
+  onDelete: (serviceCode: string) => void;
 }
 
 interface ValidationErrors {
@@ -62,6 +68,7 @@ export function ServiceDialog({
   onOpenChange,
   services,
   onSave,
+  onDelete,
 }: Props) {
   const [form, setForm] = useState({
     serviceCode: "",
@@ -206,7 +213,11 @@ export function ServiceDialog({
                 disabled={isLoadingServiceTypes}
               >
                 <SelectTrigger
-                  className={errors.serviceTypeName ? "border-red-500  w-full" : " w-full"}
+                  className={
+                    errors.serviceTypeName
+                      ? "border-red-500  w-full"
+                      : " w-full"
+                  }
                 >
                   <SelectValue
                     placeholder={
@@ -408,16 +419,33 @@ export function ServiceDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={isSubmitting}
-          >
-            Hủy
-          </Button>
-          <Button type="submit" onClick={handleSubmit} disabled={isSubmitting}>
-            {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
-          </Button>
+          <div className="flex justify-between items-center w-full">
+            <div>
+              <Button
+                variant="destructive"
+                type="button"
+                onClick={() => onDelete(form.serviceCode)}
+              >
+                <span className="text-white">Xóa dịch vụ</span>
+              </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => onOpenChange(false)}
+                disabled={isSubmitting}
+              >
+                Hủy
+              </Button>
+              <Button
+                type="submit"
+                onClick={handleSubmit}
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Đang cập nhật..." : "Cập nhật"}
+              </Button>
+            </div>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

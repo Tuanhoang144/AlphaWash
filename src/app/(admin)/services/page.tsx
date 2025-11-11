@@ -27,7 +27,7 @@ function ManageServices() {
   );
   const [searchTerm, setSearchTerm] = useState("");
 
-  const { getAllService, createService, updateService } = useServiceManager();
+  const { getAllService, createService, updateService, deleteService } = useServiceManager();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -113,6 +113,32 @@ function ManageServices() {
     }
   };
 
+  // Xử lý xóa dịch vụ
+  const handleDeleteService = async (serviceCode: string) => {
+    try {
+      // Gọi API xóa dịch vụ
+      await deleteService(serviceCode);
+
+      // Hiển thị thông báo thành công
+      addToast({
+        title: "Thành công",
+        description: "Dịch vụ đã được xóa thành công!",
+        color: "success",
+      });
+
+      // Cập nhật lại danh sách dịch vụ sau khi xóa
+      const updated = await getAllService();
+      setServices(updated);
+    } catch (error) {
+      console.error("Lỗi khi xóa dịch vụ:", error);
+      addToast({
+        title: "Lỗi",
+        description: "Không thể xóa dịch vụ. Vui lòng thử lại!",
+        color: "danger",
+      });
+    }
+  };
+
   const filteredServices = useMemo(() => {
     if (!searchTerm) return services;
     const lower = searchTerm.toLowerCase();
@@ -157,6 +183,7 @@ function ManageServices() {
             onOpenChange={setIsDialogOpen}
             services={currentServices}
             onSave={handleSaveService}
+            onDelete={handleDeleteService}
           />
         </div>
       </div>

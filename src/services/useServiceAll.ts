@@ -2,7 +2,11 @@
 
 import { useCallback, useState } from "react";
 import useApiService from "@/config/useApi";
-import { ServiceAll, ServiceFormData, ServiceUpdateFormData } from "@/types/ServiceAll";
+import {
+  ServiceAll,
+  ServiceFormData,
+  ServiceUpdateFormData,
+} from "@/types/ServiceAll";
 
 export function useServiceManager() {
   const { callApi } = useApiService();
@@ -73,6 +77,24 @@ export function useServiceManager() {
     [callApi, getAllService]
   );
 
+  // DELETE SERVICE
+  const deleteService = useCallback(
+    async (serviceCode: string) => {
+      setLoading(true);
+      try {
+        const response = await callApi(
+          "delete",
+          `/service/delete/${serviceCode}`
+        );
+        await getAllService();
+        return response?.data;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [callApi, getAllService]
+  );
+
   return {
     services,
     loading,
@@ -81,5 +103,6 @@ export function useServiceManager() {
     getAllServiceCode,
     createService,
     updateService,
+    deleteService,
   };
 }

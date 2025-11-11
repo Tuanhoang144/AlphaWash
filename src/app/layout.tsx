@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Alpha Wash",
-  description: "AlphaWash",
+  title: "Shine Autowerkz",
+  description: "Shine Autowerkz",
 };
 
 export default function RootLayout({
