@@ -191,6 +191,11 @@ export function ServiceDialog({
     }
   };
 
+  const handleDelete = async (serviceCode: string) => {
+    onDelete(serviceCode);
+    onOpenChange(false);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[700px]">
@@ -424,7 +429,7 @@ export function ServiceDialog({
               <Button
                 variant="destructive"
                 type="button"
-                onClick={() => onDelete(form.serviceCode)}
+                onClick={() => handleDelete(form.serviceCode)}
               >
                 <span className="text-white">Xóa dịch vụ</span>
               </Button>
