@@ -6,8 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { AlertTriangle, DollarSign, AlertCircle } from "lucide-react";
 import { Select } from "antd";
-import type { ServiceCatalogDTO, ServiceDTO } from "@/types/OrderResponse";
-import { tool } from "@/utils/tool";
+import type { ServiceDTO } from "@/types/OrderResponse";
 import { formatPrice } from "@/shared/utils/checkValidate";
 import {
   formatNumber,
@@ -20,7 +19,6 @@ const { Option } = Select;
 
 interface Props {
   service: ServiceDTO;
-  vehicleSize?: string;
   selectedServiceIds?: number[];
   serviceOptions: any[];
   catalogOptions: any[];
@@ -28,8 +26,8 @@ interface Props {
   loadingCatalogs: boolean;
   priceDiff: number;
   priceValidationError: string;
-  isPriceChangeValid: boolean;
-  onServiceChange: (service: ServiceDTO) => void;
+  onSelectService: (serviceId: number) => void;
+  onSelectCatalog: (catalogId: number) => void;
   onToggleAdjustedPrice: (enabled: boolean) => void;
   onSetAdjustedPrice: (price: number) => void;
   onSetAdjustedPriceReason: (reason: string) => void;
@@ -44,26 +42,12 @@ export default function ServiceCatalogSelector({
   loadingCatalogs,
   priceDiff,
   priceValidationError,
-  onServiceChange,
+  onSelectService,
+  onSelectCatalog,
   onToggleAdjustedPrice,
   onSetAdjustedPrice,
   onSetAdjustedPriceReason,
 }: Props) {
-  const handleServiceSelect = (serviceId: number) => {
-    const selected = serviceOptions.find((s) => s.id === serviceId);
-    if (selected) {
-      const next = { ...(selected.raw as ServiceDTO) };
-
-      // Giữ lại các field đang edit
-      next.adjustedPriceFlag = service.adjustedPriceFlag;
-      next.adjustedPrice = service.adjustedPrice;
-      next.adjustedPriceReason = service.adjustedPriceReason;
-      next.serviceCatalog = service.serviceCatalog;
-
-      onServiceChange(next);
-    }
-  };
-
   return (
     <div className="space-y-4">
       {/* Chọn dịch vụ */}
@@ -74,10 +58,9 @@ export default function ServiceCatalogSelector({
             showSearch
             placeholder={loadingServices ? "Đang tải..." : "Chọn dịch vụ"}
             optionFilterProp="label"
-            onChange={handleServiceSelect}
-            filterOption={(input, option: any) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
+            onChange={(value: any) => {
+              onSelectService(Number(value));
+            }}
             value={service.id || undefined}
             loading={loadingServices}
             style={{ width: "100%" }}
@@ -115,7 +98,6 @@ export default function ServiceCatalogSelector({
         <div className="space-y-2">
           <Label>Bảng giá theo kích thước</Label>
           <Select
-            showSearch
             placeholder={
               !service.serviceCode
                 ? "Chọn dịch vụ trước"
@@ -123,15 +105,14 @@ export default function ServiceCatalogSelector({
                 ? "Đang tải..."
                 : "Chọn kích thước"
             }
-            optionFilterProp="label"
-            filterOption={(input, option: any) =>
-              (option?.label ?? "").toLowerCase().includes(input.toLowerCase())
-            }
             value={service?.serviceCatalog?.id || undefined}
             disabled={!service.serviceCode || loadingCatalogs}
             loading={loadingCatalogs}
             style={{ width: "100%" }}
             size="large"
+            onChange={(value: any) => {
+              onSelectCatalog(Number(value));
+            }}
           >
             {catalogOptions.map((c) => (
               <Option key={c.id} value={c.value} label={c.label}>

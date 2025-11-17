@@ -25,6 +25,10 @@ export default function EditInvoiceContainer({ id }: Props) {
     setFormData,
     handleCustomerChange,
     handleVehicleChange,
+    handleServiceChange,
+    handleInfoOrderDetailChange,
+    addService,
+    removeServiceAt,
     buildEmptyDetail,
     handleUpdateSubmit,
     handleCancel,
@@ -58,12 +62,10 @@ export default function EditInvoiceContainer({ id }: Props) {
 
                 <ServiceForm
                   orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onOrderDetailChange={(nextDetail) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      orderDetails: [nextDetail],
-                    }))
-                  }
+                  onServiceChange={handleServiceChange}
+                  onInfoChange={handleInfoOrderDetailChange}
+                  addService={addService}
+                  removeServiceAt={removeServiceAt}
                   vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
                 />
               </div>

@@ -13,7 +13,7 @@ export function useServiceManager() {
   const [services, setServices] = useState<ServiceAll[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // GET ALL SERVICES
+  // GET ALL SERVICES HAVE CATALOGS
   const getAllService = useCallback(async () => {
     setLoading(true);
     try {

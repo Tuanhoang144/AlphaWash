@@ -16,44 +16,45 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { useEffect } from "react";
-
+import { useServiceForm } from "@/shared/hooks/order/useServiceForm";
 interface OrderDetailBlockProps {
   orderDetail: OrderDetailDTO;
-  onOrderDetailChange: (orderDetail: OrderDetailDTO) => void;
+  onServiceChange: (index: number, service: ServiceDTO) => void;
+  onInfoChange: (field: string, value: any) => void;
+  addService: (newService: ServiceDTO) => void;
+  removeServiceAt: (index: number) => void;
   vehicleSize: string;
 }
 
 export default function ServiceForm({
   orderDetail,
-  onOrderDetailChange,
+  onServiceChange,
+  onInfoChange,
+  addService,
+  removeServiceAt,
   vehicleSize,
 }: OrderDetailBlockProps) {
+  //Load danh sách dịch vụ
+  const { services: allServices, loadingServices } = useServiceForm();
+
   //Dùng để update employee/status/note trong orderDetail
-  const updateOrderDetail = (field: string, value: any) => {
-    onOrderDetailChange({
-      ...orderDetail,
-      [field]: value,
-    });
+  const updateInfo = (field: string, value: any) => {
+    onInfoChange(field, value);
   };
 
-  // Thêm dịch vụ mới vào orderDetail
-  const addService = () => {
-    const newService = createNewService();
-    updateOrderDetail("service", [...orderDetail.service, newService]);
+  //Dùng để update dịch vụ trong orderDetail
+  const updateService = (index: number, updatedService: ServiceDTO) => {
+    onServiceChange(index, updatedService);
   };
 
-  // Xoá dịch vụ khỏi orderDetail
+  //Xoá dịch vụ trong orderDetail
   const removeService = (index: number) => {
-    const newServices = orderDetail.service.filter((_, i) => i !== index);
-    updateOrderDetail("service", newServices);
+    removeServiceAt(index);
   };
 
-  // Cập nhật thông tin dịch vụ trong orderDetail
-  const updateService = (index: number, service: ServiceDTO) => {
-    const newServices = [...orderDetail.service];
-    newServices[index] = service;
-    updateOrderDetail("service", newServices);
+  //Thêm mới dịch vụ trong orderDetail
+  const addNewService = () => {
+    addService(createNewService());
   };
 
   return (
@@ -77,8 +78,10 @@ export default function ServiceForm({
               .map((s) => s.id);
             return (
               <ServiceInfoBlock
-                key={`service-${service.id}-${index}`}
-                service={service}
+                key={index}
+                service={service} //list dịch vụ trong orderDetail
+                allServices={allServices}
+                loadingServices={loadingServices}
                 onServiceChange={(updatedService) =>
                   updateService(index, updatedService)
                 }
@@ -97,7 +100,7 @@ export default function ServiceForm({
 
           <Button
             type="button"
-            onClick={addService}
+            onClick={addNewService}
             size="sm"
             className="bg-black hover:bg-white hover:border-2 hover:text-black w-full text-white"
           >
@@ -108,7 +111,7 @@ export default function ServiceForm({
           {orderDetail?.service?.length === 0 && (
             <div className="text-center py-8 border-2 border-dashed border-gray-300 rounded-lg">
               <p className="text-gray-500 mb-4">Chưa có dịch vụ nào</p>
-              <Button type="button" onClick={addService} variant="outline">
+              <Button type="button" onClick={addNewService} variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
                 Thêm Dịch Vụ Đầu Tiên
               </Button>
@@ -120,7 +123,7 @@ export default function ServiceForm({
           <EmployeeSelector
             selectedEmployees={orderDetail.employees}
             onEmployeesChange={(employees) =>
-              updateOrderDetail("employees", employees)
+              updateInfo("employees", employees)
             }
           />
         </div>
@@ -130,7 +133,9 @@ export default function ServiceForm({
             <Label>Trạng thái thi công</Label>
             <Select
               value={orderDetail.status || ""}
-              onValueChange={(value) => updateOrderDetail("status", value)}
+              onValueChange={(value) => {
+                if (value !== orderDetail.status) updateInfo("status", value);
+              }}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Chọn trạng thái" />
@@ -147,7 +152,7 @@ export default function ServiceForm({
             <Textarea
               placeholder="Ghi chú thêm..."
               value={orderDetail.note || ""}
-              onChange={(e) => updateOrderDetail("note", e.target.value)}
+              onChange={(e) => updateInfo("note", e.target.value)}
             />
           </div>
         </div>

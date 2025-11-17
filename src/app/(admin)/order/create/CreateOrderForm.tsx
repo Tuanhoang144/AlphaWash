@@ -20,6 +20,10 @@ export default function CreateOrderForm() {
     selectedCustomer,
     handleCustomerChange,
     handleVehicleChange,
+    handleInfoOrderDetailChange,
+    handleServiceChange,
+    addService,
+    removeServiceAt,
     currentTotalPrice,
     isNavigating,
     handleSubmit,
@@ -60,12 +64,10 @@ export default function CreateOrderForm() {
                 {/* Thông Dịch Vụ & Nhân Viên Thi Công */}
                 <ServiceForm
                   orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onOrderDetailChange={(nextDetail) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      orderDetails: [nextDetail],
-                    }))
-                  }
+                  onServiceChange={handleServiceChange}
+                  onInfoChange={handleInfoOrderDetailChange}
+                  addService={addService}
+                  removeServiceAt={removeServiceAt}
                   vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
                 />
               </div>

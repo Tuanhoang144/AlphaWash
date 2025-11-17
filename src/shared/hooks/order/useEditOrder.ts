@@ -26,6 +26,10 @@ export function useEditInvoice(id: string | undefined) {
     selectedCustomer,
     handleCustomerChange,
     handleVehicleChange,
+    handleServiceChange,
+    handleInfoOrderDetailChange,
+    addService,
+    removeServiceAt,
     currentTotalPrice,
     isNavigating,
     buildEmptyDetail,
@@ -39,7 +43,11 @@ export function useEditInvoice(id: string | undefined) {
     setIsLoading(true);
     try {
       const orderData = await getOrderById(id);
-      handleCustomerChange(orderData.customer as CustomerDTO);
+      if (orderData.customer.id === undefined  || orderData.customer.id === null || orderData.customer.id === "") {
+        handleCustomerChange(null);
+      } else {
+        handleCustomerChange(orderData.customer as CustomerDTO);
+      }
       handleVehicleChange(orderData.orderDetails?.[0]?.vehicle as VehicleDTO);
       if (orderData) setFormData(orderData);
     } catch (error) {
@@ -181,6 +189,10 @@ export function useEditInvoice(id: string | undefined) {
     setFormData,
     handleCustomerChange,
     handleVehicleChange,
+    handleServiceChange,
+    handleInfoOrderDetailChange,
+    addService,
+    removeServiceAt,
     buildEmptyDetail,
     handleUpdateSubmit,
     handleCancel,
