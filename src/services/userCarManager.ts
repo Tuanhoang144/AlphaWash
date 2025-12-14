@@ -6,7 +6,6 @@ import { ServiceDetailResponse, ServiceUsedDTO } from "@/types/CarUser";
 
 export function useServiceUsedManager() {
   const { callApi } = useApiService();
-  const [servicesUsed, setServicesUsed] = useState<ServiceUsedDTO[]>([]);
   const [loading, setLoading] = useState(false);
 
   // GET ALL
@@ -14,7 +13,6 @@ export function useServiceUsedManager() {
     setLoading(true);
     try {
       const response = await callApi("get", "/vehicle/services-used");
-      setServicesUsed(response?.data || []);
       return response?.data || [];
     } finally {
       setLoading(false);
@@ -69,7 +67,6 @@ export function useServiceUsedManager() {
 
 
   return {
-    servicesUsed,
     getAllServicesUsed,
     addServiceUsed,
     updateServiceUsed,

@@ -1,20 +1,21 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { ServiceUsedDTO, ServiceDetailResponse } from "@/types/CarUser";
-import { ServiceUsedTable } from "./components/ServiceUsedTable";
-import { ServiceUsedDetailDialog } from "./components/ServiceUsedDetailDialog";
-import { ServiceUsedDialog } from "./components/ServiceUsedDialog";
+import { useState, useEffect, useMemo } from "react";
+import { ServiceUsedDTO } from "@/types/CarUser";
 import { useServiceUsedManager } from "@/services/userCarManager";
-import { Pagination } from "./components/pagination";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@radix-ui/react-separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+} from "@/components/ui/breadcrumb";
+import { ServiceUserdHeader } from "./components/ServiceUserdHeader";
+import { CustomerVehicleTable } from "./components/ServiceUsedTable";
 
-export default function ServiceUsedPage() {
+export default function ManageUsersPage() {
   const {
-    servicesUsed,
     getAllServicesUsed,
     addServiceUsed,
     updateServiceUsed,
@@ -22,92 +23,60 @@ export default function ServiceUsedPage() {
     getServiceUsedDetail,
   } = useServiceUsedManager();
 
-  const [search, setSearch] = useState("");
-  const [filtered, setFiltered] = useState<ServiceUsedDTO[]>([]);
-  const [selected, setSelected] = useState<ServiceDetailResponse | null>(null);
-  const [detailOpen, setDetailOpen] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [page, setPage] = useState(1);
-  const pageSize = 5;
+  const [users, setUsers] = useState<ServiceUsedDTO[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
-    getAllServicesUsed();
+    const fetchUsers = async () => {
+      try {
+        const data = await getAllServicesUsed();
+        setUsers(data);
+      } catch (error) {
+        console.error("Lỗi khi tải danh sách khách hàng:", error);
+      }
+    };
+    fetchUsers();
   }, [getAllServicesUsed]);
 
-  useEffect(() => {
-    const f = servicesUsed.filter(
-      (c) =>
-        c.licensePlate.toLowerCase().includes(search.toLowerCase()) ||
-        c.customerName.toLowerCase().includes(search.toLowerCase())
-    );
-    setFiltered(f);
-    setPage(1);
-  }, [search, servicesUsed]);
-
-  const pagedData = filtered.slice((page - 1) * pageSize, page * pageSize);
-  const totalPages = Math.ceil(filtered.length / pageSize);
-
-  const handleViewDetail = async (c: ServiceUsedDTO) => {
-    if (!c.customerId) {
-      alert("Không có thông tin user"); // ❌ hoặc toast.error("Không có thông tin user")
-      return;
+  const filteredUsers = useMemo(() => {
+    //Filter by license plate or name
+    let list = users;
+    if (searchTerm) {
+      const lowerSearchTerm = searchTerm.toLowerCase();
+      list = list.filter(
+        (user) =>
+          user.licensePlate.toLowerCase().includes(lowerSearchTerm) ||
+          user.customerName.toLowerCase().includes(lowerSearchTerm)
+      );
     }
-
-    const detailData = await getServiceUsedDetail(c.customerId);
-    if (detailData) {
-      setSelected(detailData);   // state riêng cho detail
-      setDetailOpen(true);
-    } else {
-      alert("Không tìm thấy thông tin chi tiết của user");
-    }
-  };
-
+    return list;
+  }, [users, searchTerm]);
 
   return (
-    <SidebarInset>
+    <SidebarInset className="relative w-full">
       <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink href="#">Quản lý Khách Hàng</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </header>
-      <div className="space-y-4">
-        {/* Search */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 w-1/2">
-            <Input
-              placeholder="Tìm theo biển số hoặc tên khách..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="w-full"
-            />
-          </div>
+
+      <div className="container absolute top-17 .center-conditional left-1/2 -translate-x-1/2 space-y-4">
+        <div className="px-6">
+          <ServiceUserdHeader
+            onSearch={setSearchTerm}
+            onAddService={() => {}}
+          />
         </div>
-
-        <ServiceUsedTable
-          data={pagedData}
-          onEdit={() => { }}
-          onDelete={deleteServiceUsed}
-          onViewDetail={handleViewDetail}
-          page={page}
-          pageSize={pageSize}
-        />
-
-        {totalPages > 1 && (
-          <div className="flex justify-center">
-            <Pagination
-              currentPage={page}
-              totalPages={totalPages}
-              onPageChange={setPage}
-            />
-          </div>
-        )}
-
+        <div className="px-6">
+          <CustomerVehicleTable data={filteredUsers} />
+        </div>
+        {/* 
         <ServiceUsedDialog
           data={null}
           open={dialogOpen}
@@ -119,9 +88,8 @@ export default function ServiceUsedPage() {
           data={selected}
           open={detailOpen}
           onClose={() => setDetailOpen(false)}
-        />
+        /> */}
       </div>
-
     </SidebarInset>
   );
 }
