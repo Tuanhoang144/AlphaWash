@@ -15,7 +15,8 @@ import {
   SquareTerminal,
   Users,
   ShoppingBag,
-  ChartArea
+  ChartArea,
+  Tickets
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -50,20 +51,6 @@ const data = {
       title: "Quản Lý Đơn Hàng",
       url: "/order/table",
       icon: FileSpreadsheet ,
-      // items: [
-      //   {
-      //     title: "Genesis",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Explorer",
-      //     url: "#",
-      //   },
-      //   {
-      //     title: "Quantum",
-      //     url: "#",
-      //   },
-      // ],
     },
     {
       title: "Quản lý Nhân Viên",
@@ -75,6 +62,12 @@ const data = {
       title: "Quản lý Dịch vụ",
       url: "/services",
       icon: ShoppingBag,
+      isActive: true,
+    },
+    {
+      title: "Khuyến Mãi của Tiệm",
+      url: "/promotion",
+      icon: Tickets,
       isActive: true,
     },
     {

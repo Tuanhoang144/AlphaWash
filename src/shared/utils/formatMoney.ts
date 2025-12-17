@@ -33,3 +33,7 @@ export const handleNumericInput = (
     e.preventDefault();
   }
 };
+
+export const formatMoney = (v: number) => {
+  return v.toLocaleString("vi-VN") + "đ";
+}

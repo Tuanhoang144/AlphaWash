@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/toast";
 import { useOrderManager } from "@/services/useOrderManager";
@@ -14,6 +14,8 @@ import type {
   VehicleDTO,
 } from "@/types/OrderResponse";
 import { calculateTotal } from "@/shared/utils/order/calculatePrice";
+import { usePromotionServices } from "@/shared/services/usePromotionServices";
+import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -82,6 +84,7 @@ export function useCreateInvoice() {
     note: null,
     customer: { id: "", name: "", phone: "", vehicles: [] },
     orderDetails: [buildEmptyDetail()],
+    promotion: null,
   });
 
   // =========================================================================
@@ -225,8 +228,8 @@ export function useCreateInvoice() {
           note: detail.note ?? null,
         })) ?? [],
       deleteFlag: formData.deleteFlag ?? false,
+      promotion: selectedPromotion,
     } as OrderResponseDTO;
-
     try {
       const orderId = await createOrder(finalData);
       addToast({
@@ -268,8 +271,98 @@ export function useCreateInvoice() {
   };
 
   // =========================================================================
-  // RETURN - Public API
+  // PROMOTION
   // =========================================================================
+  const { getActivePromotionForOrder } = usePromotionServices();
+
+  const customerId = selectedCustomer?.id || formData.customer?.id || "";
+
+  const [promotions, setPromotions] = useState<PromotionApiItem[]>([]);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [selectedPromotion, setSelectedPromotion] =
+    useState<PromotionApiItem | null>(null);
+
+  const canChoosePromotion = !!customerId;
+
+  const fetchPromotions = useCallback(async () => {
+    if (!customerId) {
+      setPromotions([]);
+      return;
+    }
+    setPromoLoading(true);
+    try {
+      const data = await getActivePromotionForOrder(customerId);
+      setPromotions(Array.isArray(data) ? data : []);
+    } finally {
+      setPromoLoading(false);
+    }
+  }, [customerId, getActivePromotionForOrder]);
+
+  // Khi có customerId thì fetch, khi mất customerId thì clear
+  useEffect(() => {
+    fetchPromotions();
+  }, [fetchPromotions]);
+
+  // Khi đổi khách hàng: reset promo đã chọn (tránh áp nhầm)
+  useEffect(() => {
+    setSelectedPromotion(null);
+    // nếu bạn đang lưu discount/promo vào formData thì reset luôn:
+    setFormData((prev) => ({ ...prev, discount: 0 }));
+  }, [customerId, setFormData]);
+
+  const usablePromotions = useMemo(
+    () => promotions.filter((p) => p.usable),
+    [promotions]
+  );
+
+  // const applyPromotion = useCallback(
+  //   (promo: PromotionApiItem | null) => {
+  //     if (!customerId) return; //
+  //     if (promo && !promo.usable) return;
+
+  //     setSelectedPromotion(promo);
+
+  //     // Nếu bạn muốn lưu promo vào formData để submit backend:
+  //     // setFormData(prev => ({...prev, promotionId: promo?.idPromo ?? null }))
+  //     // hoặc lưu discount, tuỳ business của bạn:
+  //     // setFormData(prev => ({...prev, discount: calcDiscountFromPromo(...) }))
+  //   },
+  //   [customerId]
+  // );
+
+  // CHỈ áp dụng cho BILL_PERCENT
+  const applyPromotion = useCallback(
+    (promo: PromotionApiItem | null, opts?: { skipUsableCheck?: boolean }) => {
+      if (!customerId) return;
+
+      if (!opts?.skipUsableCheck && promo && promo.usable === false) return;
+      setSelectedPromotion(promo);
+
+      // CHỈ áp dụng cho BILL_PERCENT
+      if (!promo) {
+        setFormData((prev) => ({ ...prev, discount: 0, promotionId: null }));
+        return;
+      }
+
+      if (promo.promoType === "BILL_PERCENT") {
+        const percent = promo.value ?? 0;
+
+        setFormData((prev) => ({
+          ...prev,
+          discount: percent,
+          promotionId: promo?.promoId ?? null,
+        }));
+      } else {
+        // promo khác -> không dùng discount
+        setFormData((prev) => ({
+          ...prev,
+          discount: 0,
+          promotionId: promo?.promoId ?? null,
+        }));
+      }
+    },
+    [customerId, currentTotalPrice, setFormData]
+  );
 
   return {
     // Form State
@@ -300,5 +393,15 @@ export function useCreateInvoice() {
     // Submit & Navigation
     handleSubmit,
     handleNavigateToPayment,
+
+    // Promotion
+    promotions,
+    promoLoading,
+    promoError: null,
+    refetchPromotions: fetchPromotions,
+    selectedPromotion,
+    canChoosePromotion,
+    usablePromotions,
+    applyPromotion,
   };
 }

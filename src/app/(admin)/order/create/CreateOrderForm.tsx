@@ -12,6 +12,7 @@ import { VehicleDTO } from "@/types/OrderResponse";
 import ServiceForm from "@/shared/components/order/serviceCollapsible/ServiceForm";
 import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/InvoiceSummary";
 import { useCreateInvoice } from "@/shared/hooks/order/useCreateOrder";
+import PromotionPicker from "@/shared/components/order/promotion/PromotionPicker";
 
 export default function CreateOrderForm() {
   const {
@@ -29,6 +30,11 @@ export default function CreateOrderForm() {
     handleSubmit,
     handleNavigateToPayment,
     buildEmptyDetail,
+    promotions,
+    promoLoading,
+    selectedPromotion,
+    applyPromotion,
+    canChoosePromotion,
   } = useCreateInvoice();
 
   if (isNavigating) return <LoadingPage />;
@@ -83,10 +89,21 @@ export default function CreateOrderForm() {
                   }
                 />
 
+                {!canChoosePromotion ? (null
+                ) : (
+                  <PromotionPicker
+                    promotions={promotions}
+                    value={selectedPromotion}
+                    onChange={(promo) => applyPromotion(promo, { skipUsableCheck: false })}
+                    disabled={promoLoading}
+                  />
+                )}
+
                 <InvoiceSummary
                   statusPayment={formData.paymentStatus || "PENDING"}
                   orderDetails={formData.orderDetails || []}
                   totalPrice={currentTotalPrice}
+                  promotion={selectedPromotion}
                 />
 
                 {/* Submit */}

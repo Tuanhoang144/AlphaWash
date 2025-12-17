@@ -1,3 +1,5 @@
+import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
+
 export interface EmployeeDTO {
   id: number;
   name: string;
@@ -90,4 +92,5 @@ export interface OrderResponseDTO {
   note: string | null;
   customer: CustomerDTO;
   orderDetails: OrderDetailDTO[];
+  promotion : PromotionApiItem | null;
 }

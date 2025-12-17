@@ -14,6 +14,7 @@ import type {
 } from "@/types/OrderResponse";
 import { useCreateInvoice } from "./useCreateOrder";
 import { formatToLocalDateTime } from "@/shared/utils/formatDate";
+import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
 
 export function useEditInvoice(id: string | undefined) {
   const router = useRouter();
@@ -33,6 +34,11 @@ export function useEditInvoice(id: string | undefined) {
     currentTotalPrice,
     isNavigating,
     buildEmptyDetail,
+    promotions,
+    promoLoading,
+    selectedPromotion,
+    applyPromotion,
+    canChoosePromotion,
   } = useCreateInvoice();
 
   // ============================================================================
@@ -43,12 +49,19 @@ export function useEditInvoice(id: string | undefined) {
     setIsLoading(true);
     try {
       const orderData = await getOrderById(id);
-      if (orderData.customer.id === undefined  || orderData.customer.id === null || orderData.customer.id === "") {
+      if (
+        orderData.customer.id === undefined ||
+        orderData.customer.id === null ||
+        orderData.customer.id === ""
+      ) {
         handleCustomerChange(null);
       } else {
         handleCustomerChange(orderData.customer as CustomerDTO);
       }
-      handleVehicleChange(orderData.orderDetails?.[0]?.vehicle as VehicleDTO);
+      await handleVehicleChange(orderData.orderDetails?.[0]?.vehicle as VehicleDTO);
+      await applyPromotion(orderData.promotion as PromotionApiItem, { skipUsableCheck: true });
+      console.log(orderData.promotion);
+      
       if (orderData) setFormData(orderData);
     } catch (error) {
       console.error("Error loading order:", error);
@@ -110,7 +123,7 @@ export function useEditInvoice(id: string | undefined) {
       // nếu có các cờ boolean bắt buộc:
       deleteFlag: Boolean(raw?.deleteFlag),
 
-      // nếu schema có thêm trường khác trong OrderResponseDTO, set tương tự ở đây
+      promotion : raw?.promotion ?? null,
     };
   };
 
@@ -197,5 +210,10 @@ export function useEditInvoice(id: string | undefined) {
     handleUpdateSubmit,
     handleCancel,
     handlePayment,
+    promotions,
+    promoLoading,
+    selectedPromotion,
+    applyPromotion,
+    canChoosePromotion,
   };
 }

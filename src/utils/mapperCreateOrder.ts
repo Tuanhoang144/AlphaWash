@@ -34,6 +34,7 @@ export function mapFullOrderToRequest(
       note: detail.note || "",
       status: detail.status || "",
     })),
+    promotionId : order.promotion?.promoId || null,
   };
 
   return orderCreateRequest;

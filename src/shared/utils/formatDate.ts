@@ -26,3 +26,9 @@ export const toISODateInput = (d: Dayjs | null): string =>
 export const formatToLocalDateTime = (dateStr: string): string => {
   return dateStr.replace(/\.\d{3}.+$/, ''); 
 }
+
+export function formatDateVN(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("vi-VN");
+}

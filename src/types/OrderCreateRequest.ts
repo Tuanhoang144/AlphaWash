@@ -15,6 +15,7 @@ export interface OrderCreateRequest {
   discount: number
   totalPrice: number
   note: string
+  promotionId?: string | null
   orderDetails: OrderDetail[]
 }
 

@@ -23,7 +23,6 @@ import {
   QrCode,
   Search,
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge as UIBadge } from "@/components/ui/badge";
 import { Size } from "@/types/Size";
 import { OrderResponseDTO } from "@/types/OrderResponse";

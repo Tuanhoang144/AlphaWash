@@ -12,6 +12,7 @@ import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/
 import VehicleInfoSection from "@/shared/components/order/vehicleInfoCollapsible/VehicleInfoBlock";
 import type { VehicleDTO } from "@/types/OrderResponse";
 import { useEditInvoice } from "@/shared/hooks/order/useEditOrder";
+import PromotionPicker from "@/shared/components/order/promotion/PromotionPicker";
 
 type Props = { id: string };
 
@@ -33,6 +34,11 @@ export default function EditInvoiceContainer({ id }: Props) {
     handleUpdateSubmit,
     handleCancel,
     handlePayment,
+    promotions,
+    promoLoading,
+    selectedPromotion,
+    applyPromotion,
+    canChoosePromotion,
   } = useEditInvoice(id);
 
   if (isLoading || isNavigating || !formData) return <LoadingPage />;
@@ -80,10 +86,20 @@ export default function EditInvoiceContainer({ id }: Props) {
                   }
                 />
 
+                {!canChoosePromotion ? null : (
+                  <PromotionPicker
+                    promotions={promotions}
+                    value={selectedPromotion}
+                    onChange={(promo) => applyPromotion(promo, { skipUsableCheck: false })}
+                    disabled={promoLoading}
+                  />
+                )}
+
                 <InvoiceSummary
                   statusPayment={formData.paymentStatus || "PENDING"}
                   orderDetails={formData.orderDetails || []}
                   totalPrice={currentTotalPrice}
+                  promotion={selectedPromotion}
                 />
 
                 <div className="sticky top-6 bg-white rounded-lg border p-4 shadow-sm">
