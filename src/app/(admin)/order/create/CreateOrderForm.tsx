@@ -2,7 +2,7 @@
 
 import { FileText, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 import LoadingPage from "@/app/loading";
 import HeaderBreadcrumb from "@/shared/components/layout/Header";
 import CustomerInfoSection from "@/shared/components/order/customerCollapsible/CustomerInfoSection";
@@ -14,22 +14,39 @@ import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/
 import { useCreateInvoice } from "@/shared/hooks/order/useCreateOrder";
 import PromotionPicker from "@/shared/components/order/promotion/PromotionPicker";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ComboForm from "@/shared/components/order/comboCollapsible/ComboForm";
+import { useComboForm } from "@/shared/services/useComboForm";
+
 export default function CreateOrderForm() {
   const {
+    // form
     formData,
     setFormData,
+    currentTotalPrice,
+    isNavigating,
+
+    // customer/vehicle
     selectedCustomer,
     handleCustomerChange,
     handleVehicleChange,
+
+    // service
     handleInfoOrderDetailChange,
     handleServiceChange,
     addService,
     removeServiceAt,
-    currentTotalPrice,
-    isNavigating,
+    buildEmptyDetail,
+
+    // ✅ mode
+    mode,
+    setMode,
+
+    // submit
     handleSubmit,
     handleNavigateToPayment,
-    buildEmptyDetail,
+
+    // promotion
     promotions,
     promoLoading,
     selectedPromotion,
@@ -37,48 +54,81 @@ export default function CreateOrderForm() {
     canChoosePromotion,
   } = useCreateInvoice();
 
+  const { combos: allCombos, loadingCombos } = useComboForm();
+
   if (isNavigating) return <LoadingPage />;
 
   return (
     <SidebarInset>
-      {/* Header */}
       <HeaderBreadcrumb
         title="Tạo mới hóa đơn"
         parents={[{ label: "Quản lý hóa đơn", href: "/order/table" }]}
       />
 
-      {/* Form */}
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Cột Trái */}
               <div className="lg:col-span-2 space-y-6">
-                {/* Thông Tin Khách Hàng */}
                 <CustomerInfoSection
                   customer={selectedCustomer}
                   onCustomerChange={handleCustomerChange}
                 />
 
-                {/* Thông Tin Xe */}
                 <VehicleInfoSection
                   value={formData.orderDetails?.[0]?.vehicle as VehicleDTO}
                   customer={selectedCustomer || undefined}
                   onChange={handleVehicleChange}
                 />
 
-                {/* Thông Dịch Vụ & Nhân Viên Thi Công */}
-                <ServiceForm
-                  orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onServiceChange={handleServiceChange}
-                  onInfoChange={handleInfoOrderDetailChange}
-                  addService={addService}
-                  removeServiceAt={removeServiceAt}
-                  vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
-                />
+                <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
+                  <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="SERVICE">Mua dịch vụ</TabsTrigger>
+                    <TabsTrigger value="COMBO">Mua combo</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="SERVICE" className="mt-4">
+                    <ServiceForm
+                      orderDetail={
+                        formData.orderDetails?.[0] ?? buildEmptyDetail()
+                      }
+                      onServiceChange={handleServiceChange}
+                      onInfoChange={handleInfoOrderDetailChange}
+                      addService={addService}
+                      removeServiceAt={removeServiceAt}
+                      vehicleSize={
+                        formData.orderDetails?.[0]?.vehicle?.size ?? ""
+                      }
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="COMBO" className="mt-4">
+                    <ComboForm
+                      orderDetail={
+                        formData.orderDetails?.[0] ?? buildEmptyDetail()
+                      }
+                      onSetComboService={(svc) => {
+                        setMode("COMBO");
+                        addService(svc);
+                      }}
+                      onUpdateComboService={(patch) => {
+                        handleServiceChange(0, patch as any);
+                      }}
+                      onClearCombo={() => {
+                        removeServiceAt(0);
+                      }}
+                      vehicleSize={
+                        formData.orderDetails?.[0]?.vehicle?.size ?? ""
+                      }
+                      hasCustomer={!!selectedCustomer?.id}
+                      onInfoChange={handleInfoOrderDetailChange}
+                      allCombos={allCombos}
+                      loadingCombos={loadingCombos}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
 
-              {/* Right Column */}
               <div className="lg:col-span-1 space-y-6">
                 <TimeInfoForm
                   orderDate={formData.date || ""}
@@ -89,12 +139,13 @@ export default function CreateOrderForm() {
                   }
                 />
 
-                {!canChoosePromotion ? (null
-                ) : (
+                {!canChoosePromotion ? null : (
                   <PromotionPicker
                     promotions={promotions}
                     value={selectedPromotion}
-                    onChange={(promo) => applyPromotion(promo, { skipUsableCheck: false })}
+                    onChange={(promo) =>
+                      applyPromotion(promo, { skipUsableCheck: false })
+                    }
                     disabled={promoLoading}
                   />
                 )}
@@ -102,19 +153,20 @@ export default function CreateOrderForm() {
                 <InvoiceSummary
                   statusPayment={formData.paymentStatus || "PENDING"}
                   orderDetails={formData.orderDetails || []}
-                  totalPrice={currentTotalPrice}
+                  totalPrice={currentTotalPrice ?? 0}
                   promotion={selectedPromotion}
+                  combos={allCombos}
                 />
 
-                {/* Submit */}
                 <div className="sticky top-6 bg-white rounded-lg border p-4 shadow-sm">
                   <div className="space-y-4">
                     <div className="text-center">
                       <div className="text-sm text-gray-500">Tổng tiền</div>
                       <div className="text-2xl font-bold text-green-600">
-                        {currentTotalPrice.toLocaleString("vi-VN")} VNĐ
+                        {(currentTotalPrice ?? 0).toLocaleString("vi-VN")} VNĐ{" "}
                       </div>
                     </div>
+
                     <div className="flex flex-col space-y-2">
                       <Button
                         type="submit"
@@ -123,7 +175,8 @@ export default function CreateOrderForm() {
                         <FileText className="h-4 w-4 mr-2" />
                         Tạo Hóa Đơn
                       </Button>
-                      {currentTotalPrice > 0 && (
+
+                      {(currentTotalPrice ?? 0) > 0 && (
                         <Button
                           onClick={handleNavigateToPayment}
                           className="w-full bg-green-600 hover:bg-green-700"

@@ -27,10 +27,12 @@ export function mapFullOrderToRequest(
       employeeIds: (detail.employees || []).map((employee) => employee.id),
       services: (detail.service || []).map((service) => ({
         serviceCatalogCode: service.serviceCatalog?.code || "",
+        serviceComboCatalogCode: service.serviceComboCatalog?.catalogCode || "",
         adjustedPrice: service.adjustedPrice || 0,
         adjustedPriceFlag: service.adjustedPriceFlag || false,
         adjustedPriceReason: service.adjustedPriceReason || "",
       })),
+      orderType: detail.orderType || "",
       note: detail.note || "",
       status: detail.status || "",
     })),

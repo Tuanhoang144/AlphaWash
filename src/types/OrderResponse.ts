@@ -47,17 +47,32 @@ export interface ModelDTO {
   brand?: BrandDTO;
 }
 
-export interface ServiceDTO {
+export interface  ServiceDTO {
   id: number;
   serviceCode: string;
   serviceName: string;
   serviceTypeCode: string;
   serviceCatalog: ServiceCatalogDTO;
+  serviceComboCatalog?: ServiceComboCatalogDTO;
   adjustedPriceReason: string;
   adjustedPrice: number;
   adjustedPriceFlag: boolean;
   duration?: string;
   note?: string;
+}
+
+export interface ServiceComboCatalogDTO {
+  comboName: string;
+  catalogCode: string;
+  size: string;
+  price: number;
+  services: ComboQuantityDTO[];
+}
+
+export interface ComboQuantityDTO {
+  serviceCatalogCode: string;
+  serviceName: string;
+  quantity: number;
 }
 
 export interface OrderDetailDTO {
@@ -66,6 +81,7 @@ export interface OrderDetailDTO {
   vehicle: VehicleDTO;
   service: ServiceDTO[];
   status: string;
+  orderType: string;
   note: string | null;
 }
 

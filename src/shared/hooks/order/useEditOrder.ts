@@ -15,6 +15,7 @@ import type {
 import { useCreateInvoice } from "./useCreateOrder";
 import { formatToLocalDateTime } from "@/shared/utils/formatDate";
 import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
+import { set } from "date-fns";
 
 export function useEditInvoice(id: string | undefined) {
   const router = useRouter();
@@ -39,6 +40,8 @@ export function useEditInvoice(id: string | undefined) {
     selectedPromotion,
     applyPromotion,
     canChoosePromotion,
+    mode,
+    setMode,
   } = useCreateInvoice();
 
   // ============================================================================
@@ -58,10 +61,14 @@ export function useEditInvoice(id: string | undefined) {
       } else {
         handleCustomerChange(orderData.customer as CustomerDTO);
       }
-      await handleVehicleChange(orderData.orderDetails?.[0]?.vehicle as VehicleDTO);
-      await applyPromotion(orderData.promotion as PromotionApiItem, { skipUsableCheck: true });
-      console.log(orderData.promotion);
-      
+      await handleVehicleChange(
+        orderData.orderDetails?.[0]?.vehicle as VehicleDTO
+      );
+      await applyPromotion(orderData.promotion as PromotionApiItem, {
+        skipUsableCheck: true,
+      });
+      await setMode(orderData.orderDetails[0].orderType);
+
       if (orderData) setFormData(orderData);
     } catch (error) {
       console.error("Error loading order:", error);
@@ -123,7 +130,7 @@ export function useEditInvoice(id: string | undefined) {
       // nếu có các cờ boolean bắt buộc:
       deleteFlag: Boolean(raw?.deleteFlag),
 
-      promotion : raw?.promotion ?? null,
+      promotion: raw?.promotion ?? null,
     };
   };
 
@@ -215,5 +222,7 @@ export function useEditInvoice(id: string | undefined) {
     selectedPromotion,
     applyPromotion,
     canChoosePromotion,
+    mode,
+    setMode,
   };
 }

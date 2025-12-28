@@ -23,11 +23,13 @@ export interface OrderDetail {
   employeeIds: number[] 
   services: ServiceAdjust[]
   status: string
+  orderType: string
   note: string
 }
 
 export interface ServiceAdjust {
   serviceCatalogCode: string
+  serviceComboCatalogCode: string
   adjustedPrice: number
   adjustedPriceFlag: boolean
   adjustedPriceReason: string

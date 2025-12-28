@@ -14,6 +14,11 @@ import type { VehicleDTO } from "@/types/OrderResponse";
 import { useEditInvoice } from "@/shared/hooks/order/useEditOrder";
 import PromotionPicker from "@/shared/components/order/promotion/PromotionPicker";
 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import ComboForm from "@/shared/components/order/comboCollapsible/ComboForm";
+import { useComboForm } from "@/shared/services/useComboForm";
+import { useEffect } from "react";
+
 type Props = { id: string };
 
 export default function EditInvoiceContainer({ id }: Props) {
@@ -39,7 +44,11 @@ export default function EditInvoiceContainer({ id }: Props) {
     selectedPromotion,
     applyPromotion,
     canChoosePromotion,
+    mode,
+    setMode,
   } = useEditInvoice(id);
+
+  const { combos: allCombos, loadingCombos } = useComboForm();
 
   if (isLoading || isNavigating || !formData) return <LoadingPage />;
 
@@ -66,14 +75,52 @@ export default function EditInvoiceContainer({ id }: Props) {
                   onChange={handleVehicleChange}
                 />
 
-                <ServiceForm
-                  orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onServiceChange={handleServiceChange}
-                  onInfoChange={handleInfoOrderDetailChange}
-                  addService={addService}
-                  removeServiceAt={removeServiceAt}
-                  vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
-                />
+                <Tabs value={mode} onValueChange={(v) => setMode(v as any)}>
+                  <TabsList className="grid grid-cols-2 w-full">
+                    <TabsTrigger value="SERVICE">Mua dịch vụ</TabsTrigger>
+                    <TabsTrigger value="COMBO">Mua combo</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="SERVICE" className="mt-4">
+                    <ServiceForm
+                      orderDetail={
+                        formData.orderDetails?.[0] ?? buildEmptyDetail()
+                      }
+                      onServiceChange={handleServiceChange}
+                      onInfoChange={handleInfoOrderDetailChange}
+                      addService={addService}
+                      removeServiceAt={removeServiceAt}
+                      vehicleSize={
+                        formData.orderDetails?.[0]?.vehicle?.size ?? ""
+                      }
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="COMBO" className="mt-4">
+                    <ComboForm
+                      orderDetail={
+                        formData.orderDetails?.[0] ?? buildEmptyDetail()
+                      }
+                      onSetComboService={(svc) => {
+                        setMode("COMBO");
+                        addService(svc);
+                      }}
+                      onUpdateComboService={(patch) => {
+                        handleServiceChange(0, patch as any);
+                      }}
+                      onClearCombo={() => {
+                        removeServiceAt(0);
+                      }}
+                      vehicleSize={
+                        formData.orderDetails?.[0]?.vehicle?.size ?? ""
+                      }
+                      hasCustomer={!!selectedCustomer?.id}
+                      onInfoChange={handleInfoOrderDetailChange}
+                      allCombos={allCombos}
+                      loadingCombos={loadingCombos}
+                    />
+                  </TabsContent>
+                </Tabs>
               </div>
 
               <div className="lg:col-span-1 space-y-6">
@@ -90,7 +137,9 @@ export default function EditInvoiceContainer({ id }: Props) {
                   <PromotionPicker
                     promotions={promotions}
                     value={selectedPromotion}
-                    onChange={(promo) => applyPromotion(promo, { skipUsableCheck: false })}
+                    onChange={(promo) =>
+                      applyPromotion(promo, { skipUsableCheck: false })
+                    }
                     disabled={promoLoading}
                   />
                 )}
@@ -98,8 +147,9 @@ export default function EditInvoiceContainer({ id }: Props) {
                 <InvoiceSummary
                   statusPayment={formData.paymentStatus || "PENDING"}
                   orderDetails={formData.orderDetails || []}
-                  totalPrice={currentTotalPrice}
+                  totalPrice={currentTotalPrice ?? 0}
                   promotion={selectedPromotion}
+                  combos={allCombos}
                 />
 
                 <div className="sticky top-6 bg-white rounded-lg border p-4 shadow-sm">
@@ -107,7 +157,7 @@ export default function EditInvoiceContainer({ id }: Props) {
                     <div className="text-center">
                       <div className="text-sm text-gray-500">Tổng tiền</div>
                       <div className="text-2xl font-bold text-green-600">
-                        {currentTotalPrice.toLocaleString("vi-VN")} VNĐ
+                        {(currentTotalPrice ?? 0).toLocaleString("vi-VN")} VNĐ{" "}
                       </div>
                     </div>
                     <div className="flex flex-col space-y-2">
@@ -118,7 +168,7 @@ export default function EditInvoiceContainer({ id }: Props) {
                         <FileText className="h-4 w-4 mr-2" />
                         Cập Nhật Hóa Đơn
                       </Button>
-                      {currentTotalPrice > 0 && (
+                      {(currentTotalPrice ?? 0) > 0 && (
                         <Button
                           onClick={handlePayment}
                           className="w-full bg-green-600 hover:bg-green-700"

@@ -20,7 +20,7 @@ import { useServiceForm } from "@/shared/hooks/order/useServiceForm";
 interface OrderDetailBlockProps {
   orderDetail: OrderDetailDTO;
   onServiceChange: (index: number, service: ServiceDTO) => void;
-  onInfoChange: (field: string, value: any) => void;
+  onInfoChange: (field: keyof OrderDetailDTO, value: any) => void;
   addService: (newService: ServiceDTO) => void;
   removeServiceAt: (index: number) => void;
   vehicleSize: string;
@@ -38,7 +38,7 @@ export default function ServiceForm({
   const { services: allServices, loadingServices } = useServiceForm();
 
   //Dùng để update employee/status/note trong orderDetail
-  const updateInfo = (field: string, value: any) => {
+  const updateInfo = (field: keyof OrderDetailDTO, value: any) => {
     onInfoChange(field, value);
   };
 

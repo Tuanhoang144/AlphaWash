@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/toast";
@@ -15,33 +14,20 @@ import type {
 } from "@/types/OrderResponse";
 import { calculateTotal } from "@/shared/utils/order/calculatePrice";
 import { usePromotionServices } from "@/shared/services/usePromotionServices";
-import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
+import type { PromotionApiItem } from "@/shared/types/PromotionApiItem";
 
-// ============================================================================
-// TYPE DEFINITIONS
-// ============================================================================
+// =====================
+// MODE
+// =====================
+export type CreateOrderMode = "SERVICE" | "COMBO";
 
-type SingleOrder = Omit<OrderResponseDTO, "orderDetails"> & {
-  orderDetails: [OrderDetailDTO];
-};
-
-// ============================================================================
-// FACTORY - Create Empty Order Detail
-// ============================================================================
-
-const buildEmptyDetail = (patch?: Partial<OrderDetailDTO>): OrderDetailDTO => ({
-  service: [
-    {
-      serviceCode: "",
-      serviceName: "",
-      serviceTypeCode: "",
-      adjustedPriceReason: "",
-      adjustedPrice: 0,
-      adjustedPriceFlag: false,
-      duration: undefined,
-      note: undefined,
-    } as ServiceDTO,
-  ],
+// =====================
+// FACTORY - empty detail
+// =====================
+export const buildEmptyDetail = (
+  patch?: Partial<OrderDetailDTO>
+): OrderDetailDTO => ({
+  service: [],
   vehicle: {
     id: "",
     licensePlate: "",
@@ -54,6 +40,7 @@ const buildEmptyDetail = (patch?: Partial<OrderDetailDTO>): OrderDetailDTO => ({
     size: "",
     imageUrl: "",
   },
+  orderType: "",
   employees: [],
   status: "PENDING",
   code: "",
@@ -61,15 +48,50 @@ const buildEmptyDetail = (patch?: Partial<OrderDetailDTO>): OrderDetailDTO => ({
   ...patch,
 });
 
-// ============================================================================
-// HOOK - useCreateInvoice
-// ============================================================================
+type SingleOrder = Omit<OrderResponseDTO, "orderDetails"> & {
+  orderDetails: [OrderDetailDTO];
+};
+
+// =====================
+// Helpers parse backend -> UI inputs
+// =====================
+const toDateInput = (iso?: string | null) => {
+  if (!iso) return new Date().toISOString().slice(0, 10);
+  return String(iso).slice(0, 10);
+};
+
+const toTimeInput = (t?: string | null) => {
+  if (!t) return "";
+  const s = String(t);
+  return s.length >= 5 ? s.slice(0, 5) : s;
+};
+
+// =====================
+// Combo helpers (single source of truth)
+// =====================
+const getComboItem = (detail?: OrderDetailDTO) =>
+  (detail?.service?.[0] as any) ?? null;
+
+const buildEmptyComboItem = (): any => ({
+  serviceCatalog: null,
+  serviceComboCatalog: null,
+  adjustedPrice: 0,
+  adjustedPriceFlag: false,
+  adjustedPriceReason: "",
+});
 
 export function useCreateInvoice() {
-  // =========================================================================
-  // STATE - Form Data
-  // =========================================================================
+  const router = useRouter();
+  const { createOrder } = useOrderManager();
 
+  // =====================
+  // mode
+  // =====================
+  const [mode, setMode] = useState<CreateOrderMode>("SERVICE");
+
+  // =====================
+  // formData
+  // =====================
   const [formData, setFormData] = useState<Partial<SingleOrder>>({
     date: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
@@ -87,54 +109,69 @@ export function useCreateInvoice() {
     promotion: null,
   });
 
-  // =========================================================================
-  // STATE - Selection & Navigation
-  // =========================================================================
-
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
     null
   );
   const [vehicle, setVehicle] = useState<VehicleDTO | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // =========================================================================
-  // SERVICES
-  // =========================================================================
-
-  const router = useRouter();
-  const { createOrder } = useOrderManager();
-
-  // =========================================================================
-  // COMPUTED - Total Price
-  // =========================================================================
-
-  const currentTotalPrice = calculateTotal(formData as OrderResponseDTO);
-
-  // =========================================================================
-  // HELPERS - Order Detail Access
-  // =========================================================================
-
-  // Lấy detail đầu tiên (giả định chỉ có 1 detail)
+  // =====================
+  // detail helpers
+  // =====================
   const getDetail = (): OrderDetailDTO =>
-    formData.orderDetails![0] as OrderDetailDTO;
+    (formData.orderDetails?.[0] as OrderDetailDTO) ?? buildEmptyDetail();
 
-  // Cập nhật detail đầu tiên
-  const onOrderDetailChange = (nextDetail: OrderDetailDTO) => {
-    setFormData((prev) => {
-      const old = prev.orderDetails![0];
-      // Nếu KHÔNG thay đổi gì -> ĐỪNG setState (ngăn vòng lặp)
-      if (JSON.stringify(old) === JSON.stringify(nextDetail)) return prev;
-      return {
-        ...prev,
-        orderDetails: [nextDetail],
-      };
+  const setDetail = useCallback(
+    (updater: (prev: OrderDetailDTO) => OrderDetailDTO) => {
+      setFormData((prev) => {
+        const prevDetail =
+          (prev.orderDetails?.[0] as OrderDetailDTO) ?? buildEmptyDetail();
+        const nextDetail = updater(prevDetail);
+        return { ...prev, orderDetails: [nextDetail] as any };
+      });
+    },
+    []
+  );
+
+  // =====================
+  // Mode switch: ép orderType + clear đúng thứ cần clear
+  // =====================
+  useEffect(() => {
+    setDetail((d) => {
+      if (mode === "COMBO") {
+        // COMBO: service list chỉ là 1 item đại diện combo (để UI picker set)
+        return {
+          ...d,
+          orderType: "COMBO",
+          service: d.service?.length ? d.service : [],
+        };
+      }
+      // SERVICE: không động vào list service (để user không mất data khi chuyển qua lại nếu muốn)
+      return { ...d, orderType: "SERVICE" };
     });
-  };
+  }, [mode, setDetail]);
 
-  // =========================================================================
-  // HANDLERS - Customer & Vehicle
-  // =========================================================================
+  // =====================
+  // Total Price
+  // =====================
+  const currentTotalPrice = useMemo(() => {
+    if (mode === "COMBO") {
+      const d = getDetail();
+      const combo = getComboItem(d);
+      return (
+        combo?.adjustedPrice ??
+        combo?.serviceComboCatalog?.price ??
+        formData.totalPrice ??
+        0
+      );
+    }
+    return calculateTotal(formData as OrderResponseDTO);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, formData]);
 
+  // =====================
+  // Customer / Vehicle
+  // =====================
   const handleCustomerChange = (customer: CustomerDTO | null) => {
     setSelectedCustomer(customer);
     setFormData((prev) => ({ ...prev, customer: customer ?? undefined }));
@@ -142,141 +179,123 @@ export function useCreateInvoice() {
 
   const handleVehicleChange = (nextVehicle: VehicleDTO) => {
     setVehicle(nextVehicle);
-    const prevDetail = getDetail();
-    onOrderDetailChange({
-      ...prevDetail,
-      vehicle: nextVehicle,
-    });
+    setDetail((d) => ({ ...d, vehicle: nextVehicle }));
   };
 
-  // =========================================================================
-  // HANDLERS - Service Management
-  // =========================================================================
+  // =====================
+  // Services handlers (dùng cho cả SERVICE + COMBO)
+  // - SERVICE: list nhiều phần tử
+  // - COMBO: chỉ dùng index 0 (service[0])
+  // =====================
+  const ensureComboShape = (d: OrderDetailDTO) => {
+    const s0: any = d.service?.[0];
+    if (s0?.serviceComboCatalog || s0) return d;
+    return { ...d, service: [buildEmptyComboItem()] };
+  };
 
   const handleServiceChange = (index: number, updated: ServiceDTO) => {
-    const prevDetail = getDetail();
-    const prevServices = prevDetail.service ?? [];
-    if (index < 0 || index >= prevServices.length) return;
+    if (mode === "COMBO") {
+      if (index !== 0) return;
+      setDetail((d) => {
+        const normalized = ensureComboShape({ ...d, orderType: "COMBO" });
+        const next = [...(normalized.service ?? [])];
+        next[0] = {
+          ...buildEmptyComboItem(),
+          ...(next[0] as any),
+          ...(updated as any),
+          serviceCatalog: null, // combo không dùng serviceCatalog
+          serviceComboCatalog:
+            (updated as any).serviceComboCatalog ??
+            (next[0] as any).serviceComboCatalog,
+        };
+        return { ...normalized, service: next } as any;
+      });
+      return;
+    }
 
-    const next = [...prevServices];
-    next[index] = updated;
-    onOrderDetailChange({ ...prevDetail, service: next });
+    // SERVICE
+    setDetail((d) => {
+      const prevServices = d.service ?? [];
+      if (index < 0 || index >= prevServices.length) return d;
+      const next = [...prevServices];
+      next[index] = updated;
+      return { ...d, orderType: "SERVICE", service: next };
+    });
   };
 
   const addService = (newService: ServiceDTO) => {
-    const prevDetail = getDetail();
-    const next = [...(prevDetail.service ?? []), newService];
-    onOrderDetailChange({ ...prevDetail, service: next });
+    if (mode === "COMBO") {
+      // COMBO: replace service[0]
+      setDetail(
+        (d) =>
+          ({
+            ...d,
+            orderType: "COMBO",
+            service: [
+              {
+                ...buildEmptyComboItem(),
+                ...(newService as any),
+                serviceCatalog: null,
+                // yêu cầu: comboPicker phải set serviceComboCatalog đầy đủ hoặc ít nhất catalogCode
+                serviceComboCatalog:
+                  (newService as any).serviceComboCatalog ?? null,
+              },
+            ],
+          } as any)
+      );
+      return;
+    }
+
+    // SERVICE
+    setDetail((d) => ({
+      ...d,
+      orderType: "SERVICE",
+      service: [...(d.service ?? []), newService],
+    }));
   };
 
   const removeServiceAt = (index: number) => {
-    const prevDetail = getDetail();
-    const prevServices = prevDetail.service ?? [];
-    if (index < 0 || index >= prevServices.length) return;
+    if (mode === "COMBO") {
+      if (index !== 0) return;
+      setDetail((d) => ({ ...d, orderType: "COMBO", service: [] } as any));
+      return;
+    }
 
-    const next = prevServices.filter((_, i) => i !== index);
-    onOrderDetailChange({ ...prevDetail, service: next });
-  };
-
-  // =========================================================================
-  // HANDLERS - Employee/status/note trong orderDetail
-  // =========================================================================
-  const handleInfoOrderDetailChange = (field: string, value: any) => {
-    const prevDetail = getDetail();
-    console.log("CHANGE", field, value);
-
-    onOrderDetailChange({
-      ...prevDetail,
-      [field]: value,
+    // SERVICE
+    setDetail((d) => {
+      const prevServices = d.service ?? [];
+      if (index < 0 || index >= prevServices.length) return d;
+      return {
+        ...d,
+        orderType: "SERVICE",
+        service: prevServices.filter((_, i) => i !== index),
+      };
     });
   };
 
-  // =========================================================================
-  // HANDLERS - Submit & Navigation
-  // =========================================================================
+  const handleInfoOrderDetailChange = (
+    field: keyof OrderDetailDTO,
+    value: any
+  ) => {
+    setDetail((d) => {
+      const next: any = { ...d };
 
-  const createNewOrder = async (): Promise<string> => {
-    const finalData: OrderResponseDTO = {
-      ...formData,
-      id: formData.id ?? "",
-      code: formData.code ?? "",
-      tip: formData.tip ?? 0,
-      totalPrice: currentTotalPrice,
-      date: formData.date
-        ? `${formData.date}T00:00:00`
-        : new Date().toISOString(),
-      checkIn: formData.checkIn as string,
-      checkOut: formData.checkOut as string,
-      paymentType: formData.paymentType ?? "Transfer",
-      paymentStatus: formData.paymentStatus ?? "PENDING",
-      vat: formData.vat ?? 0,
-      discount: formData.discount ?? 0,
-      note: formData.note ?? null,
-      customer: (selectedCustomer ?? formData.customer) as CustomerDTO,
-      orderDetails:
-        formData.orderDetails?.map((detail) => ({
-          ...detail,
-          vehicle: (detail.vehicle ?? vehicle) as VehicleDTO,
-          service:
-            detail.service?.map((s) => ({
-              ...s,
-              serviceCatalogCode: s.serviceCatalog?.code || "",
-              adjustedPrice: s.adjustedPrice || 0,
-              adjustedPriceFlag: s.adjustedPriceFlag || false,
-              adjustedPriceReason: s.adjustedPriceReason || "",
-            })) || [],
-          note: detail.note ?? null,
-        })) ?? [],
-      deleteFlag: formData.deleteFlag ?? false,
-      promotion: selectedPromotion,
-    } as OrderResponseDTO;
-    try {
-      const orderId = await createOrder(finalData);
-      addToast({
-        title: "Thành công",
-        description: "Hóa đơn đã được tạo!",
-        color: "success",
-      });
-      return orderId;
-    } catch (err) {
-      console.error("[useCreateInvoice] Error creating order:", err);
-      addToast({
-        title: "Lỗi",
-        description: "Không thể tạo hóa đơn",
-        color: "danger",
-      });
-      throw err;
-    }
+      const nextOrderType = mode === "COMBO" ? "COMBO" : "SERVICE";
+      if (next.orderType !== nextOrderType) next.orderType = nextOrderType;
+
+      if (next[field] === value) return d;
+
+      next[field] = value;
+      return next as OrderDetailDTO;
+    });
   };
-
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setIsNavigating(true);
-    try {
-      await createNewOrder();
-      router.push("/order/table");
-    } catch {
-      setIsNavigating(false);
-    }
-  };
-
-  const handleNavigateToPayment = async () => {
-    setIsNavigating(true);
-    try {
-      const orderId = await createNewOrder();
-      if (orderId) router.push(`/order/${orderId}/payment`);
-    } catch {
-      setIsNavigating(false);
-    }
-  };
-
-  // =========================================================================
-  // PROMOTION
-  // =========================================================================
+  // =====================
+  // Promotion
+  // =====================
   const { getActivePromotionForOrder } = usePromotionServices();
 
-  const customerId = selectedCustomer?.id || formData.customer?.id || "";
-
+  const customerId =
+    selectedCustomer?.id || (formData.customer as any)?.id || "";
   const [promotions, setPromotions] = useState<PromotionApiItem[]>([]);
   const [promoLoading, setPromoLoading] = useState(false);
   const [selectedPromotion, setSelectedPromotion] =
@@ -298,39 +317,20 @@ export function useCreateInvoice() {
     }
   }, [customerId, getActivePromotionForOrder]);
 
-  // Khi có customerId thì fetch, khi mất customerId thì clear
   useEffect(() => {
     fetchPromotions();
   }, [fetchPromotions]);
 
-  // Khi đổi khách hàng: reset promo đã chọn (tránh áp nhầm)
   useEffect(() => {
     setSelectedPromotion(null);
-    // nếu bạn đang lưu discount/promo vào formData thì reset luôn:
-    setFormData((prev) => ({ ...prev, discount: 0 }));
-  }, [customerId, setFormData]);
+    setFormData((prev) => ({ ...prev, discount: 0, promotionId: null as any }));
+  }, [customerId]);
 
   const usablePromotions = useMemo(
     () => promotions.filter((p) => p.usable),
     [promotions]
   );
 
-  // const applyPromotion = useCallback(
-  //   (promo: PromotionApiItem | null) => {
-  //     if (!customerId) return; //
-  //     if (promo && !promo.usable) return;
-
-  //     setSelectedPromotion(promo);
-
-  //     // Nếu bạn muốn lưu promo vào formData để submit backend:
-  //     // setFormData(prev => ({...prev, promotionId: promo?.idPromo ?? null }))
-  //     // hoặc lưu discount, tuỳ business của bạn:
-  //     // setFormData(prev => ({...prev, discount: calcDiscountFromPromo(...) }))
-  //   },
-  //   [customerId]
-  // );
-
-  // CHỈ áp dụng cho BILL_PERCENT
   const applyPromotion = useCallback(
     (promo: PromotionApiItem | null, opts?: { skipUsableCheck?: boolean }) => {
       if (!customerId) return;
@@ -338,34 +338,199 @@ export function useCreateInvoice() {
       if (!opts?.skipUsableCheck && promo && promo.usable === false) return;
       setSelectedPromotion(promo);
 
-      // CHỈ áp dụng cho BILL_PERCENT
       if (!promo) {
-        setFormData((prev) => ({ ...prev, discount: 0, promotionId: null }));
+        setFormData((prev) => ({
+          ...prev,
+          discount: 0,
+          promotionId: null as any,
+        }));
         return;
       }
 
       if (promo.promoType === "BILL_PERCENT") {
-        const percent = promo.value ?? 0;
-
         setFormData((prev) => ({
           ...prev,
-          discount: percent,
-          promotionId: promo?.promoId ?? null,
+          discount: promo.value ?? 0,
+          promotionId: promo.promoId ?? null,
         }));
       } else {
-        // promo khác -> không dùng discount
         setFormData((prev) => ({
           ...prev,
           discount: 0,
-          promotionId: promo?.promoId ?? null,
+          promotionId: promo.promoId ?? null,
         }));
       }
     },
-    [customerId, currentTotalPrice, setFormData]
+    [customerId]
   );
 
+  // =====================
+  // Hydrate order từ backend -> UI (dùng cho edit)
+  // =====================
+  const hydrateFromOrder = useCallback((order: OrderResponseDTO) => {
+    const detail = (order.orderDetails?.[0] ??
+      buildEmptyDetail()) as OrderDetailDTO;
+    const orderType: CreateOrderMode =
+      detail.orderType === "COMBO" ? "COMBO" : "SERVICE";
+
+    setMode(orderType);
+    setSelectedCustomer((order.customer ?? null) as any);
+    setVehicle((detail.vehicle ?? null) as any);
+
+    setFormData({
+      ...(order as any),
+      date: toDateInput(order.date),
+      checkIn: toTimeInput(order.checkIn),
+      checkOut: toTimeInput(order.checkOut as any),
+      orderDetails: [{ ...(detail as any), orderType }],
+    });
+  }, []);
+
+  // =====================
+  // BUILD PAYLOAD (create/update)
+  // =====================
+  const buildFinalData = useCallback((): OrderResponseDTO => {
+    const detail = getDetail();
+
+    const base: OrderResponseDTO = {
+      ...(formData as OrderResponseDTO),
+      id: (formData as any).id ?? "",
+      code: (formData as any).code ?? "",
+      tip: (formData as any).tip ?? 0,
+      totalPrice: currentTotalPrice,
+      date: (formData as any).date
+        ? `${(formData as any).date}T00:00:00`
+        : new Date().toISOString(),
+      checkIn: (formData as any).checkIn as string,
+      checkOut: (formData as any).checkOut as string,
+      paymentType: (formData as any).paymentType ?? "Transfer",
+      paymentStatus: (formData as any).paymentStatus ?? "PENDING",
+      vat: (formData as any).vat ?? 0,
+      discount: (formData as any).discount ?? 0,
+      note: (formData as any).note ?? null,
+      customer: (selectedCustomer ?? (formData as any).customer) as CustomerDTO,
+      deleteFlag: (formData as any).deleteFlag ?? false,
+      promotion: selectedPromotion,
+      orderDetails: [],
+    } as OrderResponseDTO;
+
+    if (mode === "COMBO") {
+      if (!base.customer?.id)
+        throw new Error("Mua combo yêu cầu chọn khách hàng");
+
+      const combo = getComboItem(detail);
+      const comboCode = combo?.serviceComboCatalog?.catalogCode;
+
+      if (!comboCode) throw new Error("Vui lòng chọn combo để mua");
+
+      base.orderDetails = [
+        {
+          ...detail,
+          orderType: "COMBO",
+          vehicle: (detail.vehicle ?? vehicle) as VehicleDTO,
+          service: [
+            {
+              serviceComboCatalog: { catalogCode: comboCode } as any,
+              serviceCatalog: null as any,
+              adjustedPrice: combo?.adjustedPrice ?? 0,
+              adjustedPriceFlag: !!combo?.adjustedPriceFlag,
+              adjustedPriceReason: combo?.adjustedPriceReason ?? "",
+            } as any,
+          ],
+        } as any,
+      ];
+
+      return base;
+    }
+
+    // SERVICE
+    base.orderDetails = [
+      {
+        ...detail,
+        orderType: "SERVICE",
+        vehicle: (detail.vehicle ?? vehicle) as VehicleDTO,
+        service:
+          detail.service?.map((s) => ({
+            ...s,
+            serviceCatalog: (s as any).serviceCatalog ?? null,
+            adjustedPrice: (s as any).adjustedPrice ?? 0,
+            adjustedPriceFlag: !!(s as any).adjustedPriceFlag,
+            adjustedPriceReason: (s as any).adjustedPriceReason ?? "",
+            serviceComboCatalog: null, // chặn combo
+          })) || [],
+      } as any,
+    ];
+
+    return base;
+  }, [
+    currentTotalPrice,
+    formData,
+    mode,
+    selectedCustomer,
+    selectedPromotion,
+    vehicle,
+  ]);
+
+  // =====================
+  // Create
+  // =====================
+  const createNewOrder = async (): Promise<string> => {
+    const finalData = buildFinalData();
+    return await createOrder(finalData);
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setIsNavigating(true);
+    try {
+      await createNewOrder();
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được tạo!",
+        color: "success",
+      });
+      router.push("/order/table");
+    } catch (err: any) {
+      console.error(err);
+      addToast({
+        title: "Lỗi",
+        description: err?.message || "Không thể tạo hóa đơn",
+        color: "danger",
+      });
+      setIsNavigating(false);
+    }
+  };
+
+  const handleNavigateToPayment = async () => {
+    setIsNavigating(true);
+    try {
+      const orderId = await createNewOrder();
+      addToast({
+        title: "Thành công",
+        description: "Hóa đơn đã được tạo!",
+        color: "success",
+      });
+
+      router.push(
+        mode === "COMBO"
+          ? `/order/${orderId}/paymentCombo`
+          : `/order/${orderId}/payment`
+      );
+    } catch (err: any) {
+      console.error(err);
+      addToast({
+        title: "Lỗi",
+        description: err?.message || "Không thể tạo hóa đơn",
+        color: "danger",
+      });
+      setIsNavigating(false);
+    }
+  };
+
   return {
-    // Form State
+    mode,
+    setMode,
+
     formData,
     setFormData,
     selectedCustomer,
@@ -373,28 +538,24 @@ export function useCreateInvoice() {
     isNavigating,
     currentTotalPrice,
 
-    // Detail Helpers
+    hydrateFromOrder,
+    buildFinalData,
+
     getDetail,
-    onOrderDetailChange,
     buildEmptyDetail,
 
-    // Customer & Vehicle
     handleCustomerChange,
     handleVehicleChange,
 
-    // Services
     handleServiceChange,
     addService,
     removeServiceAt,
 
-    // Employee/status/note trong orderDetail
     handleInfoOrderDetailChange,
 
-    // Submit & Navigation
     handleSubmit,
     handleNavigateToPayment,
 
-    // Promotion
     promotions,
     promoLoading,
     promoError: null,

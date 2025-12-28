@@ -62,7 +62,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   useEffect(() => {
     const updateScrollHeight = () => {
       const { innerHeight } = window;
-      
+
       // Simple responsive logic
       if (innerHeight >= 1200) {
         setScrollY("70vh");
@@ -76,17 +76,17 @@ const OrderTable: React.FC<OrderTableProps> = ({
     };
 
     updateScrollHeight();
-    
+
     // Debounce resize
     let timeoutId: NodeJS.Timeout;
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(updateScrollHeight, 200);
     };
-    
-    window.addEventListener('resize', handleResize);
+
+    window.addEventListener("resize", handleResize);
     return () => {
-      window.removeEventListener('resize', handleResize);
+      window.removeEventListener("resize", handleResize);
       clearTimeout(timeoutId);
     };
   }, []);
@@ -103,30 +103,39 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const router = useRouter();
 
-  const getActionMenuItems = (record: OrderResponseDTO): MenuProps["items"] => [
-    {
-      key: "view",
-      icon: <Eye className="h-4 w-4" />,
-      label: "Xem chi tiết",
-      onClick: () => router.push(`/order/${record.id}`),
-    },
-    ...(record.deleteFlag
-      ? []
-      : [
-          {
-            key: "edit",
-            icon: <Edit className="h-4 w-4" />,
-            label: "Chỉnh sửa",
-            onClick: () => router.push(`/order/${record.id}/edit`),
-          },
-          {
-            key: "payment",
-            icon: <QrCode className="h-4 w-4" />,
-            label: "Thanh toán",
-            onClick: () => router.push(`/order/${record.id}/payment`),
-          },
-        ]),
-  ];
+  const getActionMenuItems = (record: OrderResponseDTO): MenuProps["items"] => {
+    const isCombo = record.orderDetails?.[0]?.orderType === "COMBO";
+
+    return [
+      {
+        key: "view",
+        icon: <Eye className="h-4 w-4" />,
+        label: "Xem chi tiết",
+        onClick: () => router.push(`/order/${record.id}`),
+      },
+      ...(record.deleteFlag
+        ? []
+        : [
+            {
+              key: "edit",
+              icon: <Edit className="h-4 w-4" />,
+              label: "Chỉnh sửa",
+              onClick: () => router.push(`/order/${record.id}/edit`),
+            },  
+            {
+              key: "payment",
+              icon: <QrCode className="h-4 w-4" />,
+              label: "Thanh toán",
+              onClick: () =>
+                router.push(
+                  isCombo
+                    ? `/order/${record.id}/paymentCombo`
+                    : `/order/${record.id}/payment`
+                ),
+            },
+          ]),
+    ];
+  };
 
   const columns: ColumnsType<OrderResponseDTO> = [
     {
@@ -401,7 +410,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   ];
 
   return (
-    <div className="w-full space-y-4 pt-5 px-4" >
+    <div className="w-full space-y-4 pt-5 px-4">
       {/*Table */}
       <div className="rounded-lg border bg-white shadow-sm">
         <div className="hidden md:block">
@@ -409,7 +418,11 @@ const OrderTable: React.FC<OrderTableProps> = ({
             columns={columns}
             dataSource={data}
             rowKey="id"
-            scroll={{ x: "max-content", y: scrollY, scrollToFirstRowOnChange: true }}
+            scroll={{
+              x: "max-content",
+              y: scrollY,
+              scrollToFirstRowOnChange: true,
+            }}
             pagination={false}
             locale={{
               emptyText: (
@@ -427,7 +440,10 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
         {/* Mobile view cho responsive */}
         <div className="block md:hidden">
-          <div className="space-y-4 p-4" style={{ maxHeight: scrollY, overflowY: 'auto' }}>
+          <div
+            className="space-y-4 p-4"
+            style={{ maxHeight: scrollY, overflowY: "auto" }}
+          >
             {data.length === 0 ? (
               <div className="flex flex-col items-center gap-4 py-12">
                 <Search className="h-12 w-12 text-gray-400" />
@@ -560,6 +576,5 @@ const OrderTable: React.FC<OrderTableProps> = ({
     </div>
   );
 };
-
 
 export default OrderTable;
