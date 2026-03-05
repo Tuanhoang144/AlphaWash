@@ -52,7 +52,7 @@ export interface  ServiceDTO {
   serviceCode: string;
   serviceName: string;
   serviceTypeCode: string;
-  serviceCatalog: ServiceCatalogDTO;
+  serviceCatalog?: ServiceCatalogDTO;
   serviceComboCatalog?: ServiceComboCatalogDTO;
   adjustedPriceReason: string;
   adjustedPrice: number;

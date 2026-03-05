@@ -1,11 +1,10 @@
 "use client";
 import React from "react";
-import { Drawer, Empty, Input, List, Segmented, Space, Tag, Typography } from "antd";
+import { Button, Drawer, Empty, Input, List, Segmented, Space, Tag, Typography } from "antd";
 import { GiftOutlined, SearchOutlined, CloseCircleOutlined, CheckCircleFilled, InfoCircleOutlined } from "@ant-design/icons";
 import { PromotionApiItem } from "@/shared/types/PromotionApiItem";
 import { formatDateVN } from "@/shared/utils/formatDate";
 import { promoTypeLabel, promoValueLabel } from "@/shared/utils/order/promotion";
-import { Button } from "@/components/ui/button";
 
 const { Text } = Typography;
 
@@ -53,7 +52,7 @@ export function PromotionDrawer({
               </div>
             </div>
           </Space>
-          <Button onClick={onClose}><CloseCircleOutlined /> </Button>
+          <Button type="text" icon={<CloseCircleOutlined />} onClick={onClose} />
         </div>
       }
       styles={{ header: { paddingBottom: 10 }, body: { paddingTop: 10 } }}
@@ -137,14 +136,13 @@ export function PromotionDrawer({
                       </div>
 
                       <Button
-                        variant={disabledItem ? "outline" : selected ? "secondary" : "default"}
-                        size="sm"
+                        type={disabledItem ? "default" : selected ? "default" : "primary"}
                         disabled={disabledItem}
-                        className="h-9 rounded-xl px-6 font-medium transition-all active:scale-97"
+                        style={{ borderRadius: 12, height: 36 }}
                         onClick={(e) => {
-                          e.stopPropagation()
-                          if (disabledItem) return
-                          onSelect(p)
+                          e.stopPropagation();
+                          if (disabledItem) return;
+                          onSelect(p);
                         }}
                       >
                         {disabledItem ? "Không áp dụng" : selected ? "Đã chọn" : "Áp dụng"}

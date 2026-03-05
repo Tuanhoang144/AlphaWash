@@ -20,33 +20,28 @@ import { useComboForm } from "@/shared/services/useComboForm";
 
 export default function CreateOrderForm() {
   const {
-    // form
     formData,
     setFormData,
     currentTotalPrice,
     isNavigating,
 
-    // customer/vehicle
     selectedCustomer,
     handleCustomerChange,
     handleVehicleChange,
-
-    // service
-    handleInfoOrderDetailChange,
+    handleStatusChange,
+    handleEmployeeChange,
+    handleNoteChange,
     handleServiceChange,
     addService,
     removeServiceAt,
     buildEmptyDetail,
 
-    // ✅ mode
     mode,
     setMode,
 
-    // submit
     handleSubmit,
     handleNavigateToPayment,
 
-    // promotion
     promotions,
     promoLoading,
     selectedPromotion,
@@ -93,7 +88,9 @@ export default function CreateOrderForm() {
                         formData.orderDetails?.[0] ?? buildEmptyDetail()
                       }
                       onServiceChange={handleServiceChange}
-                      onInfoChange={handleInfoOrderDetailChange}
+                      onStatusChange={handleStatusChange}
+                      onEmployeeChange={handleEmployeeChange}
+                      onNoteChange={handleNoteChange}
                       addService={addService}
                       removeServiceAt={removeServiceAt}
                       vehicleSize={
@@ -121,7 +118,6 @@ export default function CreateOrderForm() {
                         formData.orderDetails?.[0]?.vehicle?.size ?? ""
                       }
                       hasCustomer={!!selectedCustomer?.id}
-                      onInfoChange={handleInfoOrderDetailChange}
                       allCombos={allCombos}
                       loadingCombos={loadingCombos}
                     />

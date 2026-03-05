@@ -7,6 +7,7 @@ import { addToast } from "@heroui/toast";
 import { useOrderManager } from "@/services/useOrderManager";
 import type {
   CustomerDTO,
+  EmployeeDTO,
   OrderDetailDTO,
   OrderResponseDTO,
   ServiceDTO,
@@ -24,10 +25,20 @@ export type CreateOrderMode = "SERVICE" | "COMBO";
 // =====================
 // FACTORY - empty detail
 // =====================
+
 export const buildEmptyDetail = (
   patch?: Partial<OrderDetailDTO>
 ): OrderDetailDTO => ({
-  service: [],
+  service: [
+    {
+      serviceCode: "",
+      adjustedPriceReason: "",
+      adjustedPrice: 0,
+      adjustedPriceFlag: false,
+      duration: undefined,
+      note: undefined,
+    } as ServiceDTO,
+  ],
   vehicle: {
     id: "",
     licensePlate: "",
@@ -44,7 +55,7 @@ export const buildEmptyDetail = (
   employees: [],
   status: "PENDING",
   code: "",
-  note: null,
+  note: "",
   ...patch,
 });
 
@@ -83,15 +94,7 @@ const buildEmptyComboItem = (): any => ({
 export function useCreateInvoice() {
   const router = useRouter();
   const { createOrder } = useOrderManager();
-
-  // =====================
-  // mode
-  // =====================
   const [mode, setMode] = useState<CreateOrderMode>("SERVICE");
-
-  // =====================
-  // formData
-  // =====================
   const [formData, setFormData] = useState<Partial<SingleOrder>>({
     date: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
@@ -108,16 +111,12 @@ export function useCreateInvoice() {
     orderDetails: [buildEmptyDetail()],
     promotion: null,
   });
-
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
     null
   );
   const [vehicle, setVehicle] = useState<VehicleDTO | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
-  // =====================
-  // detail helpers
-  // =====================
   const getDetail = (): OrderDetailDTO =>
     (formData.orderDetails?.[0] as OrderDetailDTO) ?? buildEmptyDetail();
 
@@ -133,23 +132,22 @@ export function useCreateInvoice() {
     []
   );
 
-  // =====================
-  // Mode switch: ép orderType + clear đúng thứ cần clear
-  // =====================
+  useEffect(() => {
+    console.log("[LOOP DETECT] formData changed", new Date().getTime());
+  }, [formData]);
+
   useEffect(() => {
     setDetail((d) => {
       if (mode === "COMBO") {
-        // COMBO: service list chỉ là 1 item đại diện combo (để UI picker set)
         return {
           ...d,
           orderType: "COMBO",
-          service: d.service?.length ? d.service : [],
+          service: [],
         };
       }
-      // SERVICE: không động vào list service (để user không mất data khi chuyển qua lại nếu muốn)
-      return { ...d, orderType: "SERVICE" };
+      return { ...d, orderType: "SERVICE", service: [] };
     });
-  }, [mode, setDetail]);
+  }, [mode]);
 
   // =====================
   // Total Price
@@ -170,7 +168,7 @@ export function useCreateInvoice() {
   }, [mode, formData]);
 
   // =====================
-  // Customer / Vehicle
+  // Handlers: Customer, Vehicle, Employees, Status, Note
   // =====================
   const handleCustomerChange = (customer: CustomerDTO | null) => {
     setSelectedCustomer(customer);
@@ -180,6 +178,25 @@ export function useCreateInvoice() {
   const handleVehicleChange = (nextVehicle: VehicleDTO) => {
     setVehicle(nextVehicle);
     setDetail((d) => ({ ...d, vehicle: nextVehicle }));
+  };
+
+  const handleEmployeeChange = (employees: EmployeeDTO[]) => {
+    setDetail((d) => ({ ...d, employees }));
+  };
+
+  const handleStatusChange = (status: string) => {
+    setDetail((d) => {
+      // Xử lý undefined/null thành ""
+      const currentStatus = d.status ?? "";
+      if (currentStatus === status) return d;
+      return { ...d, status };
+    });
+  };
+  const handleNoteChange = (note: string) => {
+    setDetail((d) => {
+      if (d.note === note) return d;
+      return { ...d, note };
+    });
   };
 
   // =====================
@@ -233,10 +250,8 @@ export function useCreateInvoice() {
             orderType: "COMBO",
             service: [
               {
-                ...buildEmptyComboItem(),
                 ...(newService as any),
                 serviceCatalog: null,
-                // yêu cầu: comboPicker phải set serviceComboCatalog đầy đủ hoặc ít nhất catalogCode
                 serviceComboCatalog:
                   (newService as any).serviceComboCatalog ?? null,
               },
@@ -246,12 +261,21 @@ export function useCreateInvoice() {
       return;
     }
 
-    // SERVICE
-    setDetail((d) => ({
-      ...d,
-      orderType: "SERVICE",
-      service: [...(d.service ?? []), newService],
-    }));
+    setDetail((prevDetail) => {
+      const prevServices = prevDetail.service ?? [];
+      // Tránh tạo array mới nếu không cần
+      if (prevServices.includes(newService)) return prevDetail; // optional
+
+      const nextServices = [...prevServices, newService];
+
+      // Chỉ thay đổi service, giữ nguyên các field khác
+      if (prevDetail.service === nextServices) return prevDetail; // hiếm xảy ra
+
+      return {
+        ...prevDetail,
+        service: nextServices,
+      };
+    });
   };
 
   const removeServiceAt = (index: number) => {
@@ -273,22 +297,6 @@ export function useCreateInvoice() {
     });
   };
 
-  const handleInfoOrderDetailChange = (
-    field: keyof OrderDetailDTO,
-    value: any
-  ) => {
-    setDetail((d) => {
-      const next: any = { ...d };
-
-      const nextOrderType = mode === "COMBO" ? "COMBO" : "SERVICE";
-      if (next.orderType !== nextOrderType) next.orderType = nextOrderType;
-
-      if (next[field] === value) return d;
-
-      next[field] = value;
-      return next as OrderDetailDTO;
-    });
-  };
   // =====================
   // Promotion
   // =====================
@@ -551,7 +559,9 @@ export function useCreateInvoice() {
     addService,
     removeServiceAt,
 
-    handleInfoOrderDetailChange,
+    handleStatusChange,
+    handleEmployeeChange,
+    handleNoteChange,
 
     handleSubmit,
     handleNavigateToPayment,

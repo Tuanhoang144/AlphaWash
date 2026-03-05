@@ -296,10 +296,7 @@ export const generateComboInvoiceHTML = async ({
       </table>
 
       <div class="total-section">
-        <div class="total-row">
-          <span>Tạm tính:</span>
-          <span>${Math.round(baseServicePrice).toLocaleString("vi-VN")}đ</span>
-        </div>
+  
         ${discountRow}
         ${afterDiscountRow}
         ${vatRow}

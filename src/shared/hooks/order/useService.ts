@@ -374,22 +374,3 @@ export function useServiceManager(
     setAdjustedPriceReason,
   };
 }
-
-/** Factory tiện khởi tạo service rỗng */
-export function createNewService(): ServiceDTO {
-  return {
-    id: 0,
-    serviceCode: "",
-    serviceName: "",
-    serviceTypeCode: "",
-    adjustedPrice: 0,
-    adjustedPriceFlag: false,
-    adjustedPriceReason: "",
-    serviceCatalog: {
-      id: 0,
-      code: "",
-      size: "",
-      listedPrice: 0,
-    },
-  };
-}

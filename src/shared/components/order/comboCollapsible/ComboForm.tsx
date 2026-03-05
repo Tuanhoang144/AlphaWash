@@ -4,7 +4,11 @@ import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Package, AlertTriangle } from "lucide-react";
-import type { OrderDetailDTO, ServiceDTO } from "@/types/OrderResponse";
+import type {
+  EmployeeDTO,
+  OrderDetailDTO,
+  ServiceDTO,
+} from "@/types/OrderResponse";
 import type { ComboApiItem } from "@/shared/types/ComboApi";
 import EmployeeSelector from "@/shared/components/order/serviceCollapsible/ui/EmployeeSelector";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,21 +34,18 @@ type CatalogOption = {
 
 type Props = {
   orderDetail: OrderDetailDTO;
-
-  // ✅ Hook mới: combo nằm trong orderDetail.service[0]
   // Chọn combo => set/replace service[0]
   onSetComboService: (next: ServiceDTO) => void;
-
   // Chỉnh giá/flag/reason => patch vào service[0]
   onUpdateComboService: (patch: Partial<ServiceDTO>) => void;
-
   // Clear combo
   onClearCombo?: () => void;
+  onStatusChange?: (status: string) => void;
+  onEmployeeChange?: (employees: EmployeeDTO[]) => void;
+  onNoteChange?: (note: string) => void;
 
   vehicleSize: string;
   hasCustomer: boolean;
-  onInfoChange: (field: keyof OrderDetailDTO, value: any) => void;
-
   allCombos: ComboApiItem[] | null;
   loadingCombos: boolean;
 };
@@ -54,9 +55,11 @@ export default function ComboForm({
   onSetComboService,
   onUpdateComboService,
   onClearCombo,
+  onStatusChange,
+  onEmployeeChange,
+  onNoteChange,
   vehicleSize,
   hasCustomer,
-  onInfoChange,
   allCombos,
   loadingCombos,
 }: Props) {
@@ -156,6 +159,25 @@ export default function ComboForm({
       adjustedPrice: enabled ? adjustedPriceRaw ?? listedPrice : listedPrice,
       adjustedPriceReason: enabled ? adjustedReason : "",
     } as any);
+  };
+
+  //Dùng đẻ update status
+  const updateStatus = (status: string) => {
+    if (onStatusChange) {
+      onStatusChange(status);
+    }
+  };
+  //Dùng để update nhân viên
+  const updateEmployees = (employees: EmployeeDTO[]) => {
+    if (onEmployeeChange) {
+      onEmployeeChange(employees);
+    }
+  };
+  //Dùng để update ghi chú
+  const updateNote = (note: string) => {
+    if (onNoteChange) {
+      onNoteChange(note);
+    }
   };
 
   return (
@@ -318,9 +340,7 @@ export default function ComboForm({
         <div className="space-y-2">
           <EmployeeSelector
             selectedEmployees={orderDetail.employees}
-            onEmployeesChange={(employees) =>
-              onInfoChange("employees", employees)
-            }
+            onEmployeesChange={updateEmployees}
           />
         </div>
 
@@ -329,9 +349,7 @@ export default function ComboForm({
             <Label>Trạng thái thi công</Label>
             <Select
               value={orderDetail.status || ""}
-              onValueChange={(value) => {
-                if (value !== orderDetail.status) onInfoChange("status", value);
-              }}
+              onValueChange={(value) => updateStatus(value)}
             >
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Chọn trạng thái" />
@@ -349,7 +367,7 @@ export default function ComboForm({
             <Textarea
               placeholder="Ghi chú thêm..."
               value={orderDetail.note || ""}
-              onChange={(e) => onInfoChange("note", e.target.value)}
+              onChange={(e) => updateNote(e.target.value)}
             />
           </div>
         </div>

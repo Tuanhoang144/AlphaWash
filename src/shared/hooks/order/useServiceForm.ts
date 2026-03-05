@@ -4,10 +4,10 @@ import { useEffect, useState } from "react";
 import type { ServiceDTO } from "@/types/OrderResponse";
 import { useServiceManager as useServiceManagerService } from "@/services/useServiceAll";
 
-// 🔥 Hàm tự động lấy số từ STxxxx
+// Hàm tự động lấy số từ STxxxx
 function extractTypeOrder(code: string) {
   const match = code.match(/ST(\d+)/);
-  return match ? Number(match[1]) : 9999; // nếu không match → đẩy xuống cuối
+  return match ? Number(match[1]) : 9999; 
 }
 
 export function useServiceForm() {
@@ -15,6 +15,7 @@ export function useServiceForm() {
   const [loadingServices, setLoadingServices] = useState(false);
   const { getAllServiceCode } = useServiceManagerService();
 
+  //Lấy dánh sách dịch vụ
   useEffect(() => {
     let mounted = true;
 
@@ -43,6 +44,6 @@ export function useServiceForm() {
       mounted = false;
     };
   }, [getAllServiceCode]);
-
+  
   return { services, loadingServices };
 }
