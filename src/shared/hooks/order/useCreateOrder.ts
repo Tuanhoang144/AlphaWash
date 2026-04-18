@@ -19,8 +19,8 @@ import { calculateTotal } from "@/shared/utils/order/calculatePrice";
 // TYPE DEFINITIONS
 // ============================================================================
 
-type SingleOrder = Omit<OrderResponseDTO, "orderDetails"> & {
-  orderDetails: [OrderDetailDTO];
+type MultiVehicleOrder = Omit<OrderResponseDTO, "orderDetails"> & {
+  orderDetails: OrderDetailDTO[];  // Changed: now an array, not tuple
 };
 
 // ============================================================================
@@ -68,7 +68,7 @@ export function useCreateInvoice() {
   // STATE - Form Data
   // =========================================================================
 
-  const [formData, setFormData] = useState<Partial<SingleOrder>>({
+  const [formData, setFormData] = useState<Partial<MultiVehicleOrder>>({
     date: new Date().toISOString().split("T")[0],
     checkIn: new Date().toISOString().split("T")[1].substring(0, 5),
     checkOut: "",
@@ -91,7 +91,6 @@ export function useCreateInvoice() {
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerDTO | null>(
     null
   );
-  const [vehicle, setVehicle] = useState<VehicleDTO | null>(null);
   const [isNavigating, setIsNavigating] = useState(false);
 
   // =========================================================================
@@ -108,22 +107,38 @@ export function useCreateInvoice() {
   const currentTotalPrice = calculateTotal(formData as OrderResponseDTO);
 
   // =========================================================================
-  // HELPERS - Order Detail Access
+  // HELPERS - Order Detail Access (Multi-Vehicle Support)
   // =========================================================================
 
-  // Lấy detail đầu tiên (giả định chỉ có 1 detail)
-  const getDetail = (): OrderDetailDTO =>
-    formData.orderDetails![0] as OrderDetailDTO;
+  // Get detail at specific index
+  const getDetailAt = (index: number): OrderDetailDTO | null =>
+    formData.orderDetails?.[index] ?? null;
 
-  // Cập nhật detail đầu tiên
-  const onOrderDetailChange = (nextDetail: OrderDetailDTO) => {
+  // Update detail at specific index
+  const onOrderDetailChangeAt = (index: number, nextDetail: OrderDetailDTO) => {
     setFormData((prev) => {
-      const old = prev.orderDetails![0];
-      // Nếu KHÔNG thay đổi gì -> ĐỪNG setState (ngăn vòng lặp)
-      if (JSON.stringify(old) === JSON.stringify(nextDetail)) return prev;
+      const details = [...(prev.orderDetails || [])];
+      details[index] = nextDetail;
+      return { ...prev, orderDetails: details };
+    });
+  };
+
+  // Add new vehicle detail
+  const addVehicle = () => {
+    setFormData((prev) => ({
+      ...prev,
+      orderDetails: [...(prev.orderDetails || []), buildEmptyDetail()],
+    }));
+  };
+
+  // Remove vehicle at index (can't remove if only 1 left)
+  const removeVehicleAt = (index: number) => {
+    setFormData((prev) => {
+      const details = prev.orderDetails || [];
+      if (details.length <= 1) return prev; // Keep at least 1
       return {
         ...prev,
-        orderDetails: [nextDetail],
+        orderDetails: details.filter((_, i) => i !== index),
       };
     });
   };
@@ -137,52 +152,58 @@ export function useCreateInvoice() {
     setFormData((prev) => ({ ...prev, customer: customer ?? undefined }));
   };
 
-  const handleVehicleChange = (nextVehicle: VehicleDTO) => {
-    setVehicle(nextVehicle);
-    const prevDetail = getDetail();
-    onOrderDetailChange({
+  const handleVehicleChangeAt = (index: number) => (nextVehicle: VehicleDTO) => {
+    const prevDetail = getDetailAt(index);
+    if (!prevDetail) return;
+    onOrderDetailChangeAt(index, {
       ...prevDetail,
       vehicle: nextVehicle,
     });
   };
 
   // =========================================================================
-  // HANDLERS - Service Management
+  // HANDLERS - Service Management (Per Vehicle)
   // =========================================================================
 
-  const handleServiceChange = (index: number, updated: ServiceDTO) => {
-    const prevDetail = getDetail();
+  const handleServiceChangeAt = (vehicleIndex: number, serviceIndex: number, updated: ServiceDTO) => {
+    const prevDetail = getDetailAt(vehicleIndex);
+    if (!prevDetail) return;
+    
     const prevServices = prevDetail.service ?? [];
-    if (index < 0 || index >= prevServices.length) return;
+    if (serviceIndex < 0 || serviceIndex >= prevServices.length) return;
 
     const next = [...prevServices];
-    next[index] = updated;
-    onOrderDetailChange({ ...prevDetail, service: next });
+    next[serviceIndex] = updated;
+    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
   };
 
-  const addService = (newService: ServiceDTO) => {
-    const prevDetail = getDetail();
+  const addServiceAt = (vehicleIndex: number) => (newService: ServiceDTO) => {
+    const prevDetail = getDetailAt(vehicleIndex);
+    if (!prevDetail) return;
+    
     const next = [...(prevDetail.service ?? []), newService];
-    onOrderDetailChange({ ...prevDetail, service: next });
+    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
   };
 
-  const removeServiceAt = (index: number) => {
-    const prevDetail = getDetail();
+  const removeServiceAt = (vehicleIndex: number, serviceIndex: number) => {
+    const prevDetail = getDetailAt(vehicleIndex);
+    if (!prevDetail) return;
+    
     const prevServices = prevDetail.service ?? [];
-    if (index < 0 || index >= prevServices.length) return;
+    if (serviceIndex < 0 || serviceIndex >= prevServices.length) return;
 
-    const next = prevServices.filter((_, i) => i !== index);
-    onOrderDetailChange({ ...prevDetail, service: next });
+    const next = prevServices.filter((_, i) => i !== serviceIndex);
+    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
   };
 
   // =========================================================================
   // HANDLERS - Employee/status/note trong orderDetail
   // =========================================================================
-  const handleInfoOrderDetailChange = (field: string, value: any) => {
-    const prevDetail = getDetail();
-    console.log("CHANGE", field, value);
-
-    onOrderDetailChange({
+  const handleInfoOrderDetailChangeAt = (index: number) => (field: string, value: any) => {
+    const prevDetail = getDetailAt(index);
+    if (!prevDetail) return;
+    
+    onOrderDetailChangeAt(index, {
       ...prevDetail,
       [field]: value,
     });
@@ -192,7 +213,53 @@ export function useCreateInvoice() {
   // HANDLERS - Submit & Navigation
   // =========================================================================
 
+  const validateOrder = (): string | null => {
+    // Check if customer is selected
+    if (!selectedCustomer?.id) {
+      return "Vui lòng chọn khách hàng";
+    }
+
+    // Check each order detail
+    for (let i = 0; i < (formData.orderDetails?.length || 0); i++) {
+      const detail = formData.orderDetails![i];
+      
+      // Check if vehicle is selected
+      if (!detail.vehicle?.licensePlate) {
+        return `Xe #${i + 1}: Vui lòng chọn phương tiện`;
+      }
+
+      // Check if at least one service is selected
+      if (!detail.service || detail.service.length === 0) {
+        return `Xe #${i + 1}: Vui lòng thêm ít nhất một dịch vụ`;
+      }
+
+      // Check each service has valid catalog code
+      for (let j = 0; j < detail.service.length; j++) {
+        const service = detail.service[j];
+        if (!service.id || service.id === 0) {
+          return `Xe #${i + 1}, Dịch vụ #${j + 1}: Vui lòng chọn dịch vụ`;
+        }
+        if (!service.serviceCatalog?.code) {
+          return `Xe #${i + 1}, Dịch vụ #${j + 1}: Vui lòng chọn kích thước dịch vụ`;
+        }
+      }
+    }
+
+    return null;
+  };
+
   const createNewOrder = async (): Promise<string> => {
+    // Validate before submitting
+    const validationError = validateOrder();
+    if (validationError) {
+      addToast({
+        title: "Lỗi",
+        description: validationError,
+        color: "danger",
+      });
+      throw new Error(validationError);
+    }
+
     const finalData: OrderResponseDTO = {
       ...formData,
       id: formData.id ?? "",
@@ -213,11 +280,10 @@ export function useCreateInvoice() {
       orderDetails:
         formData.orderDetails?.map((detail) => ({
           ...detail,
-          vehicle: (detail.vehicle ?? vehicle) as VehicleDTO,
+          vehicle: detail.vehicle as VehicleDTO,
           service:
             detail.service?.map((s) => ({
               ...s,
-              serviceCatalogCode: s.serviceCatalog?.code || "",
               adjustedPrice: s.adjustedPrice || 0,
               adjustedPriceFlag: s.adjustedPriceFlag || false,
               adjustedPriceReason: s.adjustedPriceReason || "",
@@ -276,26 +342,29 @@ export function useCreateInvoice() {
     formData,
     setFormData,
     selectedCustomer,
-    vehicle,
     isNavigating,
     currentTotalPrice,
 
-    // Detail Helpers
-    getDetail,
-    onOrderDetailChange,
+    // Detail Helpers (Multi-Vehicle)
+    getDetailAt,
+    onOrderDetailChangeAt,
     buildEmptyDetail,
+
+    // Multi-Vehicle Management
+    addVehicle,
+    removeVehicleAt,
 
     // Customer & Vehicle
     handleCustomerChange,
-    handleVehicleChange,
+    handleVehicleChangeAt,
 
-    // Services
-    handleServiceChange,
-    addService,
+    // Services (Per Vehicle)
+    handleServiceChangeAt,
+    addServiceAt,
     removeServiceAt,
 
     // Employee/status/note trong orderDetail
-    handleInfoOrderDetailChange,
+    handleInfoOrderDetailChangeAt,
 
     // Submit & Navigation
     handleSubmit,

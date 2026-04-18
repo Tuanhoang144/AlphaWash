@@ -55,31 +55,63 @@ export const generateInvoiceHTML = ({
       : "";
 
   const firstDetail = order.orderDetails?.[0];
-  const vehicle = firstDetail?.vehicle ?? { licensePlate: "" };
 
-  const services = (order.orderDetails ?? []).flatMap(
-    (detail) => detail.service ?? []
-  );
+  // Generate vehicle sections with their services
+  const vehicleSections = (order.orderDetails ?? [])
+    .map((detail, vehicleIndex) => {
+      const vehicle = detail.vehicle;
+      const services = detail.service ?? [];
 
-  // DÙNG GIÁ ÁP DỤNG: ưu tiên adjusted khi có cờ + lý do; fallback listedPrice (hoặc price cũ nếu có)
-  const serviceRows = services
-    .map((service) => {
-      const applied =
-        service.adjustedPriceFlag && service.adjustedPriceReason
-          ? service.adjustedPrice ?? 0
-          : service.serviceCatalog?.listedPrice ??
-            0;
+      // Service rows for this vehicle
+      const serviceRows = services
+        .map((service) => {
+          const applied =
+            service.adjustedPriceFlag && service.adjustedPriceReason
+              ? service.adjustedPrice ?? 0
+              : service.serviceCatalog?.listedPrice ?? 0;
 
-      const size = service.serviceCatalog?.size ?? "";
+          const size = service.serviceCatalog?.size ?? "N/A";
+
+          return `
+            <tr>
+              <td>${service.serviceName}</td>
+              <td>${size}</td>
+              <td class="price">${applied.toLocaleString("vi-VN")}đ</td>
+            </tr>`;
+        })
+        .join("");
+
+      // Empty state message
+      const emptyRow = services.length === 0
+        ? '<tr><td colspan="3" style="text-align: center; color: #666;">Chưa có dịch vụ nào</td></tr>'
+        : "";
 
       return `
-        <tr>
-          <td>${service.serviceName}</td>
-          <td>${size}</td>
-          <td class="price">${applied.toLocaleString("vi-VN")}đ</td>
-        </tr>`;
+        <div class="vehicle-section">
+          <div class="vehicle-header">
+            🚗 Xe #${vehicleIndex + 1}: ${vehicle?.brandName ?? ""} ${vehicle?.modelName ?? ""} - ${vehicle?.licensePlate ?? ""} (Size: ${vehicle?.size ?? ""})
+          </div>
+          <table class="service-table">
+            <thead>
+              <tr>
+                <th>Dịch vụ</th>
+                <th>Loại xe</th>
+                <th>Giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${serviceRows || emptyRow}
+            </tbody>
+          </table>
+        </div>
+      `;
     })
     .join("");
+
+  // For backward compatibility - calculate all services for totals
+  const allServices = (order.orderDetails ?? []).flatMap(
+    (detail) => detail.service ?? []
+  );
 
   const qrImage = qrBase64 || qrUrl || "";
 
@@ -141,8 +173,18 @@ export const generateInvoiceHTML = ({
       .order-info-left { flex: 2; margin-right: 5px; }
       .order-info-right { flex: 1; }
       .info-row { margin-bottom: 2px; }
+      .vehicle-section { margin-bottom: 10px; }
+      .vehicle-header {
+        background: #f0f0f0;
+        padding: 6px 8px;
+        font-size: 11px;
+        font-weight: bold;
+        border: 1px solid #000;
+        border-bottom: none;
+        border-radius: 2px 2px 0 0;
+      }
       .service-table {
-        width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 10px; border: 1px solid #000;
+        width: 100%; border-collapse: collapse; margin: 0 0 8px 0; font-size: 10px; border: 1px solid #000;
       }
       .service-table th, .service-table td {
         padding: 4px 3px; border-bottom: 1px solid #ccc; border-right: 1px solid #ccc;
@@ -210,9 +252,7 @@ export const generateInvoiceHTML = ({
           `
               : ""
           }
-          <div class="info-row"><strong>Biển số:</strong> ${
-            vehicle.licensePlate ?? ""
-          }</div>
+          <div class="info-row"><strong>Số xe:</strong> ${order.orderDetails?.length ?? 0} xe</div>
         </div>
         <div class="order-info-right">
           <div class="info-row"><strong>Ngày:</strong> ${new Date(
@@ -227,18 +267,7 @@ export const generateInvoiceHTML = ({
         </div>
       </div>
 
-      <table class="service-table">
-        <thead>
-          <tr>
-            <th>Dịch vụ</th>
-            <th>Loại xe</th>
-            <th>Giá</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${serviceRows}
-        </tbody>
-      </table>
+      ${vehicleSections}
 
       <div class="total-section">
         <div class="total-row">

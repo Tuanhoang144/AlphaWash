@@ -385,6 +385,8 @@ export function createNewService(): ServiceDTO {
     adjustedPrice: 0,
     adjustedPriceFlag: false,
     adjustedPriceReason: "",
+    duration: undefined,
+    note: undefined,
     serviceCatalog: {
       id: 0,
       code: "",
