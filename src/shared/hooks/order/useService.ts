@@ -62,9 +62,16 @@ export function useServiceManager(
 
   // ===== ĐỒNG BỘ KHI initialService (từ cha) THAY ĐỔI (edit order, reset, ...) =====
   useEffect(() => {
-    setService(initialService);
-    setAdjustedPriceTouched(false);
-    setPriceValidationError("");
+    setService((prev) => {
+      const same =
+        prev.id === initialService.id &&
+        prev.serviceCatalog?.id === initialService.serviceCatalog?.id &&
+        prev.adjustedPrice === initialService.adjustedPrice &&
+        prev.adjustedPriceFlag === initialService.adjustedPriceFlag &&
+        prev.adjustedPriceReason === initialService.adjustedPriceReason;
+      if (same) return prev;
+      return initialService;
+    });
   }, [initialService]);
 
   // ===== LOAD CATALOGS KHI service.id ĐỔI =====
