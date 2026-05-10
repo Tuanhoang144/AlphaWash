@@ -7,7 +7,7 @@ import { CustomerDTO } from "@/types/OrderResponse";
 export function useCustomerManager() {
   const { callApi, loading, setIsLoading } = useApiService();
 
-  const getCustomersByPhone = useCallback(
+  const getCustomersByPhoneOrPlate = useCallback(
     async (phone: string): Promise<CustomerDTO[]> => {
       if (!phone.trim()) return [];
 
@@ -22,6 +22,15 @@ export function useCustomerManager() {
         return customer ? [customer] : [];
       } catch (error: any) {
         console.error("Lỗi khi tìm khách hàng theo SĐT:", error);
+        
+        // Kiểm tra nếu là lỗi 400 và có message từ server
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
+        
         return [];
       } finally {
         setIsLoading(false);
@@ -31,13 +40,22 @@ export function useCustomerManager() {
   );
 
   const createCustomer = useCallback(
-    async (payload: any): Promise<CustomerDTO | null> => {
+    async (payload: any) => {
       setIsLoading(true);
       try {
         const response = await callApi("post", "customer/insert", payload);
         return response?.data ?? null;
-      } catch (error) {
+      } catch (error: any) {
         console.error("Lỗi khi tạo khách hàng:", error);
+        
+        // Kiểm tra nếu là lỗi 400 và có message từ server
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
+        
         return null;
       } finally {
         setIsLoading(false);
@@ -54,6 +72,16 @@ export function useCustomerManager() {
         return response?.data;
       } catch (error: any) {
         console.error("Lỗi khi cập nhật khách hàng:", error);
+        
+        // Kiểm tra nếu là lỗi 400 và có message từ server
+        if (error.response?.status === 400 && error.response?.data?.message) {
+          // Ném lỗi với message từ server để component có thể bắt và hiển thị
+          const serverMessage = error.response.data.message;
+          const customError = new Error(serverMessage);
+          customError.name = 'BadRequest';
+          throw customError;
+        }
+        
         throw error;
       } finally {
         setIsLoading(false);
@@ -62,7 +90,7 @@ export function useCustomerManager() {
     [callApi, setIsLoading]
   );
   return {
-    getCustomersByPhone,
+    getCustomersByPhoneOrPlate,
     createCustomer,
     updateCustomer,
     loading,

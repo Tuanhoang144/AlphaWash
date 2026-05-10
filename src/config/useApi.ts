@@ -19,7 +19,6 @@ const useApiService = () => {
         return response.data;
       } catch (e: any) {
 		console.error(e);
-    addToast(e?.response?.data?.Message || "Error");
 		throw e;
       } finally {
         setIsLoading(false);
