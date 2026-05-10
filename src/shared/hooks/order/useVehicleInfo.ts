@@ -29,14 +29,22 @@ export function useVehicleManager(
   // Khi initialVehicle (từ edit order) thay đổi -> set lại state vehicle
   useEffect(() => {
     if (!initialVehicle) return;
-    setVehicle(initialVehicle);
 
-    // Nếu có brandCode, chọn lại brand tương ứng
+    setVehicle((prev) => {
+      if (prev === initialVehicle) return prev;
+      const same =
+        prev.id === initialVehicle.id &&
+        prev.licensePlate === initialVehicle.licensePlate &&
+        prev.brandCode === initialVehicle.brandCode &&
+        prev.modelCode === initialVehicle.modelCode &&
+        prev.size === initialVehicle.size;
+      if (same) return prev;
+      return initialVehicle;
+    });
+
     if (initialVehicle.brandCode) {
       const brand = brands.find((b) => b.code === initialVehicle.brandCode);
-      if (brand) {
-        setSelectedBrand(brand);
-      }
+      if (brand) setSelectedBrand(brand);
     }
   }, [initialVehicle, brands]);
 
