@@ -42,8 +42,6 @@ export default function BrandModelSelector({
   }, []);
 
   useEffect(() => {
-    console.log("Selected vehicle:", vehicle);
-    console.log("Customer vehicles:", customer?.vehicles);
     if (!customer?.vehicles || !vehicle?.licensePlate) return;
 
     const matched = customer.vehicles.find(
@@ -56,6 +54,18 @@ export default function BrandModelSelector({
       selectExistingVehicle(matched);
     }
   }, [brands]);
+
+  // Sync selectedBrand with vehicle prop when brands are loaded
+  useEffect(() => {
+    if (brands.length > 0 && vehicle.brandCode) {
+      const brand = brands.find((b) => b.code === vehicle.brandCode);
+      if (brand && brand.code !== selectedBrand?.code) {
+        setSelectedBrand(brand);
+      }
+    } else if (!vehicle.brandCode) {
+      setSelectedBrand(null);
+    }
+  }, [brands, vehicle.brandCode]);
 
   // Load models when brand changes
   useEffect(() => {
@@ -213,7 +223,7 @@ export default function BrandModelSelector({
             placeholder={loadingBrands ? "Đang tải..." : "Chọn hãng xe"}
             optionFilterProp="label"
             filterOption={filterBrandOption}
-            value={vehicle.brandCode ?? undefined}
+            value={vehicle.brandCode || undefined}
             onChange={handleBrandSelect}
             loading={loadingBrands}
             style={{ width: "100%" }}
@@ -242,7 +252,7 @@ export default function BrandModelSelector({
             }
             optionFilterProp="label"
             filterOption={filterModelOption}
-            value={vehicle.modelCode ?? undefined}
+            value={vehicle.modelCode || undefined}
             onChange={handleModelSelect}
             disabled={!selectedBrand || loadingModels}
             loading={loadingModels}

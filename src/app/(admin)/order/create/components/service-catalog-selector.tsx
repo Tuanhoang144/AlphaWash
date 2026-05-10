@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Wrench, Clock, FileText } from "lucide-react";
@@ -33,6 +33,11 @@ export default function ServiceCatalogSelector({
   const { getServiceCatalogByServiceId } = useServiceCatalogManager();
   const { getAllServices } = useServiceManager();
 
+  const onServiceCatalogChangeRef = useRef(onServiceCatalogChange);
+  useEffect(() => {
+    onServiceCatalogChangeRef.current = onServiceCatalogChange;
+  });
+
   useEffect(() => {
     loadServices();
   }, []);
@@ -52,10 +57,10 @@ export default function ServiceCatalogSelector({
         (catalog) => catalog.size === vehicleSize
       );
       if (matchingCatalog && matchingCatalog.id !== serviceCatalog?.id) {
-        onServiceCatalogChange(matchingCatalog);
+        onServiceCatalogChangeRef.current(matchingCatalog);
       }
     }
-  }, [catalogs, vehicleSize, serviceCatalog?.id, onServiceCatalogChange]);
+  }, [catalogs, vehicleSize, serviceCatalog?.id]);
 
   const loadServices = async () => {
     setLoadingServices(true);
@@ -143,7 +148,7 @@ export default function ServiceCatalogSelector({
             placeholder={loadingServices ? "Đang tải..." : "Chọn dịch vụ"}
             optionFilterProp="label" // Changed to label
             filterOption={filterServiceOption}
-            value={service.id || undefined}
+            value={service?.id || undefined}
             onChange={handleServiceSelect}
             loading={loadingServices}
             style={{ width: "100%" }}
