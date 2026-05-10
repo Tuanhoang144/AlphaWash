@@ -153,11 +153,12 @@ export function useCreateInvoice() {
   };
 
   const handleVehicleChangeAt = (index: number) => (nextVehicle: VehicleDTO) => {
-    const prevDetail = getDetailAt(index);
-    if (!prevDetail) return;
-    onOrderDetailChangeAt(index, {
-      ...prevDetail,
-      vehicle: nextVehicle,
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[index];
+      if (!detail) return prev;
+      details[index] = { ...detail, vehicle: nextVehicle };
+      return { ...prev, orderDetails: details };
     });
   };
 
@@ -166,46 +167,58 @@ export function useCreateInvoice() {
   // =========================================================================
 
   const handleServiceChangeAt = (vehicleIndex: number, serviceIndex: number, updated: ServiceDTO) => {
-    const prevDetail = getDetailAt(vehicleIndex);
-    if (!prevDetail) return;
-    
-    const prevServices = prevDetail.service ?? [];
-    if (serviceIndex < 0 || serviceIndex >= prevServices.length) return;
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
 
-    const next = [...prevServices];
-    next[serviceIndex] = updated;
-    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
+      const prevServices = Array.isArray(detail.service) ? detail.service : [];
+      if (serviceIndex < 0 || serviceIndex >= prevServices.length) return prev;
+
+      const nextServices = [...prevServices];
+      nextServices[serviceIndex] = updated;
+      details[vehicleIndex] = { ...detail, service: nextServices };
+      return { ...prev, orderDetails: details };
+    });
   };
 
   const addServiceAt = (vehicleIndex: number) => (newService: ServiceDTO) => {
-    const prevDetail = getDetailAt(vehicleIndex);
-    if (!prevDetail) return;
-    
-    const next = [...(prevDetail.service ?? []), newService];
-    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
+
+      const nextServices = [...(detail.service ?? []), newService];
+      details[vehicleIndex] = { ...detail, service: nextServices };
+      return { ...prev, orderDetails: details };
+    });
   };
 
   const removeServiceAt = (vehicleIndex: number, serviceIndex: number) => {
-    const prevDetail = getDetailAt(vehicleIndex);
-    if (!prevDetail) return;
-    
-    const prevServices = prevDetail.service ?? [];
-    if (serviceIndex < 0 || serviceIndex >= prevServices.length) return;
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
 
-    const next = prevServices.filter((_, i) => i !== serviceIndex);
-    onOrderDetailChangeAt(vehicleIndex, { ...prevDetail, service: next });
+      const prevServices = Array.isArray(detail.service) ? detail.service : [];
+      if (serviceIndex < 0 || serviceIndex >= prevServices.length) return prev;
+
+      const nextServices = prevServices.filter((_, i) => i !== serviceIndex);
+      details[vehicleIndex] = { ...detail, service: nextServices };
+      return { ...prev, orderDetails: details };
+    });
   };
 
   // =========================================================================
   // HANDLERS - Employee/status/note trong orderDetail
   // =========================================================================
   const handleInfoOrderDetailChangeAt = (index: number) => (field: string, value: any) => {
-    const prevDetail = getDetailAt(index);
-    if (!prevDetail) return;
-    
-    onOrderDetailChangeAt(index, {
-      ...prevDetail,
-      [field]: value,
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[index];
+      if (!detail) return prev;
+      details[index] = { ...detail, [field]: value };
+      return { ...prev, orderDetails: details };
     });
   };
 
