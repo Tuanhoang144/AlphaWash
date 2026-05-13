@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { CustomerDTO, VehicleDTO } from "@/types/OrderResponse";
 import VehicleInfo from "./ui/VehicleInfo";
 import { useVehicleManager } from "@/shared/hooks/order/useVehicleInfo";
@@ -16,7 +16,6 @@ export default function VehicleInfoSection({
   onChange,
   customer,
 }: Props) {
-  // Lấy dữ liệu xe và các hàm điều khiển từ hook
   const {
     vehicle,
     brandOptions,
@@ -32,9 +31,26 @@ export default function VehicleInfoSection({
     selectExistingVehicle,
   } = useVehicleManager(value, customer);
 
-  // Khi vehicle thay đổi -> báo ngược lên cha
+  const prevVehicleRef = useRef<VehicleDTO | null>(null);
+  const onChangeRef = useRef(onChange);
   useEffect(() => {
-    if (vehicle) onChange(vehicle);
+    onChangeRef.current = onChange;
+  });
+
+  useEffect(() => {
+    if (!vehicle) return;
+    const prev = prevVehicleRef.current;
+    const hasChanged =
+      !prev ||
+      prev.id !== vehicle.id ||
+      prev.licensePlate !== vehicle.licensePlate ||
+      prev.brandCode !== vehicle.brandCode ||
+      prev.modelCode !== vehicle.modelCode ||
+      prev.size !== vehicle.size;
+    if (hasChanged) {
+      prevVehicleRef.current = vehicle;
+      onChangeRef.current(vehicle);
+    }
   }, [vehicle]);
 
   return (
