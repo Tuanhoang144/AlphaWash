@@ -1,5 +1,5 @@
 export interface OrderCreateRequest {
-  customerId: string
+  customerId?: string
   date: string 
   checkInTime: string 
   checkOutTime: string 

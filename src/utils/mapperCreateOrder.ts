@@ -5,7 +5,7 @@ export function mapFullOrderToRequest(
   order: OrderResponseDTO
 ): OrderCreateRequest {
   const orderCreateRequest: OrderCreateRequest = {
-    customerId: order.customer?.id || "",
+    customerId: order.customer?.id || undefined,
     date: order.date || "",
     checkInTime: order.checkIn || "",
     checkOutTime: order.checkOut || "",

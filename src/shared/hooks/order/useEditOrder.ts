@@ -64,7 +64,7 @@ export function useEditInvoice(id: string | undefined) {
     setIsLoading(true);
     try {
       const orderData = await getOrderById(id);
-      if (orderData.customer.id === undefined  || orderData.customer.id === null || orderData.customer.id === "") {
+      if (!orderData.customer?.id) {
         handleCustomerChange(null);
       } else {
         handleCustomerChange(orderData.customer as CustomerDTO);

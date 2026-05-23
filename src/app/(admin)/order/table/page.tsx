@@ -29,11 +29,13 @@ export default function WashServiceTable() {
         .filter((order) => !order.deleteFlag) //hide những order bị hủy (deleteFlag = true)
         .map((order) => ({
           ...order,
-          customer: {
-            ...order.customer,
-            customerName: order.customer?.name ?? "Khách lẻ",
-            phone: order.customer?.phone ?? "",
-          },
+          customer: order.customer
+            ? {
+                ...order.customer,
+                customerName: order.customer.name ?? "Khách lẻ",
+                phone: order.customer.phone ?? "",
+              }
+            : { id: "", name: "Khách lẻ", phone: "", customerName: "Khách lẻ" },
         }));
 
       setData(transformed);

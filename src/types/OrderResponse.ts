@@ -88,6 +88,6 @@ export interface OrderResponseDTO {
   discount: number;
   totalPrice: number;
   note: string | null;
-  customer: CustomerDTO;
+  customer?: CustomerDTO;
   orderDetails: OrderDetailDTO[];
 }

@@ -227,11 +227,6 @@ export function useCreateInvoice() {
   // =========================================================================
 
   const validateOrder = (): string | null => {
-    // Check if customer is selected
-    if (!selectedCustomer?.id) {
-      return "Vui lòng chọn khách hàng";
-    }
-
     // Check each order detail
     for (let i = 0; i < (formData.orderDetails?.length || 0); i++) {
       const detail = formData.orderDetails![i];
@@ -289,7 +284,7 @@ export function useCreateInvoice() {
       vat: formData.vat ?? 0,
       discount: formData.discount ?? 0,
       note: formData.note ?? null,
-      customer: (selectedCustomer ?? formData.customer) as CustomerDTO,
+      customer: selectedCustomer ?? formData.customer ?? undefined,
       orderDetails:
         formData.orderDetails?.map((detail) => ({
           ...detail,
