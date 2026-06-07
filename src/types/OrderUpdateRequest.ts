@@ -6,9 +6,9 @@ export interface OrderUpdateRequest {
   modelCode: string;
   imageUrl: string;
   vehicleNote: string;
-  date: string; 
-  checkInTime: string; 
-  checkOutTime: string; 
+  date: string;
+  checkInTime: string;
+  checkOutTime: string;
   paymentType: string;
   paymentStatus: string;
   tip: number;
@@ -21,8 +21,14 @@ export interface OrderUpdateRequest {
 
 export interface OrderDetail {
   orderDetailCode: string; // Optional, if you need to track the detail code
-  employeeIds: number[]; 
-  serviceCatalogCodes: string[];
+  employeeIds: number[];
+  services: ServiceUpdate[];
   status: string;
   note: string;
+}
+export interface ServiceUpdate {
+  serviceCatalogCode: string;
+  adjustedPrice: number;
+  adjustedPriceFlag: boolean;
+  adjustedPriceReason: string;
 }

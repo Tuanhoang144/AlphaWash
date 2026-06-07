@@ -35,15 +35,13 @@ export default function BrandModelSelector({
   const [selectedBrand, setSelectedBrand] = useState<BrandDTO | null>(null);
   const { getAllBrands } = useBrandManager();
   const { getModelsByBrandCode } = useModelManager();
-  const [plateError, setPlateError] = useState<string | null>(null);
 
+  // Load brands on component mount
   useEffect(() => {
     loadBrands();
   }, []);
 
   useEffect(() => {
-    console.log("Selected vehicle:", vehicle);
-    console.log("Customer vehicles:", customer?.vehicles);
     if (!customer?.vehicles || !vehicle?.licensePlate) return;
 
     const matched = customer.vehicles.find(
@@ -57,6 +55,19 @@ export default function BrandModelSelector({
     }
   }, [brands]);
 
+  // Sync selectedBrand with vehicle prop when brands are loaded
+  useEffect(() => {
+    if (brands.length > 0 && vehicle.brandCode) {
+      const brand = brands.find((b) => b.code === vehicle.brandCode);
+      if (brand && brand.code !== selectedBrand?.code) {
+        setSelectedBrand(brand);
+      }
+    } else if (!vehicle.brandCode) {
+      setSelectedBrand(null);
+    }
+  }, [brands, vehicle.brandCode]);
+
+  // Load models when brand changes
   useEffect(() => {
     if (selectedBrand) {
       loadModels(selectedBrand.code);
@@ -167,13 +178,13 @@ export default function BrandModelSelector({
     return (option?.label ?? "").toLowerCase().includes(input.toLowerCase());
   };
 
-  const isValidLicensePlate = (plate: string) => {
-    const regex = /^[0-9]{2}[A-Z]{1,2}[-]?[0-9]{3,5}(\.[0-9]{2})?$/i;
-    return regex.test(plate.replace(/\s/g, "").toUpperCase());
-  };
-
   return (
     <div className="space-y-4">
+      <div className="flex items-center gap-2">
+        <Car className="h-4 w-4" />
+        <Label className="font-medium">Thông tin xe</Label>
+      </div>
+
       {customer?.vehicles && customer.vehicles.length > 0 && (
         <div className="space-y-2">
           <Label className="text-sm">Xe đã đăng ký:</Label>
@@ -201,24 +212,9 @@ export default function BrandModelSelector({
           <Input
             placeholder="29A-12345"
             value={vehicle.licensePlate ?? ""}
-            onChange={(e) => {
-              const value = e.target.value;
-              updateVehicle("licensePlate", value);
-              setPlateError(null);
-            }}
-            onBlur={(e) => {
-              const value = e.target.value;
-              if (value && !isValidLicensePlate(value)) {
-                setPlateError("Biển số không đúng định dạng Việt Nam");
-              } else {
-                setPlateError(null);
-              }
-            }}
+            onChange={(e) => updateVehicle("licensePlate", e.target.value)}
             required
           />
-          {plateError && (
-            <p className="text-sm text-red-600 mt-1">{plateError}</p>
-          )}
         </div>
         <div className="space-y-2">
           <Label>Hãng xe *</Label>
@@ -227,7 +223,7 @@ export default function BrandModelSelector({
             placeholder={loadingBrands ? "Đang tải..." : "Chọn hãng xe"}
             optionFilterProp="label"
             filterOption={filterBrandOption}
-            value={vehicle.brandCode ?? undefined}
+            value={vehicle.brandCode || undefined}
             onChange={handleBrandSelect}
             loading={loadingBrands}
             style={{ width: "100%" }}
@@ -256,7 +252,7 @@ export default function BrandModelSelector({
             }
             optionFilterProp="label"
             filterOption={filterModelOption}
-            value={vehicle.modelCode ?? undefined}
+            value={vehicle.modelCode || undefined}
             onChange={handleModelSelect}
             disabled={!selectedBrand || loadingModels}
             loading={loadingModels}

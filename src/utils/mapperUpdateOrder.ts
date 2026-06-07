@@ -28,9 +28,12 @@ export function mapFullOrderToUpdateRequest(
     orderDetails: order.orderDetails?.map((detail) => ({
       orderDetailCode: detail.code || "",
       employeeIds: (detail.employees || []).map((employee) => employee.id),
-      serviceCatalogCodes: (detail.service || []).map(
-        (service) => service.serviceCatalog?.code || ""
-      ),
+      services: (detail.service || []).map((service) => ({
+        serviceCatalogCode: service.serviceCatalog?.code || "",
+        adjustedPrice: service.adjustedPrice || 0,
+        adjustedPriceFlag: service.adjustedPriceFlag || false,
+        adjustedPriceReason: service.adjustedPriceReason || "",
+      })),
       note: detail.note || "",
       status: detail.status || "",
     })),

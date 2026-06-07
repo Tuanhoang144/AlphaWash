@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import { calculateVatFromOrder, calculateDiscountFromOrder } from "../../../utils/calculateTotal";
+import { calculateDiscountFromOrder, calculateVatFromOrder } from "@/shared/utils/order/calculatePrice";
 
 type InvoiceTemplateProps = {
   order: OrderResponseDTO;
@@ -16,8 +16,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
   const printRef = useRef<HTMLDivElement>(null);
   const { formatTime } = tool();
 
-  const vehicle = order.orderDetails[0].vehicle;
-  const services = order.orderDetails.flatMap((detail) => detail.service);
+  // Get all vehicles from order details
+  const vehicles = order.orderDetails.map((detail) => detail.vehicle);
+  const allServices = order.orderDetails.flatMap((detail) => detail.service);
 
   // Tính toán VAT và discount theo logic mới
   const vatAmount = calculateVatFromOrder(order);
@@ -29,12 +30,18 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
     accountName: process.env.NEXT_PUBLIC_ACCOUNTNAME || "CONG TY RUA XE",
   };
 
+  // Build QR description with all vehicles and services
+  const vehicleDescriptions = order.orderDetails.map((detail) => {
+    const services = detail.service.map((s) => s.serviceName).join(", ");
+    return `${detail.vehicle.licensePlate} (${services})`;
+  }).join(" | ");
+
   const qrUrl = `https://img.vietqr.io/image/${paymentConfig.bankName}-${
     paymentConfig.accountNumber
   }-compact2.jpg?amount=${Math.floor(
     order.totalPrice
   )}&addInfo=${encodeURIComponent(
-    vehicle.licensePlate + " - " + services.map((s) => s.serviceName).join(", ")
+    vehicleDescriptions
   )}&accountName=${encodeURIComponent(paymentConfig.accountName)}`;
 
   return (
@@ -45,7 +52,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         style={{ padding: "1px 0.5cm" }}
       >
         <div className="flex justify-between mt-4  w-full">
-          <div><p className="font-bold text-sm" >Mã HĐ: {order.code}</p></div>
+          <div>
+            <p className="font-bold text-sm">Mã HĐ: {order.code}</p>
+          </div>
           <div className="font-italic text-sm">
             In lúc: {new Date().toLocaleString("vi-VN")}
           </div>
@@ -53,11 +62,11 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
         <div className="flex items-start mb-6 pb-4 border-b border-gray-200">
           <img
             src="/logo.png?height=80&width=80"
-            alt="Logo"
+            alt="Shine Autowerkz Logo"
             className="w-40 h-40 object-contain mr-3 flex-shrink-0"
           />
           <div className="flex-1 text-start justify-center my-auto">
-            <p className="text-lg font-bold text-gray-800">ALPHA WASH</p>
+            <p className="text-lg font-bold text-gray-800">SHINE AUTOWERKZ</p>
             <p className="text-xs text-gray-600 mt-1">
               297G Đ.Liên Phường, Phường Phú Hữu, TP Thủ Đức, TP Hồ Chí Minh
             </p>
@@ -81,10 +90,6 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                 <strong>Kỹ Thuật:</strong>{" "}
                 {order.orderDetails[0].employees[0]?.name || "Chưa có"}
               </p>
-              <p className="mb-1">
-                <strong>Xe:</strong> {vehicle.brandName} {vehicle.modelName}{" "}
-                {vehicle.licensePlate}
-              </p>
             </div>
           )}
           <div className="flex-1 text-xs text-gray-700 mr-2">
@@ -101,34 +106,57 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           </div>
         </div>
 
-        <table className="w-full text-xs border border-gray-300 mb-4">
-          <thead>
-            <tr className="bg-transparent">
-              <th className="p-2 border-r border-gray-300 text-left font-semibold">
-                Dịch vụ
-              </th>
-              <th className="p-2 border-r border-gray-300 text-left font-semibold">
-                Loại xe
-              </th>
-              <th className="p-2 text-left font-semibold">Giá</th>
-            </tr>
-          </thead>
-          <tbody>
-            {services.map((service, index) => (
-              <tr key={index}>
-                <td className="p-2 border-r border-gray-300">
-                  {service.serviceName}
-                </td>
-                <td className="p-2 border-r border-gray-300">
-                  {service.serviceCatalog.size}
-                </td>
-                <td className="p-2 text-right">
-                  {service.serviceCatalog.price.toLocaleString()}đ
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        {/* Danh sách xe và dịch vụ */}
+        {order.orderDetails.map((detail, vehicleIndex) => (
+          <div key={vehicleIndex} className="mb-4">
+            <div className="bg-gray-100 p-2 rounded-t-md border border-gray-300 border-b-0">
+              <p className="text-xs font-bold text-gray-800">
+                🚗 Xe #{vehicleIndex + 1}: {detail.vehicle.brandName} {detail.vehicle.modelName} - {detail.vehicle.licensePlate} (Size: {detail.vehicle.size})
+              </p>
+            </div>
+            <table className="w-full text-xs border border-gray-300 mb-4">
+              <thead>
+                <tr className="bg-transparent">
+                  <th className="p-2 border-r border-gray-300 text-left font-semibold w-1/2">
+                    Dịch vụ
+                  </th>
+                  <th className="p-2 border-r border-gray-300 text-left font-semibold w-1/4">
+                    Loại xe
+                  </th>
+                  <th className="p-2 text-left font-semibold w-1/4">
+                    Giá
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {detail.service.map((service, serviceIndex) => (
+                  <tr key={serviceIndex}>
+                    <td className="p-2 border-r border-gray-300">
+                      {service.serviceName}
+                    </td>
+                    <td className="p-2 border-r border-gray-300">
+                      {service.serviceCatalog?.size || "N/A"}
+                    </td>
+                    <td className="p-2 text-right">
+                      {(service.adjustedPriceFlag && service.adjustedPriceReason
+                        ? service.adjustedPrice
+                        : service.serviceCatalog?.listedPrice || 0
+                      ).toLocaleString()}
+                      đ
+                    </td>
+                  </tr>
+                ))}
+                {detail.service.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="p-2 text-center text-gray-500">
+                      Chưa có dịch vụ nào
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        ))}
 
         <div className="text-sm mt-4 space-y-2 text-gray-700">
           <div className="flex justify-between">
@@ -153,7 +181,9 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
           {order.discount > 0 && (
             <div className="flex justify-between font-medium border-t pt-2">
               <span>Tổng tiền sau giảm giá:</span>
-              <span>{(baseServicePrice - discountAmount).toLocaleString()}đ</span>
+              <span>
+                {(baseServicePrice - discountAmount).toLocaleString()}đ
+              </span>
             </div>
           )}
           {order.vat > 0 && (

@@ -36,7 +36,7 @@ import Image from "next/image"
 const data = {
   user: {
     name: "admin",
-    email: "alphawash.vn",
+    email: "shineautowerkz.vn",
     avatar: "",
   },
   navMain: [
@@ -129,19 +129,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <a href="#">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <div className="text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Image
                     src="/icon.png"
-                    alt="Alpha Wash Logo"
-                    width={20}
-                    height={20}
+                    alt="Shine Autowerkz Logo"
+                    width={30}
+                    height={30}
                     className="object-contain pb-0.5"
                     priority
                   />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">Alpha Wash</span>
-                  <span className="truncate text-xs">Chăm xe đẹp đến từng centimet</span>
+                  <span className="truncate font-medium">Shine Autowerkz</span>
+                  <span className="truncate text-xs">Build Your Shine</span>
                 </div>
               </a>
             </SidebarMenuButton>
@@ -150,7 +150,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        {/* <NavProjects projects={data.projects} /> */}
         <NavSecondary items={data.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>

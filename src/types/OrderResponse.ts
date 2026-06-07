@@ -26,7 +26,7 @@ export interface VehicleDTO {
 export interface ServiceCatalogDTO {
   id: number;
   code: string;
-  price: number;
+  listedPrice: number;
   size: string;
   service?: ServiceDTO;
 }
@@ -51,6 +51,9 @@ export interface ServiceDTO {
   serviceName: string;
   serviceTypeCode: string;
   serviceCatalog: ServiceCatalogDTO;
+  adjustedPriceReason: string;
+  adjustedPrice: number;
+  adjustedPriceFlag: boolean;
   duration?: string;
   note?: string;
 }
@@ -85,6 +88,6 @@ export interface OrderResponseDTO {
   discount: number;
   totalPrice: number;
   note: string | null;
-  customer: CustomerDTO;
+  customer?: CustomerDTO;
   orderDetails: OrderDetailDTO[];
 }

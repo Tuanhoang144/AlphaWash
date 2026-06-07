@@ -6,7 +6,7 @@ export const handleInvoicePrint = async ({
   order,
   baseServicePrice,
   qrUrl,
-  logoUrl = "/logo.png",
+  logoUrl = "/logo_black.png",
 }: {
   order: OrderResponseDTO;
   baseServicePrice: number;
