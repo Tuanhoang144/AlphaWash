@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/dist/client/components/navigation";
 
 import Header from "./components/header";
@@ -9,6 +9,9 @@ import { useOrderManager } from "@/services/useOrderManager";
 import OrderTable from "./components/order-table";
 import LoadingPage from "../../../loading";
 import SearchTable from "./components/sreach";
+import BulkPaymentBar from "./components/BulkPaymentBar";
+import ConfirmBulkPaymentDialog from "./components/ConfirmBulkPaymentDialog";
+import { useBulkPayment } from "@/shared/hooks/order/useBulkPayment";
 
 export default function WashServiceTable() {
   const [data, setData] = useState<OrderResponseDTO[]>([]);
@@ -20,6 +23,30 @@ export default function WashServiceTable() {
     "payment" | "time" | null
   >(null);
   const router = useRouter();
+
+  const refreshData = useCallback(async () => {
+    try {
+      const result: OrderResponseDTO[] = await getAllOrders();
+      const transformed = result
+        .filter((order) => !order.deleteFlag)
+        .map((order) => ({
+          ...order,
+          customer: order.customer
+            ? {
+                ...order.customer,
+                customerName: order.customer.name ?? "Khách lẻ",
+                phone: order.customer.phone ?? "",
+              }
+            : { id: "", name: "Khách lẻ", phone: "", customerName: "Khách lẻ" },
+        }));
+      setData(transformed);
+    } catch (error) {
+      console.error("Lỗi khi gọi API get all order:", error);
+    }
+  }, [getAllOrders]);
+
+  // Bulk Payment
+  const bulkPayment = useBulkPayment(data, refreshData);
 
   const fetchData = async () => {
     try {
@@ -50,6 +77,52 @@ export default function WashServiceTable() {
 
   const filteredData = useMemo(() => {
     let result = [...data];
+
+    // Lọc theo ngày (bulk payment date filter)
+    if (bulkPayment.dateFilter) {
+      const getRange = () => {
+        const now = new Date();
+        switch (bulkPayment.dateFilter) {
+          case "today": {
+            const today = now.toISOString().split("T")[0];
+            return { from: today, to: today };
+          }
+          case "week": {
+            const dayOfWeek = now.getDay();
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7));
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            return {
+              from: monday.toISOString().split("T")[0],
+              to: sunday.toISOString().split("T")[0],
+            };
+          }
+          case "month": {
+            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+            return {
+              from: firstDay.toISOString().split("T")[0],
+              to: lastDay.toISOString().split("T")[0],
+            };
+          }
+          case "custom":
+            return bulkPayment.customRange.from && bulkPayment.customRange.to
+              ? bulkPayment.customRange
+              : null;
+          default:
+            return null;
+        }
+      };
+      const range = getRange();
+      if (range) {
+        result = result.filter((order) => {
+          const date = (order.date || "").split("T")[0];
+          return date >= range.from && date <= range.to;
+        });
+      }
+    }
+
     // Tìm kiếm nếu có
     if (searchTerm !== "") {
       const lowerSearch = searchTerm?.toLowerCase() ?? "";
@@ -121,7 +194,7 @@ export default function WashServiceTable() {
     }
 
     return result;
-  }, [data, searchTerm, selectedFilter]);
+  }, [data, searchTerm, selectedFilter, bulkPayment.dateFilter, bulkPayment.customRange]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -201,6 +274,28 @@ export default function WashServiceTable() {
           setSelectedFilter={setSelectedFilter}
         />
 
+        {/* Bulk Payment Bar */}
+        <BulkPaymentBar
+          selectedCount={bulkPayment.selectedCount}
+          selectedTotalPrice={bulkPayment.selectedTotalPrice}
+          dateFilter={bulkPayment.dateFilter}
+          customRange={bulkPayment.customRange}
+          onDateFilterChange={bulkPayment.handleDateFilterChange}
+          onCustomRangeChange={bulkPayment.handleCustomRangeChange}
+          onMarkAsPaid={bulkPayment.openConfirm}
+          onClearSelection={bulkPayment.clearSelection}
+        />
+
+        {/* Confirm Dialog */}
+        <ConfirmBulkPaymentDialog
+          isOpen={bulkPayment.isConfirmOpen}
+          isProcessing={bulkPayment.isProcessing}
+          selectedCount={bulkPayment.selectedCount}
+          selectedTotalPrice={bulkPayment.selectedTotalPrice}
+          onConfirm={bulkPayment.executeBulkPayment}
+          onCancel={bulkPayment.closeConfirm}
+        />
+
         <OrderTable
           data={currentData}
           itemsPerPage={itemsPerPage}
@@ -213,6 +308,9 @@ export default function WashServiceTable() {
           goToLastPage={goToLastPage}
           goToPage={goToPage}
           getPageNumbers={getPageNumbers}
+          selectedIds={bulkPayment.selectedIds}
+          onToggleSelect={bulkPayment.toggleSelect}
+          onToggleSelectAll={bulkPayment.toggleSelectAll}
         />
       </div>
     </div>

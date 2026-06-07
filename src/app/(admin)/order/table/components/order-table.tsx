@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge as UIBadge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Size } from "@/types/Size";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "../../../../../utils/tool";
@@ -43,6 +44,10 @@ interface OrderTableProps {
   goToLastPage: () => void;
   goToPage: (page: number) => void;
   getPageNumbers: () => number[];
+  // Bulk Payment
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
+  onToggleSelectAll?: (data: OrderResponseDTO[]) => void;
 }
 
 const OrderTable: React.FC<OrderTableProps> = ({
@@ -57,6 +62,9 @@ const OrderTable: React.FC<OrderTableProps> = ({
   goToLastPage,
   goToPage,
   getPageNumbers,
+  selectedIds,
+  onToggleSelect,
+  onToggleSelectAll,
 }) => {
   const [scrollY, setScrollY] = useState("55vh");
 
@@ -129,7 +137,47 @@ const OrderTable: React.FC<OrderTableProps> = ({
         ]),
   ];
 
+  // Bulk payment helpers
+  const isSelectionMode = !!selectedIds && !!onToggleSelect;
+  const unpaidInView = data.filter((o) =>
+    ["PENDING", "PROCESSING", "UNPAID"].includes(o.paymentStatus ?? "")
+  );
+  const allUnpaidSelected =
+    unpaidInView.length > 0 && unpaidInView.every((o) => selectedIds?.has(o.id));
+  const someSelected =
+    !allUnpaidSelected && unpaidInView.some((o) => selectedIds?.has(o.id));
+
   const columns: ColumnsType<OrderResponseDTO> = [
+    // Checkbox column for bulk payment
+    ...(isSelectionMode
+      ? [
+          {
+            title: (
+              <Checkbox
+                checked={allUnpaidSelected ? true : someSelected ? "indeterminate" : false}
+                onCheckedChange={() => onToggleSelectAll?.(data)}
+                aria-label="Chọn tất cả"
+              />
+            ),
+            key: "select",
+            width: 50,
+            fixed: "left" as const,
+            render: (_: unknown, record: OrderResponseDTO) => {
+              const isUnpaid = ["PENDING", "PROCESSING", "UNPAID"].includes(
+                record.paymentStatus ?? ""
+              );
+              if (!isUnpaid) return null;
+              return (
+                <Checkbox
+                  checked={selectedIds?.has(record.id) ?? false}
+                  onCheckedChange={() => onToggleSelect?.(record.id)}
+                  aria-label={`Chọn đơn ${record.code}`}
+                />
+              );
+            },
+          },
+        ]
+      : []),
     {
       title: "Mã đơn hàng",
       dataIndex: "code",
