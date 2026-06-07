@@ -1,6 +1,6 @@
 export interface OrderUpdateRequest {
   orderId: string;
-  customerId: string;
+  customerId: string | null;
   licensePlate: string;
   brandCode: string;
   modelCode: string;

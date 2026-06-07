@@ -97,6 +97,25 @@ export function useOrderManager() {
     [callApi, setIsLoading]
   );
 
+  const bulkUpdatePaymentStatus = useCallback(
+    async (orderIds: string[], paymentStatus: string): Promise<number> => {
+      setIsLoading(true);
+      try {
+        const response = await callApi("patch", "orders/bulk-payment", {
+          orderIds,
+          paymentStatus,
+        });
+        return response?.data ?? 0;
+      } catch (error) {
+        console.error("Lỗi cập nhật thanh toán hàng loạt:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   const cancelOrderById = useCallback(
     async (id: string) => {
       if (!id) return;
@@ -120,6 +139,7 @@ export function useOrderManager() {
     getOrderByCode,
     createOrder,
     updateOrder,
+    bulkUpdatePaymentStatus,
     cancelOrderById,
     loading,
   };

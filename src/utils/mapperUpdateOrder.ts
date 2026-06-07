@@ -9,7 +9,7 @@ export function mapFullOrderToUpdateRequest(
 
   const orderUpdateRequest: OrderUpdateRequest = {
     orderId: id,
-    customerId: order.customer?.id || "",
+    customerId: order.customer?.id || null,
     licensePlate: detail.vehicle.licensePlate || "",
     brandCode: detail.vehicle.brandCode || "",
     modelCode: detail.vehicle.modelCode || "",
