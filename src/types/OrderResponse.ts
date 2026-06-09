@@ -54,6 +54,7 @@ export interface ServiceDTO {
   adjustedPriceReason: string;
   adjustedPrice: number;
   adjustedPriceFlag: boolean;
+  quantity: number;
   duration?: string;
   note?: string;
 }

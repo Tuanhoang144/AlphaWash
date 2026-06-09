@@ -33,6 +33,7 @@ export function mapFullOrderToUpdateRequest(
         adjustedPrice: service.adjustedPrice || 0,
         adjustedPriceFlag: service.adjustedPriceFlag || false,
         adjustedPriceReason: service.adjustedPriceReason || "",
+        quantity: service.quantity >= 1 ? service.quantity : 1,
       })),
       note: detail.note || "",
       status: detail.status || "",

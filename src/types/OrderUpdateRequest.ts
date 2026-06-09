@@ -31,4 +31,5 @@ export interface ServiceUpdate {
   adjustedPrice: number;
   adjustedPriceFlag: boolean;
   adjustedPriceReason: string;
+  quantity: number;
 }

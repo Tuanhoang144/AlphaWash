@@ -110,6 +110,7 @@ export default function InvoiceSummary({
                             <p className="text-sm font-medium text-gray-800">{service.serviceName}</p>
                             <p className="text-xs text-gray-500">
                               {(service.serviceCatalog?.size || "N/A")} • Dịch vụ #{idx + 1}
+                              {(service.quantity || 1) > 1 && ` • SL: ${service.quantity}`}
                             </p>
                           </div>
 

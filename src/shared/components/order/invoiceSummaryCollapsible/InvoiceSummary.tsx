@@ -154,14 +154,20 @@ export default function InvoiceSummary({
                                   <div className="text-xs text-gray-500">
                                     {service.serviceCatalog ? (
                                       <div className="price">
-                                        {(service.adjustedPriceFlag === true &&
-                                        service.adjustedPriceReason
-                                          ? service.adjustedPrice
-                                          : service.serviceCatalog
-                                              ?.listedPrice)!.toLocaleString(
-                                          "vi-VN"
-                                        )}
+                                        {(
+                                          ((service.adjustedPriceFlag === true &&
+                                          service.adjustedPriceReason
+                                            ? service.adjustedPrice
+                                            : service.serviceCatalog
+                                                ?.listedPrice) ?? 0) *
+                                          (service.quantity || 1)
+                                        ).toLocaleString("vi-VN")}
                                         VNĐ
+                                        {(service.quantity || 1) > 1 && (
+                                          <span className="text-[10px] text-gray-400 ml-1">
+                                            (x{service.quantity})
+                                          </span>
+                                        )}
                                       </div>
                                     ) : (
                                       "Không rõ giá"
@@ -195,12 +201,12 @@ export default function InvoiceSummary({
                           ? (() => {
                               const total = detail.service.reduce(
                                 (acc, curr) => {
-                                  const price =
+                                  const unitPrice =
                                     curr.adjustedPriceFlag === true &&
                                     curr.adjustedPriceReason
                                       ? curr.adjustedPrice ?? 0
                                       : curr.serviceCatalog?.listedPrice ?? 0;
-                                  return acc + (price ?? 0);
+                                  return acc + unitPrice * (curr.quantity || 1);
                                 },
                                 0
                               );

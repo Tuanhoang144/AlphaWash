@@ -69,7 +69,8 @@ export function useServiceManager(
         prev.serviceCatalog?.id === initialService.serviceCatalog?.id &&
         prev.adjustedPrice === initialService.adjustedPrice &&
         prev.adjustedPriceFlag === initialService.adjustedPriceFlag &&
-        prev.adjustedPriceReason === initialService.adjustedPriceReason;
+        prev.adjustedPriceReason === initialService.adjustedPriceReason &&
+        prev.quantity === initialService.quantity;
       if (same) return prev;
       return initialService;
     });
@@ -191,6 +192,7 @@ export function useServiceManager(
         adjustedPriceFlag: false,
         adjustedPrice: 0,
         adjustedPriceReason: "",
+        quantity: 1,
       }));
     },
     [services]
@@ -268,6 +270,11 @@ export function useServiceManager(
         adjustedPrice: newPrice,
       };
     });
+  }, []);
+
+  const setQuantity = useCallback((qty: number) => {
+    const safeQty = Number.isFinite(qty) && qty >= 1 ? Math.floor(qty) : 1;
+    setService((prev) => (prev ? { ...prev, quantity: safeQty } : prev));
   }, []);
 
   // Đặt lý do điều chỉnh giá
@@ -380,6 +387,7 @@ export function useServiceManager(
     toggleAdjustedPrice,
     setAdjustedPrice,
     setAdjustedPriceReason,
+    setQuantity,
   };
 }
 
@@ -393,6 +401,7 @@ export function createNewService(): ServiceDTO {
     adjustedPrice: 0,
     adjustedPriceFlag: false,
     adjustedPriceReason: "",
+    quantity: 1,
     duration: undefined,
     note: undefined,
     serviceCatalog: {
