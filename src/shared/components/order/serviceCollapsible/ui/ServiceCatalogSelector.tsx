@@ -4,7 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { AlertTriangle, DollarSign, AlertCircle } from "lucide-react";
+import { AlertTriangle, DollarSign, AlertCircle, Minus, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Select } from "antd";
 import type { ServiceDTO } from "@/types/OrderResponse";
 import { formatPrice } from "@/shared/utils/checkValidate";
@@ -31,6 +32,7 @@ interface Props {
   onToggleAdjustedPrice: (enabled: boolean) => void;
   onSetAdjustedPrice: (price: number) => void;
   onSetAdjustedPriceReason: (reason: string) => void;
+  onSetQuantity: (qty: number) => void;
 }
 
 export default function ServiceCatalogSelector({
@@ -47,6 +49,7 @@ export default function ServiceCatalogSelector({
   onToggleAdjustedPrice,
   onSetAdjustedPrice,
   onSetAdjustedPriceReason,
+  onSetQuantity,
 }: Props) {
   return (
     <div className="space-y-4">
@@ -127,6 +130,53 @@ export default function ServiceCatalogSelector({
           </Select>
         </div>
       </div>
+
+      {/* Số lượng */}
+      {service?.serviceCatalog?.id ? (
+        <div className="flex items-center gap-3">
+          <Label className="font-medium">Số lượng:</Label>
+          <div className="flex items-center gap-1">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => onSetQuantity(Math.max(1, (service.quantity || 1) - 1))}
+              disabled={(service.quantity || 1) <= 1}
+            >
+              <Minus className="h-3 w-3" />
+            </Button>
+            <Input
+              type="number"
+              min={1}
+              value={service.quantity || 1}
+              onChange={(e) => {
+                const v = parseInt(e.target.value, 10);
+                if (v >= 1) onSetQuantity(v);
+              }}
+              className="w-16 h-8 text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={() => onSetQuantity((service.quantity || 1) + 1)}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          </div>
+          {(service.quantity || 1) > 1 && (
+            <span className="text-sm text-gray-500">
+              = {formatPrice(
+                ((service.adjustedPriceFlag && service.adjustedPriceReason
+                  ? service.adjustedPrice
+                  : service.serviceCatalog?.listedPrice) ?? 0) * (service.quantity || 1)
+              )}đ
+            </span>
+          )}
+        </div>
+      ) : null}
 
       {/* Khối ngoại lệ giá */}
       {service?.serviceCatalog?.id ? (

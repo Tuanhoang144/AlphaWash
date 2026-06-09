@@ -129,23 +129,27 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                 </tr>
               </thead>
               <tbody>
-                {detail.service.map((service, serviceIndex) => (
-                  <tr key={serviceIndex}>
-                    <td className="p-2 border-r border-gray-300">
-                      {service.serviceName}
-                    </td>
-                    <td className="p-2 border-r border-gray-300">
-                      {service.serviceCatalog?.size || "N/A"}
-                    </td>
-                    <td className="p-2 text-right">
-                      {(service.adjustedPriceFlag && service.adjustedPriceReason
-                        ? service.adjustedPrice
-                        : service.serviceCatalog?.listedPrice || 0
-                      ).toLocaleString()}
-                      đ
-                    </td>
-                  </tr>
-                ))}
+                {detail.service.map((service, serviceIndex) => {
+                  const unitPrice = service.adjustedPriceFlag && service.adjustedPriceReason
+                    ? service.adjustedPrice
+                    : service.serviceCatalog?.listedPrice || 0;
+                  const qty = service.quantity >= 1 ? service.quantity : 1;
+                  const lineTotal = unitPrice * qty;
+                  return (
+                    <tr key={serviceIndex}>
+                      <td className="p-2 border-r border-gray-300">
+                        {service.serviceName}
+                        {qty > 1 && <span className="text-gray-500"> (x{qty})</span>}
+                      </td>
+                      <td className="p-2 border-r border-gray-300">
+                        {service.serviceCatalog?.size || "N/A"}
+                      </td>
+                      <td className="p-2 text-right">
+                        {lineTotal.toLocaleString()}đ
+                      </td>
+                    </tr>
+                  );
+                })}
                 {detail.service.length === 0 && (
                   <tr>
                     <td colSpan={3} className="p-2 text-center text-gray-500">

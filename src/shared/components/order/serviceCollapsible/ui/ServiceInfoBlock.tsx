@@ -46,6 +46,7 @@ export default function ServiceInfoBlock({
     toggleAdjustedPrice,
     setAdjustedPrice,
     setAdjustedPriceReason,
+    setQuantity,
   } = useServiceManager(service, allServices, loadingServices, vehicleSize);
 
   const prevServiceRef = useRef<ServiceDTO | null>(null);
@@ -68,7 +69,8 @@ export default function ServiceInfoBlock({
       prevService.adjustedPrice !== managedService.adjustedPrice ||
       prevService.adjustedPriceFlag !== managedService.adjustedPriceFlag ||
       prevService.adjustedPriceReason !== managedService.adjustedPriceReason ||
-      prevService.serviceCatalog?.id !== managedService.serviceCatalog?.id;
+      prevService.serviceCatalog?.id !== managedService.serviceCatalog?.id ||
+      prevService.quantity !== managedService.quantity;
 
     if (hasChanged) {
       prevServiceRef.current = managedService;
@@ -125,6 +127,7 @@ export default function ServiceInfoBlock({
           onToggleAdjustedPrice={toggleAdjustedPrice}
           onSetAdjustedPrice={setAdjustedPrice}
           onSetAdjustedPriceReason={setAdjustedPriceReason}
+          onSetQuantity={setQuantity}
         />
       </CardContent>
     </Card>

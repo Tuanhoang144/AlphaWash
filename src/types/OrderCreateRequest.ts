@@ -30,4 +30,5 @@ export interface ServiceAdjust {
   adjustedPrice: number
   adjustedPriceFlag: boolean
   adjustedPriceReason: string
+  quantity: number
 }

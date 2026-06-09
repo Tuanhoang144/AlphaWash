@@ -65,18 +65,21 @@ export const generateInvoiceHTML = ({
       // Service rows for this vehicle
       const serviceRows = services
         .map((service) => {
-          const applied =
+          const unitPrice =
             service.adjustedPriceFlag && service.adjustedPriceReason
               ? service.adjustedPrice ?? 0
               : service.serviceCatalog?.listedPrice ?? 0;
 
+          const qty = service.quantity >= 1 ? service.quantity : 1;
+          const lineTotal = unitPrice * qty;
           const size = service.serviceCatalog?.size ?? "N/A";
+          const qtyDisplay = qty > 1 ? ` (x${qty})` : "";
 
           return `
             <tr>
-              <td>${service.serviceName}</td>
+              <td>${service.serviceName}${qtyDisplay}</td>
               <td>${size}</td>
-              <td class="price">${applied.toLocaleString("vi-VN")}đ</td>
+              <td class="price">${lineTotal.toLocaleString("vi-VN")}đ</td>
             </tr>`;
         })
         .join("");

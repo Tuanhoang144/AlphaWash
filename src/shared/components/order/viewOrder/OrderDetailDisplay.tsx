@@ -127,15 +127,19 @@ export default function OrderDetailDisplay({
                         {detail.service.map((service, index) => {
                           const listed =
                             service.serviceCatalog?.listedPrice ?? 0;
+                          const qty = service.quantity >= 1 ? service.quantity : 1;
                           const applied = getAppliedPrice(
                             service,
                             service.serviceCatalog
                           );
-                          const diff = applied - listed;
+                          const unitApplied = service.adjustedPriceFlag && service.adjustedPriceReason
+                            ? service.adjustedPrice ?? 0
+                            : listed;
+                          const diff = unitApplied - listed;
                           const isAdjusted =
                             !!service.adjustedPriceFlag &&
                             !!service.adjustedPriceReason?.trim() &&
-                            applied !== listed;
+                            unitApplied !== listed;
 
                           return (
                             <div
@@ -181,6 +185,14 @@ export default function OrderDetailDisplay({
                                   <span className="font-medium text-gray-700">
                                     {service.serviceCatalog?.size || "—"}
                                   </span>
+                                  {qty > 1 && (
+                                    <>
+                                      {" "}• SL:{" "}
+                                      <span className="font-medium text-gray-700">
+                                        {qty}
+                                      </span>
+                                    </>
+                                  )}
                                 </p>
 
                                 {isAdjusted && (
