@@ -1,10 +1,5 @@
 export interface OrderCreateRequest {
-  customerId: string
-  licensePlate: string
-  brandCode: string
-  modelCode: string
-  imageUrl: string
-  vehicleNote: string
+  customerId?: string
   date: string 
   checkInTime: string 
   checkOutTime: string 
@@ -23,6 +18,11 @@ export interface OrderDetail {
   services: ServiceAdjust[]
   status: string
   note: string
+  licensePlate: string
+  brandCode: string
+  modelCode: string
+  imageUrl: string
+  vehicleNote: string
 }
 
 export interface ServiceAdjust {

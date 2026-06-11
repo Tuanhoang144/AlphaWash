@@ -1,8 +1,8 @@
 "use client";
 
-import { FileText, QrCode } from "lucide-react";
+import { FileText, QrCode, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui/sidebar";
 import LoadingPage from "@/app/loading";
 import HeaderBreadcrumb from "@/shared/components/layout/Header";
 import CustomerInfoSection from "@/shared/components/order/customerCollapsible/CustomerInfoSection";
@@ -19,11 +19,13 @@ export default function CreateOrderForm() {
     setFormData,
     selectedCustomer,
     handleCustomerChange,
-    handleVehicleChange,
-    handleInfoOrderDetailChange,
-    handleServiceChange,
-    addService,
+    handleVehicleChangeAt,
+    handleInfoOrderDetailChangeAt,
+    handleServiceChangeAt,
+    addServiceAt,
     removeServiceAt,
+    addVehicle,
+    removeVehicleAt,
     currentTotalPrice,
     isNavigating,
     handleSubmit,
@@ -54,22 +56,78 @@ export default function CreateOrderForm() {
                   onCustomerChange={handleCustomerChange}
                 />
 
-                {/* Thông Tin Xe */}
-                <VehicleInfoSection
-                  value={formData.orderDetails?.[0]?.vehicle as VehicleDTO}
-                  customer={selectedCustomer || undefined}
-                  onChange={handleVehicleChange}
-                />
+                {/* Danh sách xe - Multi Vehicle Support */}
+                {formData.orderDetails?.map((detail, index) => (
+                  <div key={index} className="space-y-4">
+                    <div className="flex items-center justify-between bg-white rounded-lg border p-4">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Xe #{index + 1}
+                      </h3>
+                      {formData.orderDetails!.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeVehicleAt(index)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Xóa xe
+                        </Button>
+                      )}
+                    </div>
 
-                {/* Thông Dịch Vụ & Nhân Viên Thi Công */}
-                <ServiceForm
-                  orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onServiceChange={handleServiceChange}
-                  onInfoChange={handleInfoOrderDetailChange}
-                  addService={addService}
-                  removeServiceAt={removeServiceAt}
-                  vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
-                />
+                    {/* Thông Tin Xe */}
+                    <VehicleInfoSection
+                      value={detail.vehicle as VehicleDTO}
+                      customer={selectedCustomer || undefined}
+                      onChange={handleVehicleChangeAt(index)}
+                    />
+
+                    {/* Thông Dịch Vụ & Nhân Viên Thi Công */}
+                    <ServiceForm
+                      orderDetail={detail}
+                      onServiceChange={(sIndex, updated) => 
+                        handleServiceChangeAt(index, sIndex, updated)
+                      }
+                      onInfoChange={handleInfoOrderDetailChangeAt(index)}
+                      addService={() => addServiceAt(index)({
+                        id: 0,
+                        serviceCode: "",
+                        serviceName: "",
+                        serviceTypeCode: "",
+                        adjustedPriceReason: "",
+                        adjustedPrice: 0,
+                        adjustedPriceFlag: false,
+                        duration: undefined,
+                        note: undefined,
+                        serviceCatalog: {
+                          code: "",
+                          id: 0,
+                          listedPrice: 0,
+                          size: "",
+                        },
+                      })}
+                      removeServiceAt={(sIndex) => removeServiceAt(index, sIndex)}
+                      vehicleSize={detail.vehicle?.size ?? ""}
+                    />
+
+                    {index < formData.orderDetails!.length - 1 && (
+                      <hr className="border-gray-300 my-6" />
+                    )}
+                  </div>
+                ))}
+
+                {/* Add Vehicle Button */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addVehicle}
+                  className="w-full py-6 border-dashed border-2"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Thêm xe
+                </Button>
               </div>
 
               {/* Right Column */}

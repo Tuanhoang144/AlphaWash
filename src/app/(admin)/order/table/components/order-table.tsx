@@ -219,12 +219,12 @@ const OrderTable: React.FC<OrderTableProps> = ({
       render: (_, record) => (
         <div className="space-y-2">
           <div className="font-semibold text-base">
-            {record.customer.name || "Khách lẻ"}
+            {record.customer?.name || "Khách lẻ"}
           </div>
-          {record.customer.phone && (
+          {record.customer?.phone && (
             <div className="flex items-center gap-2  text-gray-600">
               <Phone className="h-4 w-4" />
-              <span className="font-mono">{record.customer.phone}</span>
+              <span className="font-mono">{record.customer?.phone}</span>
             </div>
           )}
         </div>

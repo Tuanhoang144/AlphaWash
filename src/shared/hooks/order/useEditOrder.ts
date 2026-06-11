@@ -25,15 +25,36 @@ export function useEditInvoice(id: string | undefined) {
     setFormData,
     selectedCustomer,
     handleCustomerChange,
-    handleVehicleChange,
-    handleServiceChange,
-    handleInfoOrderDetailChange,
-    addService,
-    removeServiceAt,
+    handleVehicleChangeAt,
+    handleServiceChangeAt,
+    handleInfoOrderDetailChangeAt,
+    addServiceAt,
+    removeServiceAt: removeServiceAtInternal,
     currentTotalPrice,
     isNavigating,
     buildEmptyDetail,
   } = useCreateInvoice();
+
+  // Wrapper functions for backward compatibility (edit form works with single vehicle)
+  const handleVehicleChange = (vehicle: VehicleDTO) => {
+    handleVehicleChangeAt(0)(vehicle);
+  };
+
+  const handleServiceChange = (index: number, service: any) => {
+    handleServiceChangeAt(0, index, service);
+  };
+
+  const handleInfoOrderDetailChange = (field: string, value: any) => {
+    handleInfoOrderDetailChangeAt(0)(field, value);
+  };
+
+  const addService = (service: any) => {
+    addServiceAt(0)(service);
+  };
+
+  const removeServiceAt = (index: number) => {
+    removeServiceAtInternal(0, index);
+  };
 
   // ============================================================================
   // Load order data khi có id
@@ -43,7 +64,7 @@ export function useEditInvoice(id: string | undefined) {
     setIsLoading(true);
     try {
       const orderData = await getOrderById(id);
-      if (orderData.customer.id === undefined  || orderData.customer.id === null || orderData.customer.id === "") {
+      if (!orderData.customer?.id) {
         handleCustomerChange(null);
       } else {
         handleCustomerChange(orderData.customer as CustomerDTO);

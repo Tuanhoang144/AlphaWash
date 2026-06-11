@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Wrench, Trash2, AlertTriangle } from "lucide-react";
@@ -48,15 +48,33 @@ export default function ServiceInfoBlock({
     setAdjustedPriceReason,
   } = useServiceManager(service, allServices, loadingServices, vehicleSize);
 
-  // Báo validation lên cha
+  const prevServiceRef = useRef<ServiceDTO | null>(null);
+  const onServiceChangeRef = useRef(onServiceChange);
+  useEffect(() => {
+    onServiceChangeRef.current = onServiceChange;
+  });
+
   useEffect(() => {
     onValidationChange?.(isPriceChangeValid);
   }, [isPriceChangeValid, onValidationChange]);
 
-  // Khi service thay đổi trong hook -> báo ngược lên cha (giống VehicleInfoSection)
   useEffect(() => {
-    if (managedService) onServiceChange(managedService);
-  }, [managedService, onServiceChange]);
+    if (!managedService) return;
+
+    const prevService = prevServiceRef.current;
+    const hasChanged =
+      !prevService ||
+      prevService.id !== managedService.id ||
+      prevService.adjustedPrice !== managedService.adjustedPrice ||
+      prevService.adjustedPriceFlag !== managedService.adjustedPriceFlag ||
+      prevService.adjustedPriceReason !== managedService.adjustedPriceReason ||
+      prevService.serviceCatalog?.id !== managedService.serviceCatalog?.id;
+
+    if (hasChanged) {
+      prevServiceRef.current = managedService;
+      onServiceChangeRef.current(managedService);
+    }
+  }, [managedService]);
 
   return (
     <Card
