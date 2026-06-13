@@ -3,11 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Wrench, Clock, FileText } from "lucide-react";
+import { Wrench } from "lucide-react";
 import { Select } from "antd";
-import { useServiceManager } from "@/services/useServiceManager";
 import { useServiceCatalogManager } from "@/services/userServiceCatalogManager";
 import { ServiceCatalogDTO, ServiceDTO } from "@/types/OrderResponse";
+import { useServiceManager } from "@/services/useServiceAll";
 
 const { Option } = Select;
 
@@ -31,7 +31,7 @@ export default function ServiceCatalogSelector({
   const [loadingServices, setLoadingServices] = useState(false);
   const [loadingCatalogs, setLoadingCatalogs] = useState(false);
   const { getServiceCatalogByServiceId } = useServiceCatalogManager();
-  const { getAllServices } = useServiceManager();
+  const { getAllService } = useServiceManager();
 
   const onServiceCatalogChangeRef = useRef(onServiceCatalogChange);
   useEffect(() => {
@@ -65,7 +65,7 @@ export default function ServiceCatalogSelector({
   const loadServices = async () => {
     setLoadingServices(true);
     try {
-      const servicesData = await getAllServices();
+      const servicesData = await getAllService();
       setServices(servicesData);
     } catch (error) {
       console.error("Error loading services:", error);
@@ -156,7 +156,7 @@ export default function ServiceCatalogSelector({
           >
             {services.map((serviceItem) => (
               <Option
-                key={serviceItem.code}
+                key={serviceItem.serviceCode}
                 value={serviceItem.id}
                 label={serviceItem.serviceName}
               >
@@ -175,7 +175,7 @@ export default function ServiceCatalogSelector({
           <Select
             showSearch
             placeholder={
-              !service.code
+              !service.serviceCode
                 ? "Chọn dịch vụ trước"
                 : loadingCatalogs
                 ? "Đang tải..."
@@ -185,7 +185,7 @@ export default function ServiceCatalogSelector({
             filterOption={filterCatalogOption}
             value={serviceCatalog?.id || undefined}
             onChange={handleCatalogSelect}
-            disabled={!service.code || loadingCatalogs}
+            disabled={!service.serviceCode || loadingCatalogs}
             loading={loadingCatalogs}
             style={{ width: "100%" }}
             size="large"
@@ -199,7 +199,7 @@ export default function ServiceCatalogSelector({
                 <div className="flex justify-between items-center w-full">
                   <span>Kích thước {catalog.size}</span>
                   <span className="font-medium text-green-600 ml-2">
-                    {catalog.price.toLocaleString("vi-VN")}đ
+                    {catalog.listedPrice.toLocaleString("vi-VN")}đ
                   </span>
                 </div>
               </Option>
@@ -220,7 +220,7 @@ export default function ServiceCatalogSelector({
           <div className="space-y-2">
             <Label>Giá dịch vụ</Label>
             <div className="p-2 bg-green-50 rounded-md font-semibold text-green-600 border border-green-200">
-              {serviceCatalog.price.toLocaleString("vi-VN")} VNĐ
+              {serviceCatalog.listedPrice.toLocaleString("vi-VN")} VNĐ
             </div>
           </div>
         </div>
