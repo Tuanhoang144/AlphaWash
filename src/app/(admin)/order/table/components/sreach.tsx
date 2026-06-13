@@ -31,7 +31,7 @@ const SearchTable: React.FC<SearchProps> = ({
 }) => {
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 mt-2 px-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 mt-5 px-4">
       {/* Search Box */}
       <div className="relative flex-1 min-w-[220px] sm:max-w-sm lg:max-w-lg">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />

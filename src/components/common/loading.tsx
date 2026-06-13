@@ -16,8 +16,8 @@ export default function Loading() {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold text-black tracking-tight">Alpha Wash</h1>
-            <p className="text-lg text-gray-700 font-medium">Chăm xe đẹp đến từng centimet</p>
+            <h1 className="text-4xl font-bold text-black tracking-tight">Shine Autowerkz</h1>
+            <p className="text-lg text-gray-700 font-medium">Build Your Shine</p>
           </div>
         </div>
 

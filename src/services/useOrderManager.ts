@@ -40,12 +40,30 @@ export function useOrderManager() {
     [callApi, setIsLoading]
   );
 
+  const getOrderByCode = useCallback(
+    async (code: string) => {
+      if (!code) return null;
+      setIsLoading(true);
+      try {
+        const response = await callApi("get", `orders/code/${code}`);
+        return response?.data;
+      } catch (error: any) {
+        console.error("Lỗi khi gọi API getOrderById:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   const createOrder = useCallback(
     async (orderData: OrderResponseDTO) => {
       setIsLoading(true);
       try {
         //Map
         const orderRequest = mapFullOrderToRequest(orderData);
+        console.log("Order request data:", orderRequest);
         const response = await callApi(
           "post",
           "orders/create-order",
@@ -63,11 +81,11 @@ export function useOrderManager() {
   );
 
   const updateOrder = useCallback(
-    async (order: OrderResponseDTO, id : string) => {
+    async (order: OrderResponseDTO, id: string) => {
       setIsLoading(true);
       try {
         const requestBody = mapFullOrderToUpdateRequest(id, order);
-        const response = await callApi("post", "orders/update", requestBody);
+        const response = await callApi("patch", "orders/update", requestBody);
         return response?.data;
       } catch (error) {
         console.error("Lỗi cập nhật đơn hàng:", error);
@@ -79,11 +97,30 @@ export function useOrderManager() {
     [callApi, setIsLoading]
   );
 
+  const cancelOrderById = useCallback(
+    async (id: string) => {
+      if (!id) return;
+      setIsLoading(true);
+      try {
+        const response = await callApi("patch", `orders/cancel/${id}`);
+        return response?.data;
+      } catch (error) {
+        console.error("Lỗi huỷ đơn hàng:", error);
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   return {
     getAllOrders,
     getOrderById,
+    getOrderByCode,
     createOrder,
     updateOrder,
+    cancelOrderById,
     loading,
   };
 }

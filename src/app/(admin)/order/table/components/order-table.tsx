@@ -1,13 +1,7 @@
-import React from "react";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import React, { useState, useEffect } from "react";
+import { Table, Button, Tooltip, Dropdown } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import { Button as UIButton } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -26,21 +20,16 @@ import {
   Eye,
   MoreHorizontal,
   Phone,
+  QrCode,
   Search,
-  User,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Badge as UIBadge } from "@/components/ui/badge";
 import { Size } from "@/types/Size";
 import { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "../../../../../utils/tool";
 import { useRouter } from "next/navigation";
+import type { MenuProps } from "antd";
 
 interface OrderTableProps {
   data: OrderResponseDTO[];
@@ -69,6 +58,40 @@ const OrderTable: React.FC<OrderTableProps> = ({
   goToPage,
   getPageNumbers,
 }) => {
+  const [scrollY, setScrollY] = useState("55vh");
+
+  useEffect(() => {
+    const updateScrollHeight = () => {
+      const { innerHeight } = window;
+      
+      // Simple responsive logic
+      if (innerHeight >= 1200) {
+        setScrollY("70vh");
+      } else if (innerHeight >= 900) {
+        setScrollY("65vh");
+      } else if (innerHeight >= 700) {
+        setScrollY("55vh");
+      } else {
+        setScrollY("50vh");
+      }
+    };
+
+    updateScrollHeight();
+    
+    // Debounce resize
+    let timeoutId: NodeJS.Timeout;
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(updateScrollHeight, 200);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => {
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(timeoutId);
+    };
+  }, []);
+
   const {
     getCarSizeInfo,
     getStatusVehicleColor,
@@ -81,322 +104,463 @@ const OrderTable: React.FC<OrderTableProps> = ({
 
   const router = useRouter();
 
-  return (
-    <div className="flex-1 space-y-4 p-4 md:p-3.5">
-      <Card>
-        <CardContent>
-          <div className="rounded-lg border overflow-x-auto">
-            <Table className="min-w-[900px]">
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  {[
-                    "Ngày",
-                    "Thời gian",
-                    "Biển số",
-                    "Khách hàng",
-                    "Liên hệ",
-                    "Thông tin xe",
-                    "Dịch vụ",
-                    "Nhân viên",
-                    "Trạng thái",
-                    "",
-                  ].map((header, index) => (
-                    <TableHead
-                      key={index}
-                      className={`font-semibold ${
-                        header === "STT" ? "w-[60px]" : ""
-                      } ${header === "Liên hệ" ? "hidden md:table-cell" : ""} ${
-                        header === "Dịch vụ" ? "hidden lg:table-cell" : ""
-                      }`}
-                    >
-                      {header === "Ngày" ? (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4" /> {header}
-                        </div>
-                      ) : header === "Thời gian" ? (
-                        <div className="flex items-center gap-2">
-                          <Clock className="h-4 w-4" /> {header}
-                        </div>
-                      ) : header === "Nhân viên" ? (
-                        <div className="flex items-center gap-2">
-                          <User className="h-4 w-4" /> {header}
-                        </div>
-                      ) : (
-                        header
-                      )}
-                    </TableHead>
-                  ))}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {data.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="h-32 text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Search className="h-8 w-8 text-muted-foreground" />
-                        <p className="text-muted-foreground">
-                          Không tìm thấy kết quả nào
-                        </p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  data.map((record) => {
-                    const carSizeInfo = getCarSizeInfo(
-                      record?.orderDetails[0]?.vehicle.size as Size
-                    );
-                    return (
-                      <TableRow
-                        key={record.id}
-                        className="hover:bg-muted/50 transition-colors"
-                      >
-                        <TableCell>{formatDate(record.orderDate)}</TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <span className="text-xs w-1/3 text-center font-medium bg-muted px-1.5 py-0.5 rounded">
-                                Vào
-                              </span>
-                              <span className="font-medium">
-                                {formatTime(record.checkIn)}
-                              </span>
-                            </div>
-                            {record.checkOut && (
-                              <div className="flex items-center gap-2 text-sm">
-                                <span className="text-xs w-1/3 text-center font-medium bg-muted px-1.5 py-0.5 rounded">
-                                  Ra
-                                </span>
-                                <span className="font-medium">
-                                  {formatTime(record.checkOut)}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-mono font-bold text-sm bg-muted px-3 py-1.5 rounded-md border">
-                            {record.orderDetails[0]?.vehicle.licensePlate ||
-                              "Chưa có"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">
-                            {record.customer.name}
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <Phone className="h-3 w-3" />
-                            <span className="font-mono">
-                              {record.customer.phone}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div>
-                              <div className="font-medium text-sm">
-                                {record.orderDetails[0]?.vehicle.brandName ||
-                                  "Chưa có"}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {record.orderDetails[0]?.vehicle.modelName ||
-                                  "Chưa có"}
-                              </div>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={`text-xs font-medium ${carSizeInfo.color}`}
-                              title={carSizeInfo.description}
-                            >
-                              {record.orderDetails[0]?.vehicle.size ||
-                                "Chưa có"}{" "}
-                              - {carSizeInfo.label}
-                            </Badge>
-                          </div>
-                        </TableCell>
-                        <TableCell className="hidden lg:table-cell">
-                          <div
-                            className="text-sm max-w-[120px] line-clamp-2"
-                            title={
-                              record.orderDetails[0]?.service.serviceName ||
-                              "Chưa có"
-                            }
-                          >
-                            {record.orderDetails[0]?.service.serviceName ||
-                              "Chưa có"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                              <User className="h-4 w-4 text-blue-600" />
-                            </div>
-                            <div className="space-y-1">
-                              <div className="font-medium text-sm">
-                                {record.orderDetails[0]?.employees[0]?.name ||
-                                  "Chưa có"}
-                              </div>
-                              {record.orderDetails[0]?.employees.length > 1 && (
-                                <div className="text-xs text-muted-foreground">
-                                  +
-                                  {record.orderDetails[0]?.employees.length - 1}{" "}
-                                  người khác
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-2">
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                                Dịch vụ
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className={`font-medium ${getStatusVehicleColor(
-                                  record.orderDetails[0]?.status || "PENDING"
-                                )}`}
-                              >
-                                {getStatusVehicleLabel(
-                                  record.orderDetails[0]?.status || "PENDING"
-                                )}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                                Thanh toán
-                              </span>
-                              <Badge
-                                variant="outline"
-                                className={`font-medium ${getStatusPaymentColor(
-                                  record.paymentStatus || "PENDING"
-                                )}`}
-                              >
-                                {getStatusPaymentLabel(
-                                  record.paymentStatus || "PENDING"
-                                )}
-                              </Badge>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent
-                              align="end"
-                              className="w-[160px]"
-                            >
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  router.push(`/order/${record.id}`);
-                                }}
-                              >
-                                <Eye className="mr-2 h-4 w-4" />
-                                Xem chi tiết
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => {
-                                  router.push(`/order/${record.id}/edit`);
-                                }}
-                              >
-                                <Edit className="mr-2 h-4 w-4" />
-                                Chỉnh sửa
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })
-                )}
-              </TableBody>
-            </Table>
+  const getActionMenuItems = (record: OrderResponseDTO): MenuProps["items"] => [
+    {
+      key: "view",
+      icon: <Eye className="h-4 w-4" />,
+      label: "Xem chi tiết",
+      onClick: () => router.push(`/order/${record.id}`),
+    },
+    ...(record.deleteFlag
+      ? []
+      : [
+          {
+            key: "edit",
+            icon: <Edit className="h-4 w-4" />,
+            label: "Chỉnh sửa",
+            onClick: () => router.push(`/order/${record.id}/edit`),
+          },
+          {
+            key: "payment",
+            icon: <QrCode className="h-4 w-4" />,
+            label: "Thanh toán",
+            onClick: () => router.push(`/order/${record.id}/payment`),
+          },
+        ]),
+  ];
+
+  const columns: ColumnsType<OrderResponseDTO> = [
+    {
+      title: "Mã đơn hàng",
+      dataIndex: "code",
+      key: "code",
+      width: 120,
+      fixed: "left",
+      render: (code: string) => (
+        <div className="text-small font-medium ">{code}</div>
+      ),
+    },
+    {
+      title: "Trạng thái",
+      key: "status",
+      width: 120,
+      fixed: "left",
+      render: (_, record) => (
+        <div className="flex flex-col items-center gap-1.5">
+          {record.deleteFlag ? (
+            <Tooltip title="Đơn hàng đã bị hủy">
+              <UIBadge
+                variant="outline"
+                className="font-medium px-2 py-1 bg-red-50 text-red-700 border-red-200 text-xs cursor-help w-full justify-center"
+              >
+                Đã hủy
+              </UIBadge>
+            </Tooltip>
+          ) : (
+            <>
+              <Tooltip
+                title={`Trạng thái dịch vụ: ${getStatusVehicleLabel(
+                  record.orderDetails[0]?.status || "PENDING"
+                )}`}
+              >
+                <UIBadge
+                  variant="outline"
+                  className={`font-medium px-2 py-1 text-xs cursor-help w-full justify-center ${getStatusVehicleColor(
+                    record.orderDetails[0]?.status || "PENDING"
+                  )}`}
+                >
+                  {getStatusVehicleLabel(
+                    record.orderDetails[0]?.status || "PENDING"
+                  )}
+                </UIBadge>
+              </Tooltip>
+              <Tooltip
+                title={`Trạng thái thanh toán: ${getStatusPaymentLabel(
+                  record.paymentStatus || "PENDING"
+                )}`}
+              >
+                <UIBadge
+                  variant="outline"
+                  className={`font-medium px-2 py-1 text-xs cursor-help w-full justify-center ${getStatusPaymentColor(
+                    record.paymentStatus || "PENDING"
+                  )}`}
+                >
+                  {getStatusPaymentLabel(record.paymentStatus || "PENDING")}
+                </UIBadge>
+              </Tooltip>
+            </>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Biển số xe",
+      key: "licensePlate",
+      width: 140,
+      render: (_, record) => {
+        const licensePlate =
+          record.orderDetails[0]?.vehicle.licensePlate || "Chưa có";
+        const formattedPlate =
+          licensePlate !== "Chưa có" && licensePlate.length >= 6
+            ? licensePlate.replace(/^(\d{2}[A-Z])(\d+)$/, "$1-$2")
+            : licensePlate;
+
+        return (
+          <div className="inline-block bg-white border-2 border-black rounded-sm px-3 py-1.5 font-mono font-black text-black text-center shadow-md min-w-[110px] tracking-wider text-sm">
+            {formattedPlate}
           </div>
-
-          {/* Pagination */}
-          {data.length > 1 && (
-            <div className="flex items-center justify-between space-x-2 py-4">
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-muted-foreground">Hiển thị</span>
-                <Select
-                  value={itemsPerPage.toString()}
-                  onValueChange={handleItemsPerPageChange}
-                >
-                  <SelectTrigger className="w-[70px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[5, 10, 25, 50, 100].map((count) => (
-                      <SelectItem key={count} value={count.toString()}>
-                        {count}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <span className="text-sm text-muted-foreground">bản ghi</span>
+        );
+      },
+    },
+    {
+      title: "Khách hàng",
+      key: "customer",
+      width: 150,
+      render: (_, record) => (
+        <div className="space-y-2">
+          <div className="font-semibold text-base">
+            {record.customer?.name || "Khách lẻ"}
+          </div>
+          {record.customer?.phone && (
+            <div className="flex items-center gap-2  text-gray-600">
+              <Phone className="h-4 w-4" />
+              <span className="font-mono">{record.customer?.phone}</span>
+            </div>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Giá tiền",
+      key: "totalPrice",
+      width: 120,
+      render: (_, record) => (
+        <div className="text-right font-mono">
+          <div className="font-bold text-base text-green-600">
+            {record.totalPrice?.toLocaleString("vi-VN") || "0"}
+          </div>
+          <div className="text-xs text-gray-500">VNĐ</div>
+        </div>
+      ),
+    },
+    {
+      title: "Thời gian",
+      key: "time",
+      width: 180,
+      render: (_, record) => (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 mt-1">
+            <Calendar className="h-4 w-4" />
+            <span className="font-medium">{formatDate(record.date)}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-gray-500" />
+            <Tooltip
+              title={
+                record.checkOut
+                  ? `Xe vào lúc ${formatTime(
+                      record.checkIn
+                    )} và ra lúc ${formatTime(record.checkOut)}`
+                  : `Xe vào lúc ${formatTime(record.checkIn)}, chưa ra`
+              }
+            >
+              <div className="text-sm font-medium cursor-help">
+                <span className="text-green-600">
+                  {formatTime(record.checkIn)}
+                </span>
+                {record.checkOut ? (
+                  <>
+                    <span className="mx-2 text-gray-400">→</span>
+                    <span className="text-red-600">
+                      {formatTime(record.checkOut)}
+                    </span>
+                  </>
+                ) : (
+                  <span className="ml-2 text-gray-400 text-xs">(Chưa ra)</span>
+                )}
               </div>
+            </Tooltip>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: "Thông tin xe",
+      key: "vehicle",
+      width: 150,
+      render: (_, record) => {
+        const carSizeInfo = getCarSizeInfo(
+          record?.orderDetails[0]?.vehicle.size as Size
+        );
+        const brandName =
+          record.orderDetails[0]?.vehicle.brandName || "Chưa có";
+        const modelName =
+          record.orderDetails[0]?.vehicle.modelName || "Chưa có";
+        const vehicleSize = record.orderDetails[0]?.vehicle.size || "Chưa có";
 
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToFirstPage}
-                  disabled={currentPage === 1}
-                  className="hidden sm:flex"
+        return (
+          <div className="space-y-1.5">
+            <Tooltip title={`${brandName} - ${modelName}`}>
+              <div className="font-medium text-sm cursor-help line-clamp-1">
+                {brandName} - {modelName}
+              </div>
+            </Tooltip>
+            <Tooltip title={`Size: ${carSizeInfo.label}`}>
+              <UIBadge
+                variant="outline"
+                className={`text-xs font-medium px-2 py-1 cursor-help ${carSizeInfo.color}`}
+              >
+                Size - {vehicleSize}
+              </UIBadge>
+            </Tooltip>
+          </div>
+        );
+      },
+    },
+    {
+      title: "Dịch vụ",
+      key: "service",
+      width: 180,
+      responsive: ["xl"],
+      render: (_, record) => (
+        <div className="space-y-2">
+          <div className="font-medium max-w-[150px] line-clamp-2 cursor-help">
+            {(record.orderDetails[0]?.service[0]?.serviceName || "Chưa có")
+              .split("|")[0]
+              .trim()}
+          </div>
+          {record.orderDetails[0]?.service.length > 1 && (
+            <Tooltip
+              title={
+                <div>
+                  <div className="font-medium mb-1">Các dịch vụ khác:</div>
+                  {record.orderDetails[0]?.service
+                    .slice(1)
+                    .map((service, index) => (
+                      <div key={index}>• {service.serviceName}</div>
+                    ))}
+                </div>
+              }
+            >
+              <div className="text-blue-600 font-medium text-xs cursor-help">
+                +{record.orderDetails[0]?.service.length - 1} dịch vụ khác
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "Nhân viên",
+      key: "employee",
+      width: 150,
+      responsive: ["xl"],
+      render: (_, record) => (
+        <div className="space-y-1.5">
+          <div className="font-medium text-sm">
+            {record.orderDetails[0]?.employees[0]?.name || "Chưa có"}
+          </div>
+          {record.orderDetails[0]?.employees.length > 1 && (
+            <Tooltip
+              title={
+                <div>
+                  <div className="font-medium mb-1">Nhân viên khác:</div>
+                  {record.orderDetails[0]?.employees
+                    .slice(1)
+                    .map((employee, index) => (
+                      <div key={index}>• {employee.name}</div>
+                    ))}
+                </div>
+              }
+            >
+              <div className="text-blue-600 font-medium text-xs cursor-help">
+                +{record.orderDetails[0]?.employees.length - 1} người khác
+              </div>
+            </Tooltip>
+          )}
+        </div>
+      ),
+    },
+    {
+      title: "",
+      key: "actions",
+      width: 80,
+      fixed: "right",
+      render: (_, record) => (
+        <Dropdown
+          menu={{ items: getActionMenuItems(record) }}
+          trigger={["click"]}
+        >
+          <Button
+            type="text"
+            icon={<MoreHorizontal className="h-4 w-4" />}
+            size="small"
+          />
+        </Dropdown>
+      ),
+    },
+  ];
+
+  return (
+    <div className="w-full space-y-4 pt-5 px-4" >
+      {/*Table */}
+      <div className="rounded-lg border bg-white shadow-sm">
+        <div className="hidden md:block">
+          <Table
+            columns={columns}
+            dataSource={data}
+            rowKey="id"
+            scroll={{ x: "max-content", y: scrollY, scrollToFirstRowOnChange: true }}
+            pagination={false}
+            locale={{
+              emptyText: (
+                <div className="flex flex-col items-center gap-4 py-12">
+                  <Search className="h-12 w-12 text-gray-400" />
+                  <p className="text-lg text-gray-600">
+                    Không tìm thấy kết quả nào
+                  </p>
+                </div>
+              ),
+            }}
+            size="middle"
+          />
+        </div>
+
+        {/* Mobile view cho responsive */}
+        <div className="block md:hidden">
+          <div className="space-y-4 p-4" style={{ maxHeight: scrollY, overflowY: 'auto' }}>
+            {data.length === 0 ? (
+              <div className="flex flex-col items-center gap-4 py-12">
+                <Search className="h-12 w-12 text-gray-400" />
+                <p className="text-lg text-gray-600">
+                  Không tìm thấy kết quả nào
+                </p>
+              </div>
+            ) : (
+              data.map((record) => (
+                <div
+                  key={record.id}
+                  className="border rounded-lg p-4 bg-gray-50"
                 >
-                  <ChevronsLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToPreviousPage}
-                  disabled={currentPage === 1}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  <span className="hidden sm:inline ml-1">Trước</span>
-                </Button>
+                  {/* Mobile card layout */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="font-mono font-bold text-base">
+                          {record.code}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {formatDate(record.date)}
+                        </div>
+                      </div>
+                      <Dropdown
+                        menu={{ items: getActionMenuItems(record) }}
+                        trigger={["click"]}
+                      >
+                        <Button
+                          type="text"
+                          icon={<MoreHorizontal className="h-4 w-4" />}
+                          size="small"
+                        />
+                      </Dropdown>
+                    </div>
+                    {/* Thêm các thông tin khác cho mobile */}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Custom Pagination - hiển thị khi có dữ liệu hoặc totalPages > 0 */}
+      {(data.length > 0 || totalPages > 0) && (
+        <div className="bg-white border rounded-lg">
+          <div className="flex flex-col sm:flex-row items-center justify-between space-y-4 sm:space-y-0 sm:space-x-2 py-4 px-6">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">Hiển thị</span>
+              <Select
+                value={itemsPerPage.toString()}
+                onValueChange={handleItemsPerPageChange}
+              >
+                <SelectTrigger className="w-[80px] h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {[10, 25, 50, 100].map((count) => (
+                    <SelectItem key={count} value={count.toString()}>
+                      {count}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600">bản ghi</span>
+              <span className="text-sm text-gray-500 ml-4">
+                Tổng: {data.length} kết quả
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-1">
+              <UIButton
+                variant="outline"
+                size="sm"
+                onClick={goToFirstPage}
+                disabled={currentPage === 1}
+                className="hidden sm:flex h-9 px-3"
+              >
+                <ChevronsLeft className="h-4 w-4" />
+              </UIButton>
+              <UIButton
+                variant="outline"
+                size="sm"
+                onClick={goToPreviousPage}
+                disabled={currentPage === 1}
+                className="h-9 px-3"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                <span className="hidden sm:inline ml-1">Trước</span>
+              </UIButton>
+
+              <div className="flex space-x-1">
                 {getPageNumbers().map((page) => (
-                  <Button
+                  <UIButton
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
                     onClick={() => goToPage(page)}
-                    className="w-8 h-8 p-0"
+                    className="h-9 w-9 p-0"
                   >
                     {page}
-                  </Button>
+                  </UIButton>
                 ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToNextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  <span className="hidden sm:inline mr-1">Sau</span>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={goToLastPage}
-                  disabled={currentPage === totalPages}
-                  className="hidden sm:flex"
-                >
-                  <ChevronsRight className="h-4 w-4" />
-                </Button>
               </div>
+
+              <UIButton
+                variant="outline"
+                size="sm"
+                onClick={goToNextPage}
+                disabled={currentPage === totalPages}
+                className="h-9 px-3"
+              >
+                <span className="hidden sm:inline mr-1">Sau</span>
+                <ChevronRight className="h-4 w-4" />
+              </UIButton>
+              <UIButton
+                variant="outline"
+                size="sm"
+                onClick={goToLastPage}
+                disabled={currentPage === totalPages}
+                className="hidden sm:flex h-9 px-3"
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </UIButton>
             </div>
-          )}
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
 
 export default OrderTable;
