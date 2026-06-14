@@ -99,6 +99,7 @@ export default function CreateOrderForm() {
                         adjustedPriceReason: "",
                         adjustedPrice: 0,
                         adjustedPriceFlag: false,
+                        quantity: 1,
                         duration: undefined,
                         note: undefined,
                         serviceCatalog: {
