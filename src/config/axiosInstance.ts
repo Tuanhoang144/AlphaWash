@@ -13,7 +13,7 @@ api.interceptors.request.use(
     let token;
 
     if (typeof window !== "undefined") {
-      token = Cookies.get("jwtToken"); 
+      token = Cookies.get("jwtToken");
     }
 
     if (token) {
@@ -22,18 +22,25 @@ api.interceptors.request.use(
 
     if (config.data instanceof FormData) {
       config.headers["Content-Type"] = "multipart/form-data";
-      console.log("Setting Content-Type to multipart/form-data");
     } else {
       config.headers["Content-Type"] = "application/json";
     }
 
-
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   function (error) {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error?.response?.status === 401 && typeof window !== "undefined") {
+      Cookies.remove("jwtToken");
+      localStorage.removeItem("userInfo");
+      window.location.href = "/login";
+    }
     return Promise.reject(error);
   }
 );
