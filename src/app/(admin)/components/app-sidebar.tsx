@@ -15,7 +15,8 @@ import {
   SquareTerminal,
   Users,
   ShoppingBag,
-  ChartArea
+  ChartArea,
+  Zap,
 } from "lucide-react"
 
 import { NavMain } from "./nav-main"
@@ -35,6 +36,12 @@ import Image from "next/image"
 
 const data = {
   navMain: [
+    {
+      title: "Tạo nhanh",
+      url: "/quick-invoice",
+      icon: Zap,
+      isActive: true,
+    },
     {
       title: "Thống kê",
       url: "/statistics",
