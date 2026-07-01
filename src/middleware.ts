@@ -3,6 +3,19 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login"];
 
+function isTokenExpired(token: string): boolean {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    // atob requires padding — JWT omits it, so we add it back
+    const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, "=");
+    const payload = JSON.parse(atob(padded));
+    return typeof payload.exp === "number" && payload.exp * 1000 < Date.now();
+  } catch {
+    return true;
+  }
+}
+
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("jwtToken")?.value;
   const { pathname } = request.nextUrl;
@@ -12,16 +25,18 @@ export function middleware(request: NextRequest) {
   );
 
   if (isPublic) {
-    if (token) {
+    if (token && !isTokenExpired(token)) {
       return NextResponse.redirect(new URL("/statistics", request.url));
     }
     return NextResponse.next();
   }
 
-  if (!token) {
+  if (!token || isTokenExpired(token)) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("from", pathname);
-    return NextResponse.redirect(loginUrl);
+    const response = NextResponse.redirect(loginUrl);
+    response.cookies.delete("jwtToken");
+    return response;
   }
 
   return NextResponse.next();

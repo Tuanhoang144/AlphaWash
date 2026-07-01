@@ -1,8 +1,13 @@
 export interface OrderCreateRequest {
   customerId?: string
-  date: string 
-  checkInTime: string 
-  checkOutTime: string 
+  licensePlate: string
+  brandCode: string
+  modelCode: string
+  imageUrl: string
+  vehicleNote: string
+  date: string          // LocalDateTime — "YYYY-MM-DDTHH:MM:SS"
+  checkInTime: string   // LocalTime   — "HH:MM:SS"
+  checkOutTime: string | null
   paymentType: string
   paymentStatus: string
   tip: number
@@ -14,7 +19,7 @@ export interface OrderCreateRequest {
 }
 
 export interface OrderDetail {
-  employeeIds: number[] 
+  employeeIds: number[]
   services: ServiceAdjust[]
   status: string
   note: string
