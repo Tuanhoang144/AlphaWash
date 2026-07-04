@@ -17,9 +17,17 @@ import {
   ShoppingBag,
   ChartArea,
   Zap,
+  Package,
+  Truck,
+  Warehouse,
+  ClipboardList,
 } from "lucide-react"
 
-import { NavMain } from "./nav-main"
+import dynamic from "next/dynamic"
+
+const NavMain = dynamic(() => import("./nav-main").then((mod) => ({ default: mod.NavMain })), {
+  ssr: false,
+})
 import { NavProjects } from "./nav-projects"
 import { NavSecondary } from "./nav-secondary"
 import { NavUser } from "./nav-user"
@@ -51,7 +59,8 @@ const data = {
     {
       title: "Quản Lý Đơn Hàng",
       url: "/order/table",
-      icon: FileSpreadsheet ,
+      icon: FileSpreadsheet,
+      isActive: true,
       // items: [
       //   {
       //     title: "Genesis",
@@ -77,6 +86,35 @@ const data = {
       title: "Quản lý Dịch vụ",
       url: "/services",
       icon: ShoppingBag,
+      isActive: true,
+    },
+    {
+      title: "Sản phẩm",
+      url: "/products",
+      icon: Package,
+      isActive: true,
+      items: [
+        { title: "Danh sách SP", url: "/products" },
+        { title: "Danh mục", url: "/products/categories" },
+        { title: "Nhập hàng loạt", url: "/products/import" },
+      ],
+    },
+    {
+      title: "Nhà cung cấp",
+      url: "/suppliers",
+      icon: Truck,
+      isActive: true,
+    },
+    {
+      title: "Kho hàng",
+      url: "/inventory",
+      icon: Warehouse,
+      isActive: true,
+    },
+    {
+      title: "Nhập hàng",
+      url: "/purchase-orders",
+      icon: ClipboardList,
       isActive: true,
     },
     {
