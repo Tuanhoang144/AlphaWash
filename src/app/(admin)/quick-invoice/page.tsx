@@ -105,7 +105,9 @@ export default function QuickInvoicePage() {
               vehicleSize={qi.vehicleSize}
               selectedServices={qi.selectedServices}
               favorites={qi.favorites}
+              recentServiceCodes={qi.recentServiceCodes}
               onToggleService={qi.toggleService}
+              onUpdateQuantity={qi.updateServiceQuantity}
               onToggleFavorite={qi.toggleFavorite}
             />
 

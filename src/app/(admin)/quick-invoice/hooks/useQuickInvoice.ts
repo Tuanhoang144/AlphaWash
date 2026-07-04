@@ -30,19 +30,33 @@ export interface PrintBillData {
 }
 
 const FAVORITES_KEY = "quick-invoice-favorites";
+const RECENT_SERVICES_KEY = "quick-invoice-recent-services";
 const ANALYTICS_KEY = "quick-invoice-analytics";
+const MAX_RECENT_SERVICES = 10;
+
+function loadFromStorage<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
+  try {
+    return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+  } catch {
+    return fallback;
+  }
+}
 
 function loadFavorites(): string[] {
-  if (typeof window === "undefined") return [];
-  try {
-    return JSON.parse(localStorage.getItem(FAVORITES_KEY) || "[]");
-  } catch {
-    return [];
-  }
+  return loadFromStorage<string[]>(FAVORITES_KEY, []);
 }
 
 function saveFavorites(codes: string[]) {
   localStorage.setItem(FAVORITES_KEY, JSON.stringify(codes));
+}
+
+function loadRecentServices(): string[] {
+  return loadFromStorage<string[]>(RECENT_SERVICES_KEY, []);
+}
+
+function saveRecentServices(codes: string[]) {
+  localStorage.setItem(RECENT_SERVICES_KEY, JSON.stringify(codes.slice(0, MAX_RECENT_SERVICES)));
 }
 
 function formatLocalTime(date: Date): string {
@@ -66,6 +80,7 @@ export function useQuickInvoice() {
   const [discount, setDiscount] = useState<number>(0);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Unpaid");
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
+  const [recentServiceCodes, setRecentServiceCodes] = useState<string[]>(loadRecentServices);
   const [recentVehicles, setRecentVehicles] = useState<RecentVehicle[]>([]);
   const [serviceGroups, setServiceGroups] = useState<QuickServiceGroup[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -167,6 +182,14 @@ export function useQuickInvoice() {
     [selectVehicle]
   );
 
+  const addToRecent = useCallback((serviceCode: string) => {
+    setRecentServiceCodes((prev) => {
+      const next = [serviceCode, ...prev.filter((c) => c !== serviceCode)].slice(0, MAX_RECENT_SERVICES);
+      saveRecentServices(next);
+      return next;
+    });
+  }, []);
+
   const toggleService = useCallback(
     (serviceCode: string, serviceName: string, catalogs: { catalogCode: string; size: string; price: number }[]) => {
       setSelectedServices((prev) => {
@@ -191,8 +214,23 @@ export function useQuickInvoice() {
           },
         ];
       });
+      addToRecent(serviceCode);
     },
-    [vehicleSize]
+    [vehicleSize, addToRecent]
+  );
+
+  const updateServiceQuantity = useCallback(
+    (serviceCode: string, delta: number) => {
+      setSelectedServices((prev) =>
+        prev.flatMap((s) => {
+          if (s.serviceCode !== serviceCode) return [s];
+          const newQty = s.quantity + delta;
+          if (newQty <= 0) return [];
+          return [{ ...s, quantity: newQty }];
+        })
+      );
+    },
+    []
   );
 
   const toggleFavorite = useCallback((serviceCode: string) => {
@@ -358,10 +396,13 @@ export function useQuickInvoice() {
     discountAmount,
     total,
 
+    recentServiceCodes,
+
     searchVehicle,
     selectVehicle,
     selectRecentVehicle,
     toggleService,
+    updateServiceQuantity,
     setDiscount,
     setPaymentMethod: setPaymentMethod as (m: string) => void,
     toggleFavorite,
