@@ -7,13 +7,13 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Car, Plus, Minus, User, Wrench } from "lucide-react";
+import { Car, Plus, Minus, User, Wrench, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { tool } from "@/utils/tool";
 import type { OrderDetailDTO } from "@/types/OrderResponse";
-import { getAppliedPrice } from "@/shared/utils/order/calculatePrice"; // ✅
+import { getAppliedPrice, getProductLineTotal } from "@/shared/utils/order/calculatePrice";
 
 interface OrderDetailDisplayProps {
   orderDetails: OrderDetailDTO[];
@@ -240,6 +240,62 @@ export default function OrderDetailDisplay({
                         })}
                       </div>
                     </div>
+
+                    {/* Sản phẩm */}
+                    {detail.products && detail.products.length > 0 && (
+                      <>
+                        <Separator />
+                        <div className="space-y-4">
+                          <div className="flex items-center gap-2">
+                            <Package className="h-5 w-5 text-purple-600" />
+                            <h4 className="text-lg font-semibold text-gray-800">
+                              Sản phẩm ({detail.products.length})
+                            </h4>
+                          </div>
+
+                          <div className="flex flex-col divide-y divide-gray-200 border border-gray-100 rounded-lg bg-white">
+                            {detail.products.map((product, pIndex) => {
+                              const lineTotal = getProductLineTotal(product);
+                              return (
+                                <div
+                                  key={pIndex}
+                                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-6 px-4 py-3 bg-purple-50 border-l-4 border-purple-400"
+                                >
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <Badge
+                                        variant="outline"
+                                        className="bg-purple-100 text-purple-700"
+                                      >
+                                        SP #{pIndex + 1}
+                                      </Badge>
+                                    </div>
+                                    <p className="mt-1 font-semibold text-gray-800 truncate">
+                                      {product.productName}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                      Mã: {product.productCode}
+                                      {" "}• SL: {product.quantity}
+                                      {product.unit && ` ${product.unit}`}
+                                    </p>
+                                  </div>
+                                  <div className="text-right min-w-[120px]">
+                                    <div className="font-bold text-purple-700 text-lg">
+                                      {lineTotal.toLocaleString("vi-VN")}đ
+                                    </div>
+                                    {product.quantity > 1 && (
+                                      <div className="text-xs text-gray-500">
+                                        {product.unitPrice.toLocaleString("vi-VN")}đ × {product.quantity}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      </>
+                    )}
 
                     <Separator />
 

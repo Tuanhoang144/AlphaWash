@@ -35,6 +35,18 @@ export function mapFullOrderToUpdateRequest(
         adjustedPriceReason: service.adjustedPriceReason || "",
         quantity: service.quantity >= 1 ? service.quantity : 1,
       })),
+      products: (detail.products || [])
+        .filter((p) => p.productCode)
+        .map((p) => ({
+          productCode: p.productCode,
+          quantity: p.quantity >= 1 ? p.quantity : 1,
+          unitPrice: p.unitPrice || 0,
+          adjustedPrice: p.adjustedPrice || undefined,
+          adjustedPriceFlag: p.adjustedPriceFlag || false,
+          adjustedPriceReason: p.adjustedPriceReason || undefined,
+          discount: p.discount || undefined,
+          note: p.note || undefined,
+        })),
       note: detail.note || "",
       status: detail.status || "",
     })),

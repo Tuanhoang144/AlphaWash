@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Printer } from "lucide-react";
 import type { OrderResponseDTO } from "@/types/OrderResponse";
 import { tool } from "@/utils/tool";
-import { calculateDiscountFromOrder, calculateVatFromOrder } from "@/shared/utils/order/calculatePrice";
+import { calculateDiscountFromOrder, calculateVatFromOrder, getProductLineTotal } from "@/shared/utils/order/calculatePrice";
 
 type InvoiceTemplateProps = {
   order: OrderResponseDTO;
@@ -150,7 +150,7 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                     </tr>
                   );
                 })}
-                {detail.service.length === 0 && (
+                {detail.service.length === 0 && !detail.products?.length && (
                   <tr>
                     <td colSpan={3} className="p-2 text-center text-gray-500">
                       Chưa có dịch vụ nào
@@ -159,6 +159,43 @@ const InvoiceTemplate = ({ order, baseServicePrice }: InvoiceTemplateProps) => {
                 )}
               </tbody>
             </table>
+
+            {/* Products table */}
+            {detail.products && detail.products.length > 0 && (
+              <table className="w-full text-xs border border-gray-300 mb-4">
+                <thead>
+                  <tr className="bg-transparent">
+                    <th className="p-2 border-r border-gray-300 text-left font-semibold w-1/2">
+                      Sản phẩm
+                    </th>
+                    <th className="p-2 border-r border-gray-300 text-center font-semibold w-1/4">
+                      SL
+                    </th>
+                    <th className="p-2 text-left font-semibold w-1/4">
+                      Giá
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {detail.products.map((product, pIndex) => {
+                    const lineTotal = getProductLineTotal(product);
+                    return (
+                      <tr key={pIndex}>
+                        <td className="p-2 border-r border-gray-300">
+                          {product.productName}
+                        </td>
+                        <td className="p-2 border-r border-gray-300 text-center">
+                          {product.quantity}
+                        </td>
+                        <td className="p-2 text-right">
+                          {lineTotal.toLocaleString()}đ
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
           </div>
         ))}
 

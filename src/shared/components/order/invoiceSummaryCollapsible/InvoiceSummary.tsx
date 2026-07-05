@@ -9,10 +9,11 @@ import {
 } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Car, Users, Clock, FileText, Plus, Minus } from "lucide-react";
+import { Car, Users, Clock, FileText, Plus, Minus, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { tool } from "@/utils/tool";
 import { OrderDetailDTO } from "@/types/OrderResponse";
+import { getProductLineTotal } from "@/shared/utils/order/calculatePrice";
 
 interface InvoiceSummaryProps {
   orderDetails: OrderDetailDTO[];
@@ -31,6 +32,10 @@ export default function InvoiceSummary({
 
   const totalServices = orderDetails.reduce(
     (sum, detail) => sum + detail.service.length,
+    0
+  );
+  const totalProducts = orderDetails.reduce(
+    (sum, detail) => sum + (detail.products || []).length,
     0
   );
   const totalEmployees = orderDetails.reduce(
@@ -70,7 +75,7 @@ export default function InvoiceSummary({
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`grid gap-4 ${totalProducts > 0 ? "grid-cols-3" : "grid-cols-2"}`}>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-blue-600 mb-1">
                   <Car className="h-4 w-4" />
@@ -80,6 +85,17 @@ export default function InvoiceSummary({
                   {totalServices}
                 </div>
               </div>
+              {totalProducts > 0 && (
+                <div className="text-center p-3 bg-purple-50 rounded-lg">
+                  <div className="flex items-center justify-center gap-1 text-purple-600 mb-1">
+                    <Package className="h-4 w-4" />
+                    <span className="text-sm font-medium">Sản phẩm</span>
+                  </div>
+                  <div className="text-xl font-bold text-purple-700">
+                    {totalProducts}
+                  </div>
+                </div>
+              )}
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <div className="flex items-center justify-center gap-1 text-green-600 mb-1">
                   <Users className="h-4 w-4" />
@@ -177,6 +193,37 @@ export default function InvoiceSummary({
                               );
                             })
                           : "Không rõ dịch vụ"}
+                        {/* Product lines */}
+                        {detail.products && detail.products.length > 0 && (
+                          <>
+                            <div className="text-xs text-purple-600 font-medium mt-2 pt-2 border-t border-dashed">
+                              Sản phẩm:
+                            </div>
+                            {detail.products.map((product, pIndex) => (
+                              <div
+                                className="flex justify-between items-center"
+                                key={`product-${product.productCode}-${pIndex}`}
+                              >
+                                <div>
+                                  <span className="font-medium">
+                                    {product.productName}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  <div className="price">
+                                    {getProductLineTotal(product).toLocaleString("vi-VN")}
+                                    VNĐ
+                                    {product.quantity > 1 && (
+                                      <span className="text-[10px] text-gray-400 ml-1">
+                                        (x{product.quantity})
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
                       </div>
                     </div>
 
@@ -197,23 +244,27 @@ export default function InvoiceSummary({
                     <div className="flex justify-between items-center pt-2 border-t">
                       <span className="text-sm">Tổng tiền:</span>
                       <span className="font-medium text-green-600">
-                        {detail.service && detail.service.length > 0
-                          ? (() => {
-                              const total = detail.service.reduce(
-                                (acc, curr) => {
-                                  const unitPrice =
-                                    curr.adjustedPriceFlag === true &&
-                                    curr.adjustedPriceReason
-                                      ? curr.adjustedPrice ?? 0
-                                      : curr.serviceCatalog?.listedPrice ?? 0;
-                                  return acc + unitPrice * (curr.quantity || 1);
-                                },
-                                0
-                              );
-
-                              return total.toLocaleString("vi-VN") + "đ";
-                            })()
-                          : "N/A"}
+                        {(() => {
+                          const serviceTotal = (detail.service || []).reduce(
+                            (acc, curr) => {
+                              const unitPrice =
+                                curr.adjustedPriceFlag === true &&
+                                curr.adjustedPriceReason
+                                  ? curr.adjustedPrice ?? 0
+                                  : curr.serviceCatalog?.listedPrice ?? 0;
+                              return acc + unitPrice * (curr.quantity || 1);
+                            },
+                            0
+                          );
+                          const productTotal = (detail.products || []).reduce(
+                            (acc, p) => acc + getProductLineTotal(p),
+                            0
+                          );
+                          const total = serviceTotal + productTotal;
+                          return total > 0
+                            ? total.toLocaleString("vi-VN") + "đ"
+                            : "N/A";
+                        })()}
                       </span>
                     </div>
                   </div>
