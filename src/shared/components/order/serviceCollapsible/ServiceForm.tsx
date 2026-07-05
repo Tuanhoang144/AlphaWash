@@ -35,7 +35,7 @@ export default function ServiceForm({
   vehicleSize,
 }: OrderDetailBlockProps) {
   //Load danh sách dịch vụ
-  const { services: allServices, loadingServices } = useServiceForm();
+  const { services: allServices, loadingServices, serviceTypeNames } = useServiceForm();
 
   //Dùng để update employee/status/note trong orderDetail
   const updateInfo = (field: string, value: any) => {
@@ -79,9 +79,10 @@ export default function ServiceForm({
             return (
               <ServiceInfoBlock
                 key={index}
-                service={service} //list dịch vụ trong orderDetail
+                service={service}
                 allServices={allServices}
                 loadingServices={loadingServices}
+                serviceTypeNames={serviceTypeNames}
                 onServiceChange={(updatedService) =>
                   updateService(index, updatedService)
                 }

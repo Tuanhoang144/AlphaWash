@@ -179,7 +179,7 @@ export function useServiceManager(
       setService((prev) => ({
         ...prev,
         id: found.id,
-        serviceCode: found.serviceCode,
+        serviceCode: found.serviceCode || (found as any).code,
         serviceName: found.serviceName,
         serviceTypeCode: found.serviceTypeCode,
         // reset catalog + giá khi đổi dịch vụ
@@ -355,7 +355,7 @@ export function useServiceManager(
         id: s.id,
         label: s.serviceName,
         value: s.id,
-        code: s.serviceCode,
+        code: s.serviceCode || (s as any).code,
         duration: (s as any).duration,
         raw: s,
       })),

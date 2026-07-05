@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { AlertTriangle, DollarSign, AlertCircle, Minus, Plus } from "lucide-react";
+import { AlertTriangle, AlertCircle, Minus, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select } from "antd";
 import type { ServiceDTO } from "@/types/OrderResponse";
@@ -15,12 +16,14 @@ import {
   parseFormattedNumber,
   validateNumericInput,
 } from "@/shared/utils/formatMoney";
+import ServicePickerModal from "./ServicePickerModal";
 
 const { Option } = Select;
 
 interface Props {
   service: ServiceDTO;
   selectedServiceIds?: number[];
+  allServices: ServiceDTO[];
   serviceOptions: any[];
   catalogOptions: any[];
   loadingServices: boolean;
@@ -33,11 +36,13 @@ interface Props {
   onSetAdjustedPrice: (price: number) => void;
   onSetAdjustedPriceReason: (reason: string) => void;
   onSetQuantity: (qty: number) => void;
+  serviceTypeNames?: Record<string, string>;
 }
 
 export default function ServiceCatalogSelector({
   service,
   selectedServiceIds,
+  allServices,
   serviceOptions,
   catalogOptions,
   loadingServices,
@@ -50,52 +55,40 @@ export default function ServiceCatalogSelector({
   onSetAdjustedPrice,
   onSetAdjustedPriceReason,
   onSetQuantity,
+  serviceTypeNames,
 }: Props) {
+  const [pickerOpen, setPickerOpen] = useState(false);
+
   return (
     <div className="space-y-4">
       {/* Chọn dịch vụ */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Chọn dịch vụ *</Label>
-          <Select
-            showSearch
-            placeholder={loadingServices ? "Đang tải..." : "Chọn dịch vụ"}
-            optionFilterProp="label"
-            onChange={(value: any) => {
-              onSelectService(Number(value));
-            }}
-            value={service.id || undefined}
-            loading={loadingServices}
-            style={{ width: "100%" }}
-            size="large"
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setPickerOpen(true)}
+            className="w-full h-10 justify-start text-left font-normal"
           >
-            {serviceOptions.map((opt) => {
-              const isDisabled = selectedServiceIds?.includes(opt.id);
-              return (
-                <Option
-                  key={opt.id}
-                  value={opt.value}
-                  label={opt.label}
-                  disabled={isDisabled}
-                >
-                  <div className="flex justify-between items-center w-full">
-                    <span
-                      className={`font-medium ${
-                        isDisabled ? "text-gray-400" : ""
-                      }`}
-                    >
-                      {opt.label}
-                    </span>
-                    {opt.duration && (
-                      <span className="text-xs text-gray-500">
-                        {opt.duration}
-                      </span>
-                    )}
-                  </div>
-                </Option>
-              );
-            })}
-          </Select>
+            <Search className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />
+            {service.serviceName ? (
+              <span className="truncate">{service.serviceName}</span>
+            ) : (
+              <span className="text-muted-foreground">
+                {loadingServices ? "Đang tải..." : "Tìm và chọn dịch vụ..."}
+              </span>
+            )}
+          </Button>
+          <ServicePickerModal
+            open={pickerOpen}
+            onClose={() => setPickerOpen(false)}
+            allServices={allServices}
+            loadingServices={loadingServices}
+            selectedServiceIds={selectedServiceIds ?? []}
+            onSelectService={onSelectService}
+            serviceTypeNames={serviceTypeNames}
+          />
         </div>
 
         <div className="space-y-2">

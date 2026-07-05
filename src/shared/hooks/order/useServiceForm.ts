@@ -13,7 +13,8 @@ function extractTypeOrder(code: string) {
 export function useServiceForm() {
   const [services, setServices] = useState<ServiceDTO[]>([]);
   const [loadingServices, setLoadingServices] = useState(false);
-  const { getAllServiceCode } = useServiceManagerService();
+  const [serviceTypeNames, setServiceTypeNames] = useState<Record<string, string>>({});
+  const { getAllServiceCode, getAllServiceType } = useServiceManagerService();
 
   useEffect(() => {
     let mounted = true;
@@ -21,7 +22,10 @@ export function useServiceForm() {
     (async () => {
       setLoadingServices(true);
       try {
-        const data = await getAllServiceCode();
+        const [data, types] = await Promise.all([
+          getAllServiceCode(),
+          getAllServiceType(),
+        ]);
 
         if (mounted) {
           const sorted = [...data].sort(
@@ -29,8 +33,15 @@ export function useServiceForm() {
               extractTypeOrder(a.serviceTypeCode) -
               extractTypeOrder(b.serviceTypeCode)
           );
-
           setServices(sorted);
+
+          if (Array.isArray(types)) {
+            const map: Record<string, string> = {};
+            for (const t of types) {
+              map[t.code] = t.serviceTypeName || t.code;
+            }
+            setServiceTypeNames(map);
+          }
         }
       } catch (e) {
         console.error("[useServiceForm] Error loading services:", e);
@@ -42,7 +53,7 @@ export function useServiceForm() {
     return () => {
       mounted = false;
     };
-  }, [getAllServiceCode]);
+  }, [getAllServiceCode, getAllServiceType]);
 
-  return { services, loadingServices };
+  return { services, loadingServices, serviceTypeNames };
 }

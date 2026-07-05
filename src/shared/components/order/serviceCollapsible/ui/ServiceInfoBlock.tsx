@@ -19,6 +19,7 @@ interface ServiceInfoBlockProps {
   serviceIndex: number;
   selectedServiceIds?: number[];
   onValidationChange?: (isValid: boolean) => void;
+  serviceTypeNames?: Record<string, string>;
 }
 
 export default function ServiceInfoBlock({
@@ -32,6 +33,7 @@ export default function ServiceInfoBlock({
   serviceIndex,
   selectedServiceIds,
   onValidationChange,
+  serviceTypeNames,
 }: ServiceInfoBlockProps) {
   const {
     service: managedService,
@@ -116,6 +118,7 @@ export default function ServiceInfoBlock({
         <ServiceCatalogSelector
           service={managedService}
           selectedServiceIds={selectedServiceIds ?? []}
+          allServices={allServices}
           serviceOptions={serviceOptions}
           catalogOptions={catalogOptions}
           loadingServices={loadingServices}
@@ -128,6 +131,7 @@ export default function ServiceInfoBlock({
           onSetAdjustedPrice={setAdjustedPrice}
           onSetAdjustedPriceReason={setAdjustedPriceReason}
           onSetQuantity={setQuantity}
+          serviceTypeNames={serviceTypeNames}
         />
       </CardContent>
     </Card>
