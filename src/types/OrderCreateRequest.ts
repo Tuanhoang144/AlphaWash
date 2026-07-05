@@ -21,6 +21,7 @@ export interface OrderCreateRequest {
 export interface OrderDetail {
   employeeIds: number[]
   services: ServiceAdjust[]
+  products?: ProductOrderItem[]
   status: string
   note: string
   licensePlate: string
@@ -36,4 +37,15 @@ export interface ServiceAdjust {
   adjustedPriceFlag: boolean
   adjustedPriceReason: string
   quantity: number
+}
+
+export interface ProductOrderItem {
+  productCode: string
+  quantity: number
+  unitPrice: number
+  adjustedPrice?: number
+  adjustedPriceFlag?: boolean
+  adjustedPriceReason?: string
+  discount?: number
+  note?: string
 }

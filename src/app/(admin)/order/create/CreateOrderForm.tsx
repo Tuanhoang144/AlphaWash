@@ -10,8 +10,10 @@ import TimeInfoForm from "@/shared/components/order/timeInfoCollapsible/TimeInfo
 import VehicleInfoSection from "@/shared/components/order/vehicleInfoCollapsible/VehicleInfoBlock";
 import { VehicleDTO } from "@/types/OrderResponse";
 import ServiceForm from "@/shared/components/order/serviceCollapsible/ServiceForm";
+import ProductSection from "@/shared/components/order/productCollapsible/ProductSection";
 import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/InvoiceSummary";
 import { useCreateInvoice } from "@/shared/hooks/order/useCreateOrder";
+import { useProductForm } from "@/shared/hooks/order/useProductForm";
 
 export default function CreateOrderForm() {
   const {
@@ -24,6 +26,9 @@ export default function CreateOrderForm() {
     handleServiceChangeAt,
     addServiceAt,
     removeServiceAt,
+    handleAddProduct,
+    handleRemoveProduct,
+    handleProductQuantityChange,
     addVehicle,
     removeVehicleAt,
     currentTotalPrice,
@@ -32,6 +37,12 @@ export default function CreateOrderForm() {
     handleNavigateToPayment,
     buildEmptyDetail,
   } = useCreateInvoice();
+
+  const {
+    products: allProducts,
+    categories: productCategories,
+    loadingProducts,
+  } = useProductForm();
 
   if (isNavigating) return <LoadingPage />;
 
@@ -87,7 +98,7 @@ export default function CreateOrderForm() {
                     {/* Thông Dịch Vụ & Nhân Viên Thi Công */}
                     <ServiceForm
                       orderDetail={detail}
-                      onServiceChange={(sIndex, updated) => 
+                      onServiceChange={(sIndex, updated) =>
                         handleServiceChangeAt(index, sIndex, updated)
                       }
                       onInfoChange={handleInfoOrderDetailChangeAt(index)}
@@ -111,6 +122,19 @@ export default function CreateOrderForm() {
                       })}
                       removeServiceAt={(sIndex) => removeServiceAt(index, sIndex)}
                       vehicleSize={detail.vehicle?.size ?? ""}
+                    />
+
+                    {/* Sản Phẩm */}
+                    <ProductSection
+                      products={detail.products || []}
+                      allProducts={allProducts}
+                      categories={productCategories}
+                      loadingProducts={loadingProducts}
+                      onAddProduct={(product) => handleAddProduct(index, product)}
+                      onRemoveProduct={(pIndex) => handleRemoveProduct(index, pIndex)}
+                      onQuantityChange={(pIndex, qty) =>
+                        handleProductQuantityChange(index, pIndex, qty)
+                      }
                     />
 
                     {index < formData.orderDetails!.length - 1 && (

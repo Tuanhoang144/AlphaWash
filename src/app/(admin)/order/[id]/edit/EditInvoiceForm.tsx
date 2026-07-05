@@ -8,10 +8,12 @@ import HeaderBreadcrumb from "@/shared/components/layout/Header";
 import CustomerInfoSection from "@/shared/components/order/customerCollapsible/CustomerInfoSection";
 import TimeInfoForm from "@/shared/components/order/timeInfoCollapsible/TimeInfoForm";
 import ServiceForm from "@/shared/components/order/serviceCollapsible/ServiceForm";
+import ProductSection from "@/shared/components/order/productCollapsible/ProductSection";
 import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/InvoiceSummary";
 import VehicleInfoSection from "@/shared/components/order/vehicleInfoCollapsible/VehicleInfoBlock";
 import type { VehicleDTO } from "@/types/OrderResponse";
 import { useEditInvoice } from "@/shared/hooks/order/useEditOrder";
+import { useProductForm } from "@/shared/hooks/order/useProductForm";
 
 type Props = { id: string };
 
@@ -29,11 +31,20 @@ export default function EditInvoiceContainer({ id }: Props) {
     handleInfoOrderDetailChange,
     addService,
     removeServiceAt,
+    handleAddProduct,
+    handleRemoveProduct,
+    handleProductQuantityChange,
     buildEmptyDetail,
     handleUpdateSubmit,
     handleCancel,
     handlePayment,
   } = useEditInvoice(id);
+
+  const {
+    products: allProducts,
+    categories: productCategories,
+    loadingProducts,
+  } = useProductForm();
 
   if (isLoading || isNavigating || !formData) return <LoadingPage />;
 
@@ -67,6 +78,16 @@ export default function EditInvoiceContainer({ id }: Props) {
                   addService={addService}
                   removeServiceAt={removeServiceAt}
                   vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
+                />
+
+                <ProductSection
+                  products={formData.orderDetails?.[0]?.products || []}
+                  allProducts={allProducts}
+                  categories={productCategories}
+                  loadingProducts={loadingProducts}
+                  onAddProduct={handleAddProduct}
+                  onRemoveProduct={handleRemoveProduct}
+                  onQuantityChange={handleProductQuantityChange}
                 />
               </div>
 

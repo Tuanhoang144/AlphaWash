@@ -59,11 +59,27 @@ export interface ServiceDTO {
   note?: string;
 }
 
+export interface OrderProductDTO {
+  id: number;
+  productCode: string;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  adjustedPrice: number;
+  adjustedPriceFlag: boolean;
+  adjustedPriceReason: string;
+  discount: number;
+  note: string;
+  currentStock?: number;
+  unit?: string;
+}
+
 export interface OrderDetailDTO {
   code: string;
   employees: EmployeeDTO[];
   vehicle: VehicleDTO;
   service: ServiceDTO[];
+  products?: OrderProductDTO[];
   status: string;
   note: string | null;
 }

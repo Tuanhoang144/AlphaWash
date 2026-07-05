@@ -11,7 +11,9 @@ import type {
   OrderDetailDTO,
   CustomerDTO,
   VehicleDTO,
+  OrderProductDTO,
 } from "@/types/OrderResponse";
+import type { Product } from "@/types/Product";
 import { useCreateInvoice } from "./useCreateOrder";
 import { formatToLocalDateTime } from "@/shared/utils/formatDate";
 
@@ -30,6 +32,9 @@ export function useEditInvoice(id: string | undefined) {
     handleInfoOrderDetailChangeAt,
     addServiceAt,
     removeServiceAt: removeServiceAtInternal,
+    handleAddProduct: handleAddProductAt,
+    handleRemoveProduct: handleRemoveProductAt,
+    handleProductQuantityChange: handleProductQuantityChangeAt,
     currentTotalPrice,
     isNavigating,
     buildEmptyDetail,
@@ -54,6 +59,18 @@ export function useEditInvoice(id: string | undefined) {
 
   const removeServiceAt = (index: number) => {
     removeServiceAtInternal(0, index);
+  };
+
+  const handleAddProduct = (product: Product) => {
+    handleAddProductAt(0, product);
+  };
+
+  const handleRemoveProduct = (index: number) => {
+    handleRemoveProductAt(0, index);
+  };
+
+  const handleProductQuantityChange = (index: number, qty: number) => {
+    handleProductQuantityChangeAt(0, index, qty);
   };
 
   // ============================================================================
@@ -214,6 +231,9 @@ export function useEditInvoice(id: string | undefined) {
     handleInfoOrderDetailChange,
     addService,
     removeServiceAt,
+    handleAddProduct,
+    handleRemoveProduct,
+    handleProductQuantityChange,
     buildEmptyDetail,
     handleUpdateSubmit,
     handleCancel,

@@ -3,7 +3,8 @@ import { tool } from "@/utils/tool";
 import {
   calculateVatFromOrder,
   calculateDiscountFromOrder,
-} from "@/shared/utils/order/calculatePrice"; // dùng utils chuẩn
+  getProductLineTotal,
+} from "@/shared/utils/order/calculatePrice";
 
 export const generateInvoiceHTML = ({
   order,
@@ -85,8 +86,32 @@ export const generateInvoiceHTML = ({
         .join("");
 
       // Empty state message
-      const emptyRow = services.length === 0
+      const products = detail.products ?? [];
+      const emptyRow = services.length === 0 && products.length === 0
         ? '<tr><td colspan="3" style="text-align: center; color: #666;">Chưa có dịch vụ nào</td></tr>'
+        : "";
+
+      // Product rows for this vehicle
+      const productTable = products.length > 0
+        ? `<table class="service-table">
+            <thead>
+              <tr>
+                <th>Sản phẩm</th>
+                <th style="text-align:center">SL</th>
+                <th>Giá</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${products.map((p) => {
+                const lineTotal = getProductLineTotal(p);
+                return `<tr>
+                  <td>${p.productName}</td>
+                  <td style="text-align:center">${p.quantity}</td>
+                  <td class="price">${lineTotal.toLocaleString("vi-VN")}đ</td>
+                </tr>`;
+              }).join("")}
+            </tbody>
+          </table>`
         : "";
 
       return `
@@ -106,6 +131,7 @@ export const generateInvoiceHTML = ({
               ${serviceRows || emptyRow}
             </tbody>
           </table>
+          ${productTable}
         </div>
       `;
     })

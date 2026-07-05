@@ -9,10 +9,12 @@ import { useOrderManager } from "@/services/useOrderManager";
 import type {
   CustomerDTO,
   OrderDetailDTO,
+  OrderProductDTO,
   OrderResponseDTO,
   ServiceDTO,
   VehicleDTO,
 } from "@/types/OrderResponse";
+import type { Product } from "@/types/Product";
 import { calculateTotal } from "@/shared/utils/order/calculatePrice";
 
 // ============================================================================
@@ -41,6 +43,7 @@ const buildEmptyDetail = (patch?: Partial<OrderDetailDTO>): OrderDetailDTO => ({
       note: undefined,
     } as ServiceDTO,
   ],
+  products: [],
   vehicle: {
     id: "",
     licensePlate: "",
@@ -211,6 +214,75 @@ export function useCreateInvoice() {
   };
 
   // =========================================================================
+  // HANDLERS - Product Management (Per Vehicle)
+  // =========================================================================
+
+  const handleAddProduct = (vehicleIndex: number, product: Product) => {
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
+
+      const existing = (detail.products || []).find(
+        (p) => p.productCode === product.code
+      );
+      if (existing) return prev;
+
+      const newProduct: OrderProductDTO = {
+        id: 0,
+        productCode: product.code,
+        productName: product.productName,
+        unitPrice: product.sellingPrice ?? 0,
+        quantity: 1,
+        adjustedPrice: 0,
+        adjustedPriceFlag: false,
+        adjustedPriceReason: "",
+        discount: 0,
+        note: "",
+        currentStock: product.currentStock,
+        unit: product.unit,
+      };
+
+      details[vehicleIndex] = {
+        ...detail,
+        products: [...(detail.products || []), newProduct],
+      };
+      return { ...prev, orderDetails: details };
+    });
+  };
+
+  const handleRemoveProduct = (vehicleIndex: number, productIndex: number) => {
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
+
+      const products = [...(detail.products || [])];
+      products.splice(productIndex, 1);
+      details[vehicleIndex] = { ...detail, products };
+      return { ...prev, orderDetails: details };
+    });
+  };
+
+  const handleProductQuantityChange = (
+    vehicleIndex: number,
+    productIndex: number,
+    qty: number
+  ) => {
+    setFormData((prev) => {
+      const details = [...(prev.orderDetails || [])];
+      const detail = details[vehicleIndex];
+      if (!detail) return prev;
+
+      const products = [...(detail.products || [])];
+      if (productIndex < 0 || productIndex >= products.length) return prev;
+      products[productIndex] = { ...products[productIndex], quantity: qty };
+      details[vehicleIndex] = { ...detail, products };
+      return { ...prev, orderDetails: details };
+    });
+  };
+
+  // =========================================================================
   // HANDLERS - Employee/status/note trong orderDetail
   // =========================================================================
   const handleInfoOrderDetailChangeAt = (index: number) => (field: string, value: any) => {
@@ -237,17 +309,21 @@ export function useCreateInvoice() {
         return `Xe #${i + 1}: Vui lòng chọn phương tiện`;
       }
 
-      // Check if at least one service is selected
-      if (!detail.service || detail.service.length === 0) {
-        return `Xe #${i + 1}: Vui lòng thêm ít nhất một dịch vụ`;
+      // Check if at least one service or product is added
+      const validServices = (detail.service || []).filter(
+        (s) => s.id && s.id !== 0
+      );
+      const validProducts = (detail.products || []).filter(
+        (p) => p.productCode
+      );
+      if (validServices.length === 0 && validProducts.length === 0) {
+        return `Xe #${i + 1}: Vui lòng thêm ít nhất một dịch vụ hoặc sản phẩm`;
       }
 
-      // Check each service has valid catalog code
-      for (let j = 0; j < detail.service.length; j++) {
+      // Check each valid service has catalog code
+      for (let j = 0; j < (detail.service || []).length; j++) {
         const service = detail.service[j];
-        if (!service.id || service.id === 0) {
-          return `Xe #${i + 1}, Dịch vụ #${j + 1}: Vui lòng chọn dịch vụ`;
-        }
+        if (!service.id || service.id === 0) continue;
         if (!service.serviceCatalog?.code) {
           return `Xe #${i + 1}, Dịch vụ #${j + 1}: Vui lòng chọn kích thước dịch vụ`;
         }
@@ -372,6 +448,11 @@ export function useCreateInvoice() {
     handleServiceChangeAt,
     addServiceAt,
     removeServiceAt,
+
+    // Products (Per Vehicle)
+    handleAddProduct,
+    handleRemoveProduct,
+    handleProductQuantityChange,
 
     // Employee/status/note trong orderDetail
     handleInfoOrderDetailChangeAt,

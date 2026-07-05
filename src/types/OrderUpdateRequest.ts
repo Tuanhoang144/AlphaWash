@@ -20,11 +20,23 @@ export interface OrderUpdateRequest {
 }
 
 export interface OrderDetail {
-  orderDetailCode: string; // Optional, if you need to track the detail code
+  orderDetailCode: string;
   employeeIds: number[];
   services: ServiceUpdate[];
+  products?: ProductOrderItem[];
   status: string;
   note: string;
+}
+
+export interface ProductOrderItem {
+  productCode: string;
+  quantity: number;
+  unitPrice: number;
+  adjustedPrice?: number;
+  adjustedPriceFlag?: boolean;
+  adjustedPriceReason?: string;
+  discount?: number;
+  note?: string;
 }
 export interface ServiceUpdate {
   serviceCatalogCode: string;
