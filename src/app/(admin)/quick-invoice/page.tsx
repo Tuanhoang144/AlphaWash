@@ -66,6 +66,7 @@ export default function QuickInvoicePage() {
               onSearch={qi.searchVehicle}
               onSelectVehicle={qi.selectVehicle}
               onClear={() => qi.setSearchQuery("")}
+              onOpenNewVehicleModal={() => qi.setShowCustomerModal(true)}
             />
             <RecentVehicles
               vehicles={qi.recentVehicles}

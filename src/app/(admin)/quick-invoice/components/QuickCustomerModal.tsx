@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, UserX, UserPlus } from "lucide-react";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { useBrandManager } from "@/services/useBrandManager";
 import { useModelManager } from "@/services/useModelManager";
@@ -11,7 +11,7 @@ interface QuickCustomerModalProps {
   open: boolean;
   defaultPlate: string;
   onClose: () => void;
-  onCreated: (vehicle: VehicleDTO, customer: CustomerDTO) => void;
+  onCreated: (vehicle: VehicleDTO, customer: CustomerDTO | null) => void;
 }
 
 interface BrandItem {
@@ -37,6 +37,7 @@ export default function QuickCustomerModal({
   const { getAllBrands } = useBrandManager();
   const { getModelsByBrandCode } = useModelManager();
 
+  const [walkIn, setWalkIn] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [plate, setPlate] = useState(defaultPlate);
@@ -69,21 +70,35 @@ export default function QuickCustomerModal({
   const selectedModel = models.find((m) => m.code === modelCode);
 
   async function handleSave() {
-    if (!name.trim() || !phone.trim() || !plate.trim()) {
-      setError("Vui lòng điền đầy đủ thông tin");
+    if (!plate.trim()) {
+      setError("Vui lòng nhập biển số xe");
       return;
     }
+    if (!walkIn && (!name.trim() || !phone.trim())) {
+      setError("Vui lòng điền tên và số điện thoại khách hàng");
+      return;
+    }
+
     setSaving(true);
     setError("");
     try {
-      const customerData = await createCustomer({
-        customerName: name.trim(),
-        phone: phone.trim(),
-        note: "",
-      });
-      if (!customerData) {
-        setError("Không thể tạo khách hàng");
-        return;
+      let customerResult: CustomerDTO | null = null;
+
+      if (!walkIn) {
+        const customerData = await createCustomer({
+          customerName: name.trim(),
+          phone: phone.trim(),
+          note: "",
+        });
+        if (!customerData) {
+          setError("Không thể tạo khách hàng");
+          return;
+        }
+        customerResult = {
+          id: customerData.id,
+          name: customerData.customerName || name.trim(),
+          phone: customerData.phone || phone.trim(),
+        };
       }
 
       const selectedBrand = brands.find((b) => b.code === brandCode);
@@ -98,23 +113,18 @@ export default function QuickCustomerModal({
         modelName: selectedModel?.modelName || "",
         size: selectedModel?.size || "M",
         imageUrl: "",
-        customerId: customerData.id,
+        customerId: customerResult?.id,
       };
 
-      const customer: CustomerDTO = {
-        id: customerData.id,
-        name: customerData.customerName || name.trim(),
-        phone: customerData.phone || phone.trim(),
-      };
-
-      onCreated(vehicle, customer);
+      onCreated(vehicle, customerResult);
       setName("");
       setPhone("");
       setBrandCode("");
       setModelCode("");
+      setWalkIn(false);
       setError("");
     } catch (err: any) {
-      setError(err?.message || "Lỗi khi tạo khách hàng");
+      setError(err?.message || "Lỗi khi tạo");
     } finally {
       setSaving(false);
     }
@@ -126,7 +136,7 @@ export default function QuickCustomerModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50">
       <div className="w-full max-w-md bg-background rounded-t-2xl sm:rounded-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Khách hàng mới</h3>
+          <h3 className="text-lg font-semibold">Xe mới</h3>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-muted">
             <X className="h-5 w-5" />
           </button>
@@ -136,33 +146,42 @@ export default function QuickCustomerModal({
           <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm">{error}</div>
         )}
 
+        {/* Walk-in toggle */}
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setWalkIn(false)}
+            className={`flex-1 h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              !walkIn
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            <UserPlus className="h-4 w-4" />
+            Có khách hàng
+          </button>
+          <button
+            type="button"
+            onClick={() => setWalkIn(true)}
+            className={`flex-1 h-11 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors ${
+              walkIn
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-muted-foreground hover:bg-muted/80"
+            }`}
+          >
+            <UserX className="h-4 w-4" />
+            Khách vãng lai
+          </button>
+        </div>
+
         <div className="space-y-3">
+          {/* Vehicle fields — always shown */}
           <div>
             <label className="text-sm font-medium text-muted-foreground">Biển số *</label>
             <input
               type="text"
               value={plate}
               onChange={(e) => setPlate(e.target.value)}
-              className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Tên khách hàng *</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Nguyễn Văn A"
-              className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Số điện thoại *</label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="0901234567"
               className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -198,6 +217,32 @@ export default function QuickCustomerModal({
               </select>
             </div>
           )}
+
+          {/* Customer fields — only when not walk-in */}
+          {!walkIn && (
+            <>
+              <div className="border-t pt-3">
+                <label className="text-sm font-medium text-muted-foreground">Tên khách hàng *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Nguyễn Văn A"
+                  className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Số điện thoại *</label>
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="0901234567"
+                  className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
+            </>
+          )}
         </div>
 
         <button
@@ -206,7 +251,7 @@ export default function QuickCustomerModal({
           className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-5 w-5 animate-spin" />}
-          {saving ? "Đang tạo..." : "Tạo & Tiếp tục"}
+          {saving ? "Đang tạo..." : walkIn ? "Tiếp tục" : "Tạo & Tiếp tục"}
         </button>
       </div>
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, X, Loader2 } from "lucide-react";
+import { Search, X, Loader2, Car } from "lucide-react";
 import { CustomerDTO, VehicleDTO } from "@/types/OrderResponse";
 
 interface VehicleSearchProps {
@@ -10,6 +10,7 @@ interface VehicleSearchProps {
   onSearch: (query: string) => void;
   onSelectVehicle: (vehicle: VehicleDTO, customer: CustomerDTO) => void;
   onClear: () => void;
+  onOpenNewVehicleModal?: () => void;
 }
 
 export default function VehicleSearch({
@@ -19,7 +20,11 @@ export default function VehicleSearch({
   onSearch,
   onSelectVehicle,
   onClear,
+  onOpenNewVehicleModal,
 }: VehicleSearchProps) {
+  const trimmedQuery = searchQuery.trim();
+  const showNoResults = !searching && trimmedQuery.length >= 2 && searchResults.length === 0;
+
   return (
     <div className="space-y-3">
       <div className="relative">
@@ -76,6 +81,22 @@ export default function VehicleSearch({
               </button>
             ))
           )}
+        </div>
+      )}
+
+      {/* No results — open modal to add new vehicle */}
+      {showNoResults && (
+        <div className="space-y-3 p-4 rounded-xl border border-dashed border-muted-foreground/30 bg-muted/30">
+          <p className="text-sm text-muted-foreground text-center">
+            Không tìm thấy xe <span className="font-semibold text-foreground">"{trimmedQuery}"</span>
+          </p>
+          <button
+            onClick={() => onOpenNewVehicleModal?.()}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-medium text-sm flex items-center justify-center gap-2 hover:bg-primary/90 active:scale-[0.97] transition-transform"
+          >
+            <Car className="h-4 w-4" />
+            Thêm xe mới
+          </button>
         </div>
       )}
     </div>
