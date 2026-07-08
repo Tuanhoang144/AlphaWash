@@ -122,14 +122,8 @@ export function useQuickInvoice() {
         setSearching(true);
         try {
           const raw = await getCustomersByPhoneOrPlate(query);
-          // callApi already unwraps response.data, so `raw` here is the
-          // ApiResponse's `data` field, which getCustomersByPhoneOrPlate
-          // wraps again into a single-element array — unwrap that extra level.
           const results = Array.isArray(raw?.[0]) ? raw[0] : raw;
           setSearchResults(results);
-          if (results.length === 0 && query.trim().length >= 3) {
-            setShowCustomerModal(true);
-          }
         } catch {
           setSearchResults([]);
         } finally {
@@ -141,7 +135,7 @@ export function useQuickInvoice() {
   );
 
   const selectVehicle = useCallback(
-    (v: VehicleDTO, c: CustomerDTO) => {
+    (v: VehicleDTO, c: CustomerDTO | null) => {
       setVehicle(v);
       setCustomer(c);
       if (!v.size) {
