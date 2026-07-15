@@ -15,7 +15,8 @@ const useApiService = () => {
     ) => {
       try {
         setIsLoading(true);
-        const response = await api[method](url, data);
+        const cleanUrl = url.startsWith("/") ? url.slice(1) : url;
+        const response = await api[method](cleanUrl, data);
         return response.data;
       } catch (e: any) {
 		console.error(e);
