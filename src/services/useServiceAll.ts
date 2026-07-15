@@ -17,7 +17,7 @@ export function useServiceManager() {
   const getAllService = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await callApi("get", "/service/search");
+      const response = await callApi("get", "service/search");
       setServices(response?.data || []);
       return response?.data || [];
     } finally {
@@ -29,7 +29,7 @@ export function useServiceManager() {
   const getAllServiceType = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await callApi("get", "/service-type/");
+      const response = await callApi("get", "service-type/");
       return response?.data || [];
     } finally {
       setLoading(false);
@@ -40,7 +40,7 @@ export function useServiceManager() {
   const getAllServiceCode = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await callApi("get", "/service/");
+      const response = await callApi("get", "service/");
       return response?.data || [];
     } finally {
       setLoading(false);
@@ -52,7 +52,7 @@ export function useServiceManager() {
     async (data: ServiceFormData) => {
       setLoading(true);
       try {
-        const response = await callApi("post", "/service/create", data);
+        const response = await callApi("post", "service/create", data);
         await getAllService(); // refresh list
         return response?.data;
       } finally {
@@ -67,7 +67,7 @@ export function useServiceManager() {
     async (data: ServiceUpdateFormData) => {
       setLoading(true);
       try {
-        const response = await callApi("post", "/service/update", data);
+        const response = await callApi("post", "service/update", data);
         await getAllService(); // refresh list
         return response?.data;
       } finally {
@@ -84,7 +84,7 @@ export function useServiceManager() {
       try {
         const response = await callApi(
           "delete",
-          `/service/delete/${serviceCode}`
+          `service/delete/${serviceCode}`
         );
         await getAllService();
         return response?.data;
