@@ -1,6 +1,9 @@
 "use client";
 
+import type React from "react";
+import { useState } from "react";
 import { FileText, QrCode, Trash2 } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import { Button } from "@/components/ui/button";
 import { SidebarInset } from "@/components/ui/sidebar";
 import LoadingPage from "@/app/loading";
@@ -46,6 +49,22 @@ export default function EditInvoiceContainer({ id }: Props) {
     loadingProducts,
   } = useProductForm();
 
+  const [plateBlocked, setPlateBlocked] = useState(false);
+
+  const handleGuardedUpdateSubmit = (e: React.FormEvent) => {
+    if (plateBlocked) {
+      e.preventDefault();
+      addToast({
+        title: "Không thể cập nhật hóa đơn",
+        description:
+          "Biển số xe đã thuộc về khách hàng khác. Vui lòng liên kết hoặc chuyển quyền sở hữu trước khi tiếp tục.",
+        color: "danger",
+      });
+      return;
+    }
+    handleUpdateSubmit(e);
+  };
+
   if (isLoading || isNavigating || !formData) return <LoadingPage />;
 
   return (
@@ -57,7 +76,7 @@ export default function EditInvoiceContainer({ id }: Props) {
 
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <form onSubmit={handleUpdateSubmit}>
+          <form onSubmit={handleGuardedUpdateSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2 space-y-6">
                 <CustomerInfoSection
@@ -69,6 +88,7 @@ export default function EditInvoiceContainer({ id }: Props) {
                   value={formData.orderDetails?.[0]?.vehicle as VehicleDTO}
                   customer={selectedCustomer || undefined}
                   onChange={handleVehicleChange}
+                  onBlockChange={setPlateBlocked}
                 />
 
                 <ServiceForm
