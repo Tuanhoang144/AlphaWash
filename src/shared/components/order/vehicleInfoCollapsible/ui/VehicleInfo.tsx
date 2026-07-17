@@ -2,11 +2,11 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Car } from "lucide-react";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import type { VehicleDTO } from "@/types/OrderResponse";
 import { Select } from "antd";
+import LicensePlateInput from "@/shared/components/vehicle/LicensePlateInput";
 const { Option } = Select;
 
 type BrandOption = { value: string; label: string };
@@ -24,12 +24,17 @@ interface Props {
 
   selectedBrandCode: string;
   plateError: string | null;
+  /** The vehicle's own current plate — duplicate check is skipped when unchanged. */
+  excludePlate?: string;
 
   onLicenseChange: (plate: string) => void;
   onLicenseBlur: (plate: string) => boolean;
   onBrandChange: (brandCode: string) => void;
   onModelChange: (modelCode: string) => void;
   onSelectExisting: (v: VehicleDTO) => void;
+  onVehicleLinked: (vehicleId: string, vehicle: VehicleDTO) => void;
+  onPlateConfirmed: (plate: string) => void;
+  onTransferRequested: (vehicleId: string, vehicle: VehicleDTO) => void;
 }
 
 export default function VehicleInfo({
@@ -41,11 +46,15 @@ export default function VehicleInfo({
   loadingModels,
   selectedBrandCode,
   plateError,
+  excludePlate,
   onLicenseChange,
   onLicenseBlur,
   onBrandChange,
   onModelChange,
   onSelectExisting,
+  onVehicleLinked,
+  onPlateConfirmed,
+  onTransferRequested,
 }: Props) {
   return (
     <Card>
@@ -77,19 +86,18 @@ export default function VehicleInfo({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Biển số */}
-            <div className="space-y-2">
-              <Label>Biển số xe *</Label>
-              <Input
-                placeholder="29A-12345"
-                value={vehicle?.licensePlate ?? ""}
-                onChange={(e) => onLicenseChange(e.target.value)}
-                onBlur={(e) => onLicenseBlur(e.target.value)}
-                required
-              />
-              {plateError && (
-                <p className="text-sm text-red-600 mt-1">{plateError}</p>
-              )}
-            </div>
+            <LicensePlateInput
+              value={vehicle?.licensePlate ?? ""}
+              onChange={onLicenseChange}
+              onBlur={onLicenseBlur}
+              excludePlate={excludePlate}
+              error={plateError}
+              onVehicleLinked={onVehicleLinked}
+              onPlateConfirmed={onPlateConfirmed}
+              onTransferRequested={onTransferRequested}
+              label="Biển số xe"
+              required
+            />
 
             {/* Hãng xe */}
             <div className="space-y-2">

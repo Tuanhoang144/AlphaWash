@@ -21,6 +21,7 @@ import {
   Truck,
   Warehouse,
   ClipboardList,
+  AlertTriangle,
 } from "lucide-react"
 
 import dynamic from "next/dynamic"
@@ -127,6 +128,12 @@ const data = {
       title: "Quản lý Size Xe",
       url: "/sizeCar",
       icon: ShoppingBag,
+      isActive: true,
+    },
+    {
+      title: "Xe Trùng Lặp",
+      url: "/duplicate-vehicles",
+      icon: AlertTriangle,
       isActive: true,
     },
   ],

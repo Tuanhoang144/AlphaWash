@@ -9,12 +9,15 @@ interface Props {
   value: VehicleDTO;
   onChange: (v: VehicleDTO) => void;
   customer?: CustomerDTO;
+  /** Called whenever this vehicle's plate is blocked (belongs to another customer) or unblocked. */
+  onBlockChange?: (blocked: boolean) => void;
 }
 
 export default function VehicleInfoSection({
   value,
   onChange,
   customer,
+  onBlockChange,
 }: Props) {
   const {
     vehicle,
@@ -24,11 +27,16 @@ export default function VehicleInfoSection({
     loadingModels,
     selectedBrand,
     plateError,
+    plateBlocked,
+    excludePlate,
     handleLicensePlateChange,
     validateLicensePlate,
     handleBrandSelect,
     handleModelSelect,
     selectExistingVehicle,
+    handleVehicleLinked,
+    handleTransferRequested,
+    handlePlateConfirmed,
   } = useVehicleManager(value, customer);
 
   const prevVehicleRef = useRef<VehicleDTO | null>(null);
@@ -53,6 +61,14 @@ export default function VehicleInfoSection({
     }
   }, [vehicle]);
 
+  const onBlockChangeRef = useRef(onBlockChange);
+  useEffect(() => {
+    onBlockChangeRef.current = onBlockChange;
+  });
+  useEffect(() => {
+    onBlockChangeRef.current?.(plateBlocked);
+  }, [plateBlocked]);
+
   return (
     <VehicleInfo
       vehicle={vehicle}
@@ -66,12 +82,16 @@ export default function VehicleInfoSection({
       loadingModels={loadingModels}
       selectedBrandCode={selectedBrand?.code ?? ""}
       plateError={plateError}
+      excludePlate={excludePlate}
       // handlers
       onLicenseChange={handleLicensePlateChange}
       onLicenseBlur={validateLicensePlate}
       onBrandChange={handleBrandSelect}
       onModelChange={handleModelSelect}
       onSelectExisting={selectExistingVehicle}
+      onVehicleLinked={handleVehicleLinked}
+      onPlateConfirmed={handlePlateConfirmed}
+      onTransferRequested={handleTransferRequested}
     />
   );
 }

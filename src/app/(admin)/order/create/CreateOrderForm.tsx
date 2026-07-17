@@ -1,6 +1,9 @@
 "use client";
 
+import type React from "react";
+import { useState } from "react";
 import { FileText, QrCode, Plus, Trash2 } from "lucide-react";
+import { addToast } from "@heroui/toast";
 import { Button } from "@/components/ui/button";
 import { SidebarInset } from "@/components/ui/sidebar";
 import LoadingPage from "@/app/loading";
@@ -44,6 +47,33 @@ export default function CreateOrderForm() {
     loadingProducts,
   } = useProductForm();
 
+  const [blockedVehicleIndexes, setBlockedVehicleIndexes] = useState<Set<number>>(
+    new Set()
+  );
+
+  const handleVehicleBlockChange = (index: number) => (blocked: boolean) => {
+    setBlockedVehicleIndexes((prev) => {
+      const next = new Set(prev);
+      if (blocked) next.add(index);
+      else next.delete(index);
+      return next;
+    });
+  };
+
+  const handleGuardedSubmit = (e: React.FormEvent) => {
+    if (blockedVehicleIndexes.size > 0) {
+      e.preventDefault();
+      addToast({
+        title: "Không thể tạo hóa đơn",
+        description:
+          "Có biển số xe đã thuộc về khách hàng khác. Vui lòng liên kết hoặc chuyển quyền sở hữu trước khi tiếp tục.",
+        color: "danger",
+      });
+      return;
+    }
+    handleSubmit(e);
+  };
+
   if (isNavigating) return <LoadingPage />;
 
   return (
@@ -57,7 +87,7 @@ export default function CreateOrderForm() {
       {/* Form */}
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleGuardedSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Cột Trái */}
               <div className="lg:col-span-2 space-y-6">
@@ -93,6 +123,7 @@ export default function CreateOrderForm() {
                       value={detail.vehicle as VehicleDTO}
                       customer={selectedCustomer || undefined}
                       onChange={handleVehicleChangeAt(index)}
+                      onBlockChange={handleVehicleBlockChange(index)}
                     />
 
                     {/* Thông Dịch Vụ & Nhân Viên Thi Công */}

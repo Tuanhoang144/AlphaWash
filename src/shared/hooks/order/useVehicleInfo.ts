@@ -1,8 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { addToast } from "@heroui/toast";
 import { useBrandManager } from "@/services/useBrandManager";
 import { useModelManager } from "@/services/useModelManager";
+import { useVehicleService } from "@/services/useVehicleService";
 import type {
   BrandDTO,
   CustomerDTO,
@@ -22,9 +24,25 @@ export function useVehicleManager(
   const [loadingModels, setLoadingModels] = useState(false);
   const [selectedBrand, setSelectedBrand] = useState<BrandDTO | null>(null);
   const [plateError, setPlateError] = useState<string | null>(null);
+  const [plateBlocked, setPlateBlocked] = useState(false);
 
   const { getAllBrands } = useBrandManager();
   const { getModelsByBrandCode } = useModelManager();
+  const { linkCustomerToVehicle, transferVehicleOwnership } = useVehicleService();
+
+  // Biển số hiện đang gán cho vehicle.id — dùng để bỏ qua kiểm tra trùng khi không đổi biển số
+  const committedPlateRef = useRef<string>("");
+  const committedIdRef = useRef<string>("");
+
+  useEffect(() => {
+    if (vehicle.id && vehicle.id !== committedIdRef.current) {
+      committedIdRef.current = vehicle.id;
+      committedPlateRef.current = vehicle.licensePlate;
+    } else if (!vehicle.id) {
+      committedIdRef.current = "";
+      committedPlateRef.current = "";
+    }
+  }, [vehicle.id, vehicle.licensePlate]);
 
   // Khi initialVehicle (từ edit order) thay đổi -> set lại state vehicle
   useEffect(() => {
@@ -148,6 +166,7 @@ export function useVehicleManager(
     const brand = brands.find((b) => b.code === v.brandCode) || null;
     setSelectedBrand(brand || null);
     setVehicle(v);
+    setPlateBlocked(false);
   };
 
   const validateLicensePlate = (plate: string) => {
@@ -162,6 +181,58 @@ export function useVehicleManager(
   const handleLicensePlateChange = (plate: string) => {
     setPlateError(null);
     updateVehicle({ licensePlate: plate });
+  };
+
+  // Xe trùng biển số nhưng chưa gắn khách hàng -> liên kết thay vì tạo mới
+  const handleVehicleLinked = async (vehicleId: string, linkedVehicle: VehicleDTO) => {
+    selectExistingVehicle(linkedVehicle);
+    if (customer?.id) {
+      try {
+        await linkCustomerToVehicle(vehicleId, customer.id);
+        addToast({
+          title: "Đã liên kết",
+          description: "Xe đã được liên kết với khách hàng hiện tại.",
+          color: "success",
+        });
+      } catch {
+        addToast({
+          title: "Lỗi",
+          description: "Không thể liên kết xe với khách hàng.",
+          color: "danger",
+        });
+      }
+    }
+  };
+
+  // Xe trùng biển số đã có chủ -> chuyển quyền sở hữu sang khách hàng hiện tại
+  const handleTransferRequested = async (vehicleId: string, otherVehicle: VehicleDTO) => {
+    if (!customer?.id) {
+      addToast({
+        title: "Chưa chọn khách hàng",
+        description: "Vui lòng chọn hoặc tạo khách hàng trước khi chuyển quyền sở hữu xe.",
+        color: "warning",
+      });
+      return;
+    }
+    try {
+      await transferVehicleOwnership(vehicleId, customer.id);
+      selectExistingVehicle(otherVehicle);
+      addToast({
+        title: "Đã chuyển quyền sở hữu",
+        description: "Xe đã được chuyển sang khách hàng hiện tại.",
+        color: "success",
+      });
+    } catch {
+      addToast({
+        title: "Lỗi",
+        description: "Không thể chuyển quyền sở hữu xe.",
+        color: "danger",
+      });
+    }
+  };
+
+  const handlePlateConfirmed = () => {
+    // Biển số hợp lệ, không trùng — không cần xử lý thêm
   };
 
   const resetVehicle = (): VehicleDTO => ({
@@ -186,8 +257,10 @@ export function useVehicleManager(
     loadingModels,
     selectedBrand,
     plateError,
+    plateBlocked,
     brandOptions,
     modelOptions,
+    excludePlate: committedPlateRef.current || undefined,
     // actions
     updateVehicle,
     handleBrandSelect,
@@ -195,6 +268,10 @@ export function useVehicleManager(
     selectExistingVehicle,
     validateLicensePlate,
     handleLicensePlateChange,
+    handleVehicleLinked,
+    handleTransferRequested,
+    handlePlateConfirmed,
+    setPlateBlocked,
     resetVehicle,
   };
 }

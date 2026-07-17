@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Loader2, UserX, UserPlus } from "lucide-react";
 import { useCustomerManager } from "@/services/useCustomerManager";
 import { useBrandManager } from "@/services/useBrandManager";
 import { useModelManager } from "@/services/useModelManager";
+import { useVehicleService } from "@/services/useVehicleService";
 import { CustomerDTO, VehicleDTO } from "@/types/OrderResponse";
+import LicensePlateInput from "@/shared/components/vehicle/LicensePlateInput";
 
 interface QuickCustomerModalProps {
   open: boolean;
@@ -36,6 +38,7 @@ export default function QuickCustomerModal({
   const { createCustomer } = useCustomerManager();
   const { getAllBrands } = useBrandManager();
   const { getModelsByBrandCode } = useModelManager();
+  const { linkCustomerToVehicle, transferVehicleOwnership } = useVehicleService();
 
   const [walkIn, setWalkIn] = useState(false);
   const [name, setName] = useState("");
@@ -48,6 +51,12 @@ export default function QuickCustomerModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Duplicate-plate handling
+  const [linkedVehicle, setLinkedVehicle] = useState<VehicleDTO | null>(null);
+  const [pendingTransfer, setPendingTransfer] = useState<VehicleDTO | null>(null);
+  const [plateBlocked, setPlateBlocked] = useState(false);
+  const pendingModelCodeRef = useRef<string | null>(null);
+
   useEffect(() => {
     setPlate(defaultPlate);
   }, [defaultPlate]);
@@ -55,19 +64,58 @@ export default function QuickCustomerModal({
   useEffect(() => {
     if (open) {
       getAllBrands().then((data: BrandItem[]) => setBrands(data || []));
+    } else {
+      setLinkedVehicle(null);
+      setPendingTransfer(null);
+      setPlateBlocked(false);
     }
   }, [open, getAllBrands]);
 
   useEffect(() => {
     if (brandCode) {
-      getModelsByBrandCode(brandCode).then((data: ModelItem[]) => setModels(data || []));
+      getModelsByBrandCode(brandCode).then((data: ModelItem[]) => {
+        setModels(data || []);
+        if (pendingModelCodeRef.current) {
+          setModelCode(pendingModelCodeRef.current);
+          pendingModelCodeRef.current = null;
+        } else {
+          setModelCode("");
+        }
+      });
     } else {
       setModels([]);
+      setModelCode("");
     }
-    setModelCode("");
   }, [brandCode, getModelsByBrandCode]);
 
   const selectedModel = models.find((m) => m.code === modelCode);
+
+  const adoptExistingVehicle = (vehicle: VehicleDTO) => {
+    setPlate(vehicle.licensePlate);
+    if (vehicle.brandCode && vehicle.brandCode === brandCode) {
+      setModelCode(vehicle.modelCode || "");
+    } else {
+      pendingModelCodeRef.current = vehicle.modelCode || null;
+      setBrandCode(vehicle.brandCode || "");
+    }
+  };
+
+  const handleVehicleLinked = (_vehicleId: string, vehicle: VehicleDTO) => {
+    setLinkedVehicle(vehicle);
+    setPendingTransfer(null);
+    adoptExistingVehicle(vehicle);
+  };
+
+  const handlePlateConfirmed = () => {
+    setLinkedVehicle(null);
+    setPendingTransfer(null);
+  };
+
+  const handleTransferRequested = (_vehicleId: string, vehicle: VehicleDTO) => {
+    setPendingTransfer(vehicle);
+    setLinkedVehicle(null);
+    adoptExistingVehicle(vehicle);
+  };
 
   async function handleSave() {
     if (!plate.trim()) {
@@ -76,6 +124,16 @@ export default function QuickCustomerModal({
     }
     if (!walkIn && (!name.trim() || !phone.trim())) {
       setError("Vui lòng điền tên và số điện thoại khách hàng");
+      return;
+    }
+    if (plateBlocked && !pendingTransfer) {
+      setError(
+        "Biển số này đã có chủ sở hữu. Vui lòng liên kết hoặc chuyển quyền sở hữu trước khi tiếp tục."
+      );
+      return;
+    }
+    if (pendingTransfer && walkIn) {
+      setError("Cần thông tin khách hàng để chuyển quyền sở hữu xe.");
       return;
     }
 
@@ -101,20 +159,44 @@ export default function QuickCustomerModal({
         };
       }
 
+      const existingVehicle = linkedVehicle || pendingTransfer;
+
+      if (customerResult && existingVehicle) {
+        try {
+          if (pendingTransfer) {
+            await transferVehicleOwnership(pendingTransfer.id, customerResult.id);
+          } else if (linkedVehicle) {
+            await linkCustomerToVehicle(linkedVehicle.id, customerResult.id);
+          }
+        } catch {
+          setError(
+            pendingTransfer
+              ? "Không thể chuyển quyền sở hữu xe"
+              : "Không thể liên kết xe với khách hàng"
+          );
+          return;
+        }
+      }
+
       const selectedBrand = brands.find((b) => b.code === brandCode);
-      const vehicle: VehicleDTO = {
-        id: "",
-        licensePlate: plate.trim(),
-        brandId: selectedBrand?.id || 0,
-        brandCode: brandCode,
-        brandName: selectedBrand?.brandName || "",
-        modelId: selectedModel?.id || 0,
-        modelCode: modelCode,
-        modelName: selectedModel?.modelName || "",
-        size: selectedModel?.size || "M",
-        imageUrl: "",
-        customerId: customerResult?.id,
-      };
+      const vehicle: VehicleDTO = existingVehicle
+        ? {
+            ...existingVehicle,
+            customerId: customerResult?.id,
+          }
+        : {
+            id: "",
+            licensePlate: plate.trim(),
+            brandId: selectedBrand?.id || 0,
+            brandCode: brandCode,
+            brandName: selectedBrand?.brandName || "",
+            modelId: selectedModel?.id || 0,
+            modelCode: modelCode,
+            modelName: selectedModel?.modelName || "",
+            size: selectedModel?.size || "M",
+            imageUrl: "",
+            customerId: customerResult?.id,
+          };
 
       onCreated(vehicle, customerResult);
       setName("");
@@ -123,6 +205,9 @@ export default function QuickCustomerModal({
       setModelCode("");
       setWalkIn(false);
       setError("");
+      setLinkedVehicle(null);
+      setPendingTransfer(null);
+      setPlateBlocked(false);
     } catch (err: any) {
       setError(err?.message || "Lỗi khi tạo");
     } finally {
@@ -176,15 +261,16 @@ export default function QuickCustomerModal({
 
         <div className="space-y-3">
           {/* Vehicle fields — always shown */}
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Biển số *</label>
-            <input
-              type="text"
-              value={plate}
-              onChange={(e) => setPlate(e.target.value)}
-              className="w-full h-12 px-4 mt-1 rounded-xl border border-input bg-background text-base focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
+          <LicensePlateInput
+            value={plate}
+            onChange={setPlate}
+            onVehicleLinked={handleVehicleLinked}
+            onPlateConfirmed={handlePlateConfirmed}
+            onTransferRequested={handleTransferRequested}
+            onBlockChange={setPlateBlocked}
+            label="Biển số *"
+            required
+          />
           <div>
             <label className="text-sm font-medium text-muted-foreground">Hãng xe</label>
             <select
@@ -247,7 +333,7 @@ export default function QuickCustomerModal({
 
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || (plateBlocked && !pendingTransfer)}
           className="w-full h-14 rounded-xl bg-primary text-primary-foreground font-semibold text-base flex items-center justify-center gap-2 disabled:opacity-50"
         >
           {saving && <Loader2 className="h-5 w-5 animate-spin" />}
