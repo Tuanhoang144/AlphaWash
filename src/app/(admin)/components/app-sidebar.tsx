@@ -119,8 +119,8 @@ const data = {
       isActive: true,
     },
     {
-      title: "Quản lý Khách Hàng",
-      url: "/users",
+      title: "Khách Hàng",
+      url: "/customers",
       icon: Users,
       isActive: true,
     },

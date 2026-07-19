@@ -24,7 +24,7 @@ const dummyData: CarSize[] = [
   },
 ];
 
-const API_URL = "http://localhost:8080/api/vehicle/size";
+const API_URL = "http://localhost:8080/api/vehicles/size";
 
 export function useCarSizeManager() {
   const [carSizes, setCarSizes] = useState<CarSize[]>(dummyData);

@@ -3,6 +3,8 @@
 import { useCallback } from "react";
 import useApiService from "@/config/useApi";
 import type {
+  AutoLinkPreview,
+  AutoLinkResult,
   DuplicateVehicleGroup,
   MergeLog,
   MergePreviewResult,
@@ -144,6 +146,32 @@ export function useVehicleService() {
     }
   }, [callApi, setIsLoading]);
 
+  const getAutoLinkPreview = useCallback(async (): Promise<AutoLinkPreview> => {
+    setIsLoading(true);
+    try {
+      const response = await callApi("get", "admin/auto-link/preview");
+      return response?.data ?? { totalUnlinked: 0, safeToLink: 0, conflicts: 0, previewItems: [], conflictItems: [] };
+    } catch (error) {
+      console.error("Lỗi khi tải preview auto-link:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [callApi, setIsLoading]);
+
+  const executeAutoLink = useCallback(async (): Promise<AutoLinkResult> => {
+    setIsLoading(true);
+    try {
+      const response = await callApi("post", "admin/auto-link/execute");
+      return response?.data ?? { linked: 0, skipped: 0, conflicts: 0 };
+    } catch (error) {
+      console.error("Lỗi khi thực hiện auto-link:", error);
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [callApi, setIsLoading]);
+
   return {
     loading,
     checkPlate,
@@ -153,5 +181,7 @@ export function useVehicleService() {
     mergeDuplicateVehicles,
     getMergePreview,
     getMergeLogs,
+    getAutoLinkPreview,
+    executeAutoLink,
   };
 }

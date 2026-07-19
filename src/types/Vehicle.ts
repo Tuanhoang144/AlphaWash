@@ -1,17 +1,4 @@
-import { Customer } from './Customer';
-import { Brand } from './Brand';
-import { Model } from './Model';
 import { CustomerDTO, VehicleDTO } from './OrderResponse';
-
-export type Vehicle = {
-  id: string; // UUID
-  customer?: Customer;
-  licensePlate: string;
-  brand?: Brand;
-  model?: Model;
-  imageUrl?: string;
-  note?: string;
-}
 
 export interface PlateCheckResult {
   exists: boolean;
@@ -88,4 +75,32 @@ export interface MergeLog {
   appointmentsMigrated: number;
   historyRecordsMigrated: number;
   status: "SUCCESS" | "ROLLED_BACK";
+}
+
+export interface AutoLinkPreviewItem {
+  vehicleId: string;
+  licensePlate: string;
+  suggestedCustomerId: string;
+  suggestedCustomerName: string;
+  orderCount: number;
+}
+
+export interface ConflictItem {
+  vehicleId: string;
+  licensePlate: string;
+  customerOptions: { customerId: string; customerName: string; orderCount: number }[];
+}
+
+export interface AutoLinkPreview {
+  totalUnlinked: number;
+  safeToLink: number;
+  conflicts: number;
+  previewItems: AutoLinkPreviewItem[];
+  conflictItems: ConflictItem[];
+}
+
+export interface AutoLinkResult {
+  linked: number;
+  skipped: number;
+  conflicts: number;
 }
