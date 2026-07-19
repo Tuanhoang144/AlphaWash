@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowLeft, RotateCcw, Loader2, Car, User } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ArrowLeft, RotateCcw, Loader2, Car, User, ClipboardPaste } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { addToast } from "@heroui/react";
 import { useQuickInvoice } from "./hooks/useQuickInvoice";
@@ -12,10 +13,67 @@ import DiscountBar from "./components/DiscountBar";
 import PaymentBar from "./components/PaymentBar";
 import InvoiceSummary from "./components/InvoiceSummary";
 import PrintBillModal from "./components/PrintBillModal";
+import MessageParserModal from "./components/MessageParserModal";
+import { QuickService } from "@/types/QuickInvoice";
+
+interface PendingParsedService {
+  service: QuickService;
+}
 
 export default function QuickInvoicePage() {
   const router = useRouter();
   const qi = useQuickInvoice();
+
+  const [showMessageParser, setShowMessageParser] = useState(false);
+  const pendingServiceRef = useRef<PendingParsedService | null>(null);
+
+  // When step changes to "services", auto-apply any pending service from message parse
+  useEffect(() => {
+    if (qi.step === "services" && pendingServiceRef.current) {
+      const { service } = pendingServiceRef.current;
+      pendingServiceRef.current = null;
+      qi.toggleService(service.serviceCode, service.serviceName, service.catalogs);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qi.step]);
+
+  function handleMessageParseFill({
+    plate,
+    matchedService,
+    rawServiceName,
+    staff,
+  }: {
+    plate: string;
+    matchedService: QuickService | null;
+    rawServiceName: string;
+    staff: string;
+    brand: string;
+    model: string;
+  }) {
+    // Store matched service to auto-apply after vehicle selection
+    if (matchedService) {
+      pendingServiceRef.current = { service: matchedService };
+    }
+
+    // Pre-fill the plate search field and trigger search
+    qi.searchVehicle(plate);
+
+    if (!matchedService && rawServiceName) {
+      addToast({
+        title: `Dịch vụ "${rawServiceName}" không khớp`,
+        description: "Vui lòng chọn dịch vụ thủ công sau khi chọn xe.",
+        color: "warning",
+      });
+    }
+
+    if (staff) {
+      addToast({
+        title: `Nhân viên: ${staff}`,
+        description: "Vui lòng gán nhân viên khi tạo hoá đơn.",
+        color: "default",
+      });
+    }
+  }
 
   async function handleCreate() {
     try {
@@ -44,6 +102,14 @@ export default function QuickInvoicePage() {
           <ArrowLeft className="h-5 w-5" />
         </button>
         <h1 className="text-lg font-semibold flex-1">Tạo nhanh</h1>
+        <button
+          onClick={() => setShowMessageParser(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-lg hover:bg-muted text-sm font-medium text-primary"
+          title="Tạo từ tin nhắn nhóm"
+        >
+          <ClipboardPaste className="h-4 w-4" />
+          <span className="hidden sm:inline">Từ tin nhắn</span>
+        </button>
         {qi.step === "services" && (
           <button
             onClick={qi.goBackToVehicle}
@@ -163,6 +229,14 @@ export default function QuickInvoicePage() {
           </div>
         </div>
       )}
+
+      {/* Message parser modal */}
+      <MessageParserModal
+        open={showMessageParser}
+        onClose={() => setShowMessageParser(false)}
+        serviceGroups={qi.serviceGroups}
+        onFillForm={handleMessageParseFill}
+      />
 
       {/* Quick customer modal */}
       <QuickCustomerModal
