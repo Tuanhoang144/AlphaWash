@@ -79,7 +79,7 @@ export default function QuotesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const searchRef = useRef<ReturnType<typeof setTimeout>>();
+  const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const load = useCallback(
     async (p = page, s = size, q = search, st = statusFilter) => {
@@ -111,12 +111,12 @@ export default function QuotesPage() {
 
   // Debounced search
   useEffect(() => {
-    clearTimeout(searchRef.current);
+    clearTimeout(searchRef.current ?? undefined);
     searchRef.current = setTimeout(() => {
       load(0, size, search, statusFilter);
       setPage(0);
     }, 400);
-    return () => clearTimeout(searchRef.current);
+    return () => clearTimeout(searchRef.current ?? undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 

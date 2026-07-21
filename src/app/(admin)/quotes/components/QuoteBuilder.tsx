@@ -93,7 +93,7 @@ export function QuoteBuilder({ initialQuote }: Props) {
   const [customerSearch, setCustomerSearch] = useState("");
   const [suggestions, setSuggestions] = useState<CustomerSuggestion[]>([]);
   const [searching, setSearching] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout>>();
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // UI state
   const [mainPickerOpen, setMainPickerOpen] = useState(false);
@@ -103,7 +103,7 @@ export function QuoteBuilder({ initialQuote }: Props) {
 
   // Debounced customer search
   useEffect(() => {
-    clearTimeout(searchTimer.current);
+    clearTimeout(searchTimer.current ?? undefined);
     if (!customerSearch.trim() || customerSearch.length < 2) {
       setSuggestions([]);
       return;
@@ -127,7 +127,7 @@ export function QuoteBuilder({ initialQuote }: Props) {
         setSearching(false);
       }
     }, 400);
-    return () => clearTimeout(searchTimer.current);
+    return () => clearTimeout(searchTimer.current ?? undefined);
   }, [customerSearch, searchCustomers]);
 
   const selectCustomer = (c: CustomerSuggestion) => {
