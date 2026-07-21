@@ -22,6 +22,7 @@ import {
   Warehouse,
   ClipboardList,
   AlertTriangle,
+  FileText,
 } from "lucide-react"
 
 import dynamic from "next/dynamic"
@@ -87,6 +88,12 @@ const data = {
       title: "Quản lý Dịch vụ",
       url: "/services",
       icon: ShoppingBag,
+      isActive: true,
+    },
+    {
+      title: "Báo Giá",
+      url: "/quotes",
+      icon: FileText,
       isActive: true,
     },
     {

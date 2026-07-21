@@ -8,3 +8,22 @@ export type Service = {
   note?: string;
   serviceType?: ServiceType;
 }
+
+export interface ServiceItem {
+  id: string
+  name: string
+  category: string
+  brand?: string
+  type?: string
+  warranty?: string
+  priceS?: number
+  priceM?: number
+  priceL?: number
+  priceSEDAN?: number
+  priceSUV?: number
+  priceOverSize?: number
+  canBeBonus: boolean
+  active: boolean
+  description?: string
+  sortOrder: number
+}
