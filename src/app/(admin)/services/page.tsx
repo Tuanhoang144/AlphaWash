@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,186 +9,170 @@ import {
 } from "@/components/ui/breadcrumb";
 import { Separator } from "@/components/ui/separator";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-
-import { CreateServiceDialog } from "./components/CreateServiceDialog";
-import { ServiceManagementHeader } from "./components/ServiceManagementHeader";
-import { useServiceManager } from "@/services/useServiceAll";
-import type { ServiceAll } from "@/types/ServiceAll";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Plus, Search } from "lucide-react";
 import { addToast } from "@heroui/toast";
-import { ServiceTable } from "./components/ServiceTable";
-import { ServiceDialog } from "./components/EditServiceDialog";
 
-function ManageServices() {
-  const [services, setServices] = useState<ServiceAll[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [currentServices, setCurrentServices] = useState<ServiceAll[] | null>(
-    null
-  );
-  const [searchTerm, setSearchTerm] = useState("");
+import { ServiceTableNew } from "./components/ServiceTableNew";
+import { AddServiceDialog } from "./components/AddServiceDialog";
+import { EditServiceDrawer } from "./components/EditServiceDrawer";
+import { useServiceCatalog } from "@/services/useServiceCatalog";
+import type { ServiceItem } from "@/types/Service";
 
-  const { getAllService, createService, updateService, deleteService } = useServiceManager();
+const ALL_TAB = "Tất cả";
+
+export default function ServicesPage() {
+  const { getServices, getCategories, createService, updateService, deleteService, toggleActive } =
+    useServiceCatalog();
+
+  const [services, setServices] = useState<ServiceItem[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState(ALL_TAB);
+  const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [editService, setEditService] = useState<ServiceItem | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [svcs, cats] = await Promise.all([
+        getServices(),
+        getCategories(),
+      ]);
+      setServices(svcs);
+      setCategories(cats);
+    } catch {
+      // BE not ready — silently ignore, show empty state
+    } finally {
+      setLoading(false);
+    }
+  }, [getServices, getCategories]);
 
   useEffect(() => {
-    const fetchData = async () => {
-      const data = await getAllService();
-      setServices(data);
-    };
-    fetchData();
-  }, [getAllService]);
+    load();
+  }, [load]);
 
-  const handleAddService = () => {
-    setCurrentServices(null);
-    setIsCreateDialogOpen(true);
+  const filtered = services.filter((s) => {
+    const matchCat = activeCategory === ALL_TAB || s.category === activeCategory;
+    const matchSearch =
+      !search ||
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      (s.brand ?? "").toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const handleAdd = async (data: Omit<ServiceItem, "id">) => {
+    await createService(data);
+    addToast({ title: "Đã thêm dịch vụ", color: "success" });
+    await load();
   };
 
-  const handleEditService = (services: ServiceAll[]) => {
-    setCurrentServices(services);
-    setIsDialogOpen(true);
+  const handleEdit = (svc: ServiceItem) => {
+    setEditService(svc);
+    setEditOpen(true);
   };
 
-  const handleCreateService = async (data: {
-    serviceTypeCode: string;
-    serviceName: string;
-    duration: string;
-    size: string;
-    price: number;
-    note: string;
-  }) => {
+  const handleSave = async (id: string, data: Partial<ServiceItem>) => {
+    await updateService(id, data);
+    addToast({ title: "Đã cập nhật dịch vụ", color: "success" });
+    await load();
+  };
+
+  const handleDelete = async (id: string) => {
+    await deleteService(id);
+    addToast({ title: "Đã xóa dịch vụ", color: "success" });
+    await load();
+  };
+
+  const handleToggleActive = async (svc: ServiceItem, active: boolean) => {
     try {
-      const serviceData = {
-        serviceName: data.serviceName,
-        duration: data.duration,
-        size: data.size,
-        price: data.price,
-        note: data.note,
-        serviceTypeCode: data.serviceTypeCode,
-      };
-      await createService(serviceData as any);
-      addToast({
-        title: "Thành công",
-        description: "Dịch vụ đã được tạo thành công!",
-        color: "success",
-      });
-      const updated = await getAllService();
-      setServices(updated);
-      setIsCreateDialogOpen(false);
-    } catch (error) {
-      console.error("Lỗi khi tạo dịch vụ:", error);
+      await toggleActive(svc.id, active);
+      setServices((prev) =>
+        prev.map((s) => (s.id === svc.id ? { ...s, active } : s))
+      );
+    } catch {
+      addToast({ title: "Lỗi khi đổi trạng thái", color: "danger" });
     }
   };
 
-  const handleSaveService = async (data: {
-    serviceTypeCode: string;
-    serviceCode: string;
-    serviceName: string;
-    duration: string;
-    note?: string;
-    sizes: {
-      S?: { price: number };
-      M?: { price: number };
-      L?: { price: number };
-    };
-  }) => {
-    try {
-      const serviceData = {
-        serviceTypeCode: data.serviceTypeCode,
-        serviceCode: data.serviceCode,
-        serviceName: data.serviceName,
-        duration: data.duration,
-        note: data.note,
-        sizes: data.sizes,
-      };
-      await updateService(serviceData);
-      addToast({
-        title: "Thành công",
-        description: "Dịch vụ đã được cập nhật thành công!",
-        color: "success",
-      });
-      const updated = await getAllService();
-      setServices(updated);
-      setIsDialogOpen(false);
-    } catch (error) {
-      console.error("Lỗi khi lưu dịch vụ:", error);
-    }
-  };
-
-  // Xử lý xóa dịch vụ
-  const handleDeleteService = async (serviceCode: string) => {
-    try {
-      // Gọi API xóa dịch vụ
-      await deleteService(serviceCode);
-
-      // Hiển thị thông báo thành công
-      addToast({
-        title: "Thành công",
-        description: "Dịch vụ đã được xóa thành công!",
-        color: "success",
-      });
-
-      // Cập nhật lại danh sách dịch vụ sau khi xóa
-      const updated = await getAllService();
-      setServices(updated);
-    } catch (error) {
-      console.error("Lỗi khi xóa dịch vụ:", error);
-      addToast({
-        title: "Lỗi",
-        description: "Không thể xóa dịch vụ. Vui lòng thử lại!",
-        color: "danger",
-      });
-    }
-  };
-
-  const filteredServices = useMemo(() => {
-    if (!searchTerm) return services;
-    const lower = searchTerm.toLowerCase();
-    return services.filter(
-      (s) =>
-        s.serviceName.toLowerCase().includes(lower) ||
-        s.serviceCode.toLowerCase().includes(lower)
-    );
-  }, [services, searchTerm]);
+  const tabs = [ALL_TAB, ...categories];
 
   return (
     <SidebarInset className="relative w-full">
-      <header className="sticky top-0 flex shrink-0 items-center gap-2 border-b bg-background p-4">
+      <header className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b bg-background p-4">
         <SidebarTrigger className="-ml-1" />
         <Separator orientation="vertical" className="mr-2 h-4" />
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Quản lý dịch vụ</BreadcrumbLink>
+              <BreadcrumbLink href="/services">Bảng Giá Dịch Vụ</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </header>
 
-      <div className="container absolute top-16 left-1/2 -translate-x-1/2 .center-conditional p-6">
-        <div className="container">
-          <ServiceManagementHeader
-            onAddService={handleAddService}
-            onSearch={setSearchTerm}
-          />
-          <ServiceTable
-            services={filteredServices}
-            onEditService={handleEditService}
-          />
-          <CreateServiceDialog
-            isOpen={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-            onSave={handleCreateService}
-          />
-          <ServiceDialog
-            isOpen={isDialogOpen}
-            onOpenChange={setIsDialogOpen}
-            services={currentServices}
-            onSave={handleSaveService}
-            onDelete={handleDeleteService}
-          />
+      <div className="p-6 space-y-4">
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold">Bảng Giá Dịch Vụ</h1>
+            <p className="text-muted-foreground text-sm">{services.length} dịch vụ</p>
+          </div>
+          <Button onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Thêm dịch vụ
+          </Button>
         </div>
+
+        {/* Search + Category tabs */}
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              className="pl-9"
+              placeholder="Tìm dịch vụ..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
+          <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+            <TabsList className="flex-wrap h-auto">
+              {tabs.map((tab) => (
+                <TabsTrigger key={tab} value={tab} className="text-xs">
+                  {tab}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        </div>
+
+        {/* Table */}
+        <ServiceTableNew
+          services={filtered}
+          loading={loading}
+          onEdit={handleEdit}
+          onToggleActive={handleToggleActive}
+        />
       </div>
+
+      {/* Dialogs */}
+      <AddServiceDialog
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        onSave={handleAdd}
+      />
+      <EditServiceDrawer
+        open={editOpen}
+        service={editService}
+        onOpenChange={setEditOpen}
+        onSave={handleSave}
+        onDelete={handleDelete}
+      />
     </SidebarInset>
   );
 }
-
-export default ManageServices;
