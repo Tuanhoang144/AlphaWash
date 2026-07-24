@@ -67,9 +67,16 @@ export default function ServicesPage() {
   });
 
   const handleAdd = async (data: Omit<ServiceItem, "id">) => {
-    await createService(data);
-    addToast({ title: "Đã thêm dịch vụ", color: "success" });
-    await load();
+    try {
+      await createService(data);
+      addToast({ title: "Đã thêm dịch vụ", color: "success" });
+      await load();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ?? err?.message ?? "Lỗi không xác định";
+      addToast({ title: "Lỗi tạo dịch vụ", description: msg, color: "danger" });
+      throw err; // re-throw để dialog không tự đóng
+    }
   };
 
   const handleEdit = (svc: ServiceItem) => {
@@ -78,9 +85,16 @@ export default function ServicesPage() {
   };
 
   const handleSave = async (id: string, data: Partial<ServiceItem>) => {
-    await updateService(id, data);
-    addToast({ title: "Đã cập nhật dịch vụ", color: "success" });
-    await load();
+    try {
+      await updateService(id, data);
+      addToast({ title: "Đã cập nhật dịch vụ", color: "success" });
+      await load();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ?? err?.message ?? "Lỗi không xác định";
+      addToast({ title: "Lỗi cập nhật dịch vụ", description: msg, color: "danger" });
+      throw err;
+    }
   };
 
   const handleDelete = async (id: string) => {

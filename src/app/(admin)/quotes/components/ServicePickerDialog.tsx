@@ -148,7 +148,7 @@ export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, on
                     <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
                       {svc.category && <span>{svc.category}</span>}
                       {svc.brand && <span>· {svc.brand}</span>}
-                      {svc.type && <span>· {svc.type}</span>}
+                      {svc.typeDetail && <span>· {svc.typeDetail}</span>}
                       {svc.warranty && <span>· BH: {svc.warranty}</span>}
                     </div>
                   </div>

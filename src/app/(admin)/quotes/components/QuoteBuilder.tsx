@@ -148,7 +148,7 @@ export function QuoteBuilder({ initialQuote }: Props) {
       serviceId: svc.id,
       serviceName: svc.name,
       brand: svc.brand,
-      type: svc.type,
+      type: svc.typeDetail,
       warranty: svc.warranty,
       price,
       isBonus: false,
@@ -162,7 +162,7 @@ export function QuoteBuilder({ initialQuote }: Props) {
       serviceId: svc.id,
       serviceName: svc.name,
       brand: svc.brand,
-      type: svc.type,
+      type: svc.typeDetail,
       warranty: svc.warranty,
       price, // reference price
       isBonus: true,

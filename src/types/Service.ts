@@ -14,7 +14,7 @@ export interface ServiceItem {
   name: string
   category: string
   brand?: string
-  type?: string
+  typeDetail?: string
   warranty?: string
   priceS?: number
   priceM?: number
