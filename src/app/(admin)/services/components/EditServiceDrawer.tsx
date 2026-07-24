@@ -22,13 +22,13 @@ import {
 } from "@/components/ui/select";
 import type { ServiceItem } from "@/types/Service";
 
-const CATEGORIES = [
-  "Rửa xe",
-  "Nội thất",
-  "Đánh bóng",
-  "Kính & Ceramic",
-  "PPF",
-  "Combo",
+const CATEGORIES: { value: string; label: string }[] = [
+  { value: "WASHING", label: "Rửa xe" },
+  { value: "INTERIOR", label: "Nội thất" },
+  { value: "POLISHING", label: "Đánh bóng" },
+  { value: "GLASS", label: "Kính & Ceramic" },
+  { value: "PPF", label: "PPF" },
+  { value: "COMBO", label: "Combo" },
 ];
 
 interface Props {
@@ -128,8 +128,8 @@ export function EditServiceDrawer({ open, service, onOpenChange, onSave, onDelet
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -149,8 +149,8 @@ export function EditServiceDrawer({ open, service, onOpenChange, onSave, onDelet
           <div className="space-y-1">
             <Label>Loại</Label>
             <Input
-              value={form.type ?? ""}
-              onChange={(e) => set("type", e.target.value)}
+              value={form.typeDetail ?? ""}
+              onChange={(e) => set("typeDetail", e.target.value)}
             />
           </div>
 

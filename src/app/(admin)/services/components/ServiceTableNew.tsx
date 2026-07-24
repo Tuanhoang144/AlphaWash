@@ -73,7 +73,7 @@ export function ServiceTableNew({ services, loading, onEdit, onToggleActive }: P
             >
               <TableCell className="font-medium">{svc.name}</TableCell>
               <TableCell className="text-sm text-muted-foreground">{svc.brand || "—"}</TableCell>
-              <TableCell className="text-sm">{svc.type || "—"}</TableCell>
+              <TableCell className="text-sm">{svc.typeDetail || "—"}</TableCell>
               <TableCell className="text-right">
                 <PriceCell value={svc.priceS} />
               </TableCell>
