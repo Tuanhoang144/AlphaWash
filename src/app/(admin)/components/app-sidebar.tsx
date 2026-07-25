@@ -89,6 +89,10 @@ const data = {
       url: "/services",
       icon: ShoppingBag,
       isActive: true,
+      items: [
+        { title: "Bảng giá dịch vụ", url: "/services" },
+        { title: "Danh mục", url: "/service-categories" },
+      ],
     },
     {
       title: "Báo Giá",

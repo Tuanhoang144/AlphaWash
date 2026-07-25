@@ -12,16 +12,18 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Plus, Search } from "lucide-react";
+import { LayoutGrid, List, Plus, Search } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
 import { ServiceTableNew } from "./components/ServiceTableNew";
 import { AddServiceDialog } from "./components/AddServiceDialog";
 import { EditServiceDrawer } from "./components/EditServiceDrawer";
+import { CategoryGrid, getCategoryLabel } from "./components/CategoryGrid";
 import { useServiceCatalog } from "@/services/useServiceCatalog";
 import type { ServiceItem } from "@/types/Service";
 
 const ALL_TAB = "Tất cả";
+const CATEGORIES_VIEW = "__CATEGORIES__";
 
 export default function ServicesPage() {
   const { getServices, getCategories, createService, updateService, deleteService, toggleActive } =
@@ -32,6 +34,7 @@ export default function ServicesPage() {
   const [activeCategory, setActiveCategory] = useState(ALL_TAB);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<"list" | "categories">("list");
 
   const [addOpen, setAddOpen] = useState(false);
   const [editService, setEditService] = useState<ServiceItem | null>(null);
@@ -75,7 +78,7 @@ export default function ServicesPage() {
       const msg =
         err?.response?.data?.message ?? err?.message ?? "Lỗi không xác định";
       addToast({ title: "Lỗi tạo dịch vụ", description: msg, color: "danger" });
-      throw err; // re-throw để dialog không tự đóng
+      throw err;
     }
   };
 
@@ -114,6 +117,12 @@ export default function ServicesPage() {
     }
   };
 
+  // Click a category card → switch to list view filtered by that category
+  const handleSelectCategory = (category: string) => {
+    setActiveCategory(category);
+    setView("list");
+  };
+
   const tabs = [ALL_TAB, ...categories];
 
   return (
@@ -135,43 +144,82 @@ export default function ServicesPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Bảng Giá Dịch Vụ</h1>
-            <p className="text-muted-foreground text-sm">{services.length} dịch vụ</p>
+            <p className="text-muted-foreground text-sm">
+              {view === "categories"
+                ? `${categories.length} danh mục`
+                : `${services.length} dịch vụ`}
+            </p>
           </div>
-          <Button onClick={() => setAddOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Thêm dịch vụ
-          </Button>
+          <div className="flex items-center gap-2">
+            {/* View toggle */}
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <Button
+                variant={view === "list" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 px-2.5"
+                onClick={() => setView("list")}
+                title="Danh sách dịch vụ"
+              >
+                <List className="h-4 w-4" />
+              </Button>
+              <Button
+                variant={view === "categories" ? "default" : "ghost"}
+                size="sm"
+                className="rounded-none h-8 px-2.5"
+                onClick={() => setView("categories")}
+                title="Danh mục"
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </Button>
+            </div>
+            <Button onClick={() => setAddOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Thêm dịch vụ
+            </Button>
+          </div>
         </div>
 
-        {/* Search + Category tabs */}
-        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Tìm dịch vụ..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        {view === "categories" ? (
+          /* ── Categories Grid View ── */
+          <CategoryGrid
+            categories={categories}
+            services={services}
+            onSelectCategory={handleSelectCategory}
+          />
+        ) : (
+          /* ── Services List View ── */
+          <>
+            {/* Search + Category tabs */}
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-9"
+                  placeholder="Tìm dịch vụ..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <Tabs value={activeCategory} onValueChange={setActiveCategory}>
+                <TabsList className="flex-wrap h-auto">
+                  {tabs.map((tab) => (
+                    <TabsTrigger key={tab} value={tab} className="text-xs">
+                      {tab === ALL_TAB ? tab : getCategoryLabel(tab)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            </div>
+
+            {/* Table */}
+            <ServiceTableNew
+              services={filtered}
+              loading={loading}
+              onEdit={handleEdit}
+              onToggleActive={handleToggleActive}
             />
-          </div>
-          <Tabs value={activeCategory} onValueChange={setActiveCategory}>
-            <TabsList className="flex-wrap h-auto">
-              {tabs.map((tab) => (
-                <TabsTrigger key={tab} value={tab} className="text-xs">
-                  {tab}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
-
-        {/* Table */}
-        <ServiceTableNew
-          services={filtered}
-          loading={loading}
-          onEdit={handleEdit}
-          onToggleActive={handleToggleActive}
-        />
+          </>
+        )}
       </div>
 
       {/* Dialogs */}
