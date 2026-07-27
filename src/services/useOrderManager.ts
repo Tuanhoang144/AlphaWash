@@ -23,6 +23,23 @@ export function useOrderManager() {
     }
   }, [callApi, setIsLoading]);
 
+  const getPagedOrders = useCallback(
+    async (page: number, size: number) => {
+      setIsLoading(true);
+      try {
+        const response = await callApi("get", "orders/", {
+          params: { page, size },
+        });
+        return response?.data;
+      } catch (error: any) {
+        throw error;
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [callApi, setIsLoading]
+  );
+
   const getOrderById = useCallback(
     async (id: string) => {
       if (!id) return null;
@@ -135,6 +152,7 @@ export function useOrderManager() {
 
   return {
     getAllOrders,
+    getPagedOrders,
     getOrderById,
     getOrderByCode,
     createOrder,
