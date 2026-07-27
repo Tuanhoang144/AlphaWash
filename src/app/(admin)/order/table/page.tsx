@@ -16,64 +16,66 @@ import { useBulkPayment } from "@/shared/hooks/order/useBulkPayment";
 export default function WashServiceTable() {
   const [data, setData] = useState<OrderResponseDTO[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
-  const { getAllOrders, loading } = useOrderManager();
+  const [page, setPage] = useState(0); // 0-based, for server
+  const [pageSize, setPageSize] = useState<number>(10);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalElements, setTotalElements] = useState(0);
+  const { getPagedOrders, loading } = useOrderManager();
   const [selectedFilter, setSelectedFilter] = useState<
     "payment" | "time" | null
   >(null);
   const router = useRouter();
 
+  const loadOrders = useCallback(
+    async (p: number, size: number) => {
+      try {
+        const result = await getPagedOrders(p, size);
+        // Support both PageResponse { content, totalPages, totalElements }
+        // and plain array fallback (if BE doesn't support pagination yet)
+        const content: OrderResponseDTO[] = Array.isArray(result)
+          ? result
+          : (result?.content ?? []);
+
+        const transformed = content
+          .filter((order) => !order.deleteFlag)
+          .map((order) => ({
+            ...order,
+            customer: order.customer
+              ? {
+                  ...order.customer,
+                  customerName: order.customer.name ?? "Khách lẻ",
+                  phone: order.customer.phone ?? "",
+                }
+              : {
+                  id: "",
+                  name: "Khách lẻ",
+                  phone: "",
+                  customerName: "Khách lẻ",
+                },
+          }));
+
+        setData(transformed);
+        setTotalPages(result?.totalPages ?? 1);
+        setTotalElements(result?.totalElements ?? transformed.length);
+      } catch (error) {
+        console.error("Lỗi khi gọi API get all order:", error);
+      }
+    },
+    [getPagedOrders]
+  );
+
+  // Refresh (dùng sau bulk payment) — reload trang hiện tại
   const refreshData = useCallback(async () => {
-    try {
-      const result: OrderResponseDTO[] = await getAllOrders();
-      const transformed = result
-        .filter((order) => !order.deleteFlag)
-        .map((order) => ({
-          ...order,
-          customer: order.customer
-            ? {
-                ...order.customer,
-                customerName: order.customer.name ?? "Khách lẻ",
-                phone: order.customer.phone ?? "",
-              }
-            : { id: "", name: "Khách lẻ", phone: "", customerName: "Khách lẻ" },
-        }));
-      setData(transformed);
-    } catch (error) {
-      console.error("Lỗi khi gọi API get all order:", error);
-    }
-  }, [getAllOrders]);
+    await loadOrders(page, pageSize);
+  }, [loadOrders, page, pageSize]);
 
   // Bulk Payment
   const bulkPayment = useBulkPayment(data, refreshData);
 
-  const fetchData = async () => {
-    try {
-      const result: OrderResponseDTO[] = await getAllOrders();
-
-      const transformed = result
-        .filter((order) => !order.deleteFlag) //hide những order bị hủy (deleteFlag = true)
-        .map((order) => ({
-          ...order,
-          customer: order.customer
-            ? {
-                ...order.customer,
-                customerName: order.customer.name ?? "Khách lẻ",
-                phone: order.customer.phone ?? "",
-              }
-            : { id: "", name: "Khách lẻ", phone: "", customerName: "Khách lẻ" },
-        }));
-
-      setData(transformed);
-    } catch (error) {
-      console.error("Lỗi khi gọi API get all order:", error);
-    }
-  };
-
+  // Fetch khi page hoặc pageSize thay đổi
   useEffect(() => {
-    fetchData();
-  }, [getAllOrders]);
+    loadOrders(page, pageSize);
+  }, [page, pageSize]);
 
   const filteredData = useMemo(() => {
     let result = [...data];
@@ -196,40 +198,35 @@ export default function WashServiceTable() {
     return result;
   }, [data, searchTerm, selectedFilter, bulkPayment.dateFilter, bulkPayment.customRange]);
 
+  // Reset về trang đầu khi filter hoặc search thay đổi
   useEffect(() => {
-    setCurrentPage(1);
+    setPage(0);
   }, [selectedFilter]);
 
-  // Calculate pagination
-  const totalItems = filteredData.length;
-  const safeItemsPerPage = itemsPerPage ?? 5;
-  const totalPages = Math.ceil(totalItems / safeItemsPerPage);
-  const startIndex = (currentPage - 1) * safeItemsPerPage;
-  const endIndex = startIndex + safeItemsPerPage;
-  const currentData = filteredData.slice(startIndex, endIndex);
+  // currentPage 1-based cho UI
+  const currentPage = page + 1;
 
-  // Reset to first page when search term changes
-  const handleSearch = (term: string) => {
-    console.log(term);
-    setSearchTerm(term);
-    setCurrentPage(1);
-  };
-
-  // Handle items per page change
-  const handleItemsPerPageChange = (value: string) => {
-    setItemsPerPage(Number(value));
-    setCurrentPage(1);
-  };
-
-  // Pagination handlers
-  const goToFirstPage = () => setCurrentPage(1);
-  const goToLastPage = () => setCurrentPage(totalPages);
-  const goToPreviousPage = () => setCurrentPage(Math.max(1, currentPage - 1));
+  // Pagination handlers (chuyển đổi giữa 1-based UI và 0-based server)
+  const goToFirstPage = () => setPage(0);
+  const goToLastPage = () => setPage(Math.max(0, totalPages - 1));
+  const goToPreviousPage = () => setPage((p) => Math.max(0, p - 1));
   const goToNextPage = () =>
-    setCurrentPage(Math.min(totalPages, currentPage + 1));
-  const goToPage = (page: number) => setCurrentPage(page);
+    setPage((p) => Math.min(totalPages - 1, p + 1));
+  const goToPage = (p: number) => setPage(p - 1); // p là 1-based từ UI
 
-  // Generate page numbers for pagination
+  // Reset về trang đầu khi search thay đổi
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    setPage(0);
+  };
+
+  // Thay đổi số bản ghi mỗi trang
+  const handleItemsPerPageChange = (value: string) => {
+    setPageSize(Number(value));
+    setPage(0);
+  };
+
+  // Tạo danh sách số trang cho pagination UI (1-based)
   const getPageNumbers = () => {
     const pages = [];
     const maxVisiblePages = 5;
@@ -297,9 +294,10 @@ export default function WashServiceTable() {
         />
 
         <OrderTable
-          data={currentData}
-          itemsPerPage={itemsPerPage}
+          data={filteredData}
+          itemsPerPage={pageSize}
           totalPages={totalPages}
+          totalElements={totalElements}
           currentPage={currentPage}
           handleItemsPerPageChange={handleItemsPerPageChange}
           goToFirstPage={goToFirstPage}

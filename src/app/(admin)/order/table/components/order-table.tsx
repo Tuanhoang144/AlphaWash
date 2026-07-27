@@ -36,6 +36,7 @@ interface OrderTableProps {
   data: OrderResponseDTO[];
   itemsPerPage: number;
   totalPages: number;
+  totalElements?: number; // tổng số bản ghi từ server
   currentPage: number;
   handleItemsPerPageChange: (value: string) => void;
   goToFirstPage: () => void;
@@ -54,6 +55,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
   data,
   itemsPerPage,
   totalPages,
+  totalElements,
   currentPage,
   handleItemsPerPageChange,
   goToFirstPage,
@@ -544,7 +546,7 @@ const OrderTable: React.FC<OrderTableProps> = ({
               </Select>
               <span className="text-sm text-gray-600">bản ghi</span>
               <span className="text-sm text-gray-500 ml-4">
-                Tổng: {data.length} kết quả
+                Tổng: {totalElements ?? data.length} kết quả
               </span>
             </div>
 
