@@ -3,17 +3,34 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCarSizeManager } from "@/services/userCarSizeManager";
-import { CarSize } from "@/types/CarSize";
+import { CarSize, CreateCarSizeRequest } from "@/types/CarSize";
 import { useEffect, useState } from "react";
 import { CarSizeDialog } from "./car-sze/CarSizeDialog";
 import { CarSizeTable } from "./car-sze/CarTable";
 import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Separator } from "@radix-ui/react-separator";
-import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from "@/components/ui/breadcrumb";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+} from "@/components/ui/breadcrumb";
+import { Plus, Search } from "lucide-react";
+import { CarSizeCreateDialog } from "./car-sze/CarSizeCreateDialog";
+import { set } from "date-fns";
+import { addToast } from "@heroui/toast";
 
 export default function CarSizePage() {
-  const { carSizes, getAllCarSizes, updateCarSize, deleteCarSize } = useCarSizeManager();
-  const [openDialog, setOpenDialog] = useState(false);
+  const {
+    carSizes,
+    getAllCarSizes,
+    updateCarSize,
+    deleteCarSize,
+    createCarSize,
+  } = useCarSizeManager();
+  const [openDialogEdit, setOpenDialogEdit] = useState(false);
+  const [openDialogCreate, setOpenDialogCreate] = useState(false);
+  const [created, setCreated] = useState<CarSize | null>(null);
   const [editing, setEditing] = useState<CarSize | null>(null);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,7 +51,7 @@ export default function CarSizePage() {
 
   const handleEdit = (carSize: CarSize) => {
     setEditing(carSize);
-    setOpenDialog(true);
+    setOpenDialogEdit(true);
   };
 
   const handleDelete = async (id: number) => {
@@ -46,23 +63,59 @@ export default function CarSizePage() {
 
   const handleSubmit = async (
     form: Omit<CarSize, "id" | "brandCode" | "brandName" | "modelName">,
-    id?: number
+    id?: number,
   ) => {
     setLoading(true);
     await updateCarSize(form); // nhớ truyền id nếu cần
     await refreshData();
-    setOpenDialog(false);
+    setOpenDialogEdit(false);
     setEditing(null);
     setLoading(false);
+    addToast({
+      title: "Thành công",
+      description: "Đã cập nhật size xe.",
+      color: "success",
+    });
   };
 
+  const handleCreate = async (
+    form: Omit<
+      CreateCarSizeRequest,
+      "brandCode" | "brandName" | "modelName" | "size" | "note"
+    >,
+  ) => {
+    try {
+      setLoading(true);
+      await createCarSize(form);
+      await refreshData();
+      setOpenDialogCreate(false);
+      addToast({
+        title: "Thành công",
+        description: "Đã thêm loại xe.",
+        color: "success",
+      });
+    } finally {
+      setCreated(null);
+      setLoading(false);
+    }
+  };
+
+  const keyword = search.toLowerCase();
   // Lọc + phân trang
-  const filtered = carSizes?.filter(
-    (c) =>
-      c?.modelCode?.toLowerCase().includes(search.toLowerCase()) ||
-      c?.brandName?.toLowerCase().includes(search.toLowerCase()) ||
-      c?.modelName?.toLowerCase().includes(search.toLowerCase())
-  ) || [];
+  const filtered = (carSizes ?? [])
+    .filter((c) => {
+      const text = [c.brandName, c.modelName, c.modelCode]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return text.includes(keyword);
+    })
+    .sort(
+      (a, b) =>
+        (a.brandName ?? "").localeCompare(b.brandName ?? "", "vi") ||
+        (a.modelName ?? "").localeCompare(b.modelName ?? "", "vi"),
+    );
 
   const totalPages = Math.ceil(filtered.length / pageSize);
   const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
@@ -75,63 +128,96 @@ export default function CarSizePage() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem className="hidden md:block">
-              <BreadcrumbLink href="#">Dashboard</BreadcrumbLink>
+              <BreadcrumbLink href="#">Quản lý Size xe</BreadcrumbLink>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
       </header>
-    <div className="p-6 space-y-4">
-      <h1 className="text-xl font-bold">Quản lý Size xe</h1>
+      <div className="p-6 space-y-4">
+        <h1 className="text-xl font-bold">Quản lý Size xe</h1>
 
-      <div className="flex items-center justify-between">
-        <Input
-          placeholder="Tìm kiếm theo tên xe, hãng, mã..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1); // reset về trang 1 khi search
-          }}
-          className="max-w-sm"
-        />
-      </div>
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="relative w-full md:max-w-md">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Tìm kiếm theo hãng, tên xe, mã xe..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className="pl-9"
+            />
+          </div>
 
-      {loading ? (
-        <div className="text-center py-10">Đang tải dữ liệu...</div>
-      ) : (
-        <CarSizeTable carSizes={paginated} onEdit={handleEdit} onDelete={handleDelete} />
-      )}
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center space-x-2 mt-4">
           <Button
-            variant="outline"
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
+            onClick={() => {
+              setCreated(null);
+              setOpenDialogCreate(true);
+            }}
           >
-            Trang trước
-          </Button>
-          <span className="flex items-center">Trang {page} / {totalPages}</span>
-          <Button
-            variant="outline"
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Trang sau
+            <Plus className="mr-2 h-4 w-4" />
+            Thêm xe
           </Button>
         </div>
-      )}
 
-      <CarSizeDialog
-        open={openDialog}
-        onClose={() => {
-          setOpenDialog(false);
-          setEditing(null);
-        }}
-        onSubmit={handleSubmit}
-        initialData={editing}
-      />
-    </div>
-      </SidebarInset>
+        {loading ? (
+          <div className="text-center py-10">Đang tải dữ liệu...</div>
+        ) : (
+          <CarSizeTable
+            carSizes={paginated}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center space-x-2 mt-4">
+            <Button
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Trang trước
+            </Button>
+            <span className="flex items-center">
+              Trang {page} / {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Trang sau
+            </Button>
+          </div>
+        )}
+
+        <CarSizeDialog
+          open={openDialogEdit}
+          onClose={() => {
+            setOpenDialogEdit(false);
+            setEditing(null);
+          }}
+          onSubmit={handleSubmit}
+          initialData={editing}
+        />
+
+        <CarSizeCreateDialog
+          open={openDialogCreate}
+          onClose={() => {
+            setOpenDialogCreate(false);
+          }}
+          brands={Array.from(
+            new Map(carSizes.map((c) => [c.brandCode, c])).values(),
+          ).map((c) => ({
+            id: c.brandCode,
+            name: c.brandName ?? c.brandCode,
+          }))}
+          onSubmit={handleCreate}
+        />
+      </div>
+    </SidebarInset>
   );
 }
