@@ -25,8 +25,8 @@ export function CarSizeTable({ carSizes, onEdit, onDelete }: CarSizeTableProps) 
         <TableHeader>
           <TableRow>
             <TableHead className="text-center">STT</TableHead>
-            <TableHead className="text-center">Mã hãng</TableHead>
-            <TableHead className="text-center">Mã xe</TableHead>
+            {/* <TableHead className="text-center">Mã hãng</TableHead>
+            <TableHead className="text-center">Mã xe</TableHead> */}
             <TableHead className="text-center">Hãng</TableHead>
             <TableHead className="text-center">Tên xe</TableHead>
             <TableHead className="text-center">Size xe</TableHead>
@@ -38,8 +38,8 @@ export function CarSizeTable({ carSizes, onEdit, onDelete }: CarSizeTableProps) 
           {carSizes.map((c, index) => (
             <TableRow key={index + 1}>
               <TableCell className="text-center">{index + 1}</TableCell>
-              <TableCell className="text-center">{c.brandCode}</TableCell>
-              <TableCell className="text-center">{c.modelCode}</TableCell>
+              {/* <TableCell className="text-center">{c.brandCode}</TableCell>
+              <TableCell className="text-center">{c.modelCode}</TableCell> */}
               <TableCell className="text-center">{c.brandName}</TableCell>
               <TableCell className="text-center">{c.modelName}</TableCell>
               <TableCell className="text-center">{c.size}</TableCell>
