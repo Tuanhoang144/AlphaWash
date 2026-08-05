@@ -1,19 +1,21 @@
-import { OrderDetailDTO, OrderResponseDTO } from "@/types/OrderResponse";
+import { OrderResponseDTO } from "@/types/OrderResponse";
 import { OrderUpdateRequest } from "@/types/OrderUpdateRequest";
 
 export function mapFullOrderToUpdateRequest(
   id: string,
   order: OrderResponseDTO
 ): OrderUpdateRequest {
-  const detail = order.orderDetails[0]; // giả sử chỉ có 1 detail
+  const firstDetail = order.orderDetails[0];
 
   const orderUpdateRequest: OrderUpdateRequest = {
     orderId: id,
     customerId: order.customer?.id || null,
-    licensePlate: detail.vehicle.licensePlate || "",
-    brandCode: detail.vehicle.brandCode || "",
-    modelCode: detail.vehicle.modelCode || "",
-    imageUrl: detail.vehicle.imageUrl || "",
+    // Top-level vehicle = xe của detail đầu tiên (backward compat với BE)
+    licensePlate: firstDetail?.vehicle?.licensePlate || "",
+    brandCode: firstDetail?.vehicle?.brandCode || "",
+    modelCode: firstDetail?.vehicle?.modelCode || "",
+    imageUrl: firstDetail?.vehicle?.imageUrl || "",
+    vehicleNote: "",
     date: order.date || "",
     checkInTime: order.checkIn || "",
     checkOutTime: order.checkOut || "",
@@ -24,17 +26,24 @@ export function mapFullOrderToUpdateRequest(
     discount: order.discount || 0,
     totalPrice: order.totalPrice || 0,
     note: order.note || "",
-    vehicleNote: "",
     orderDetails: order.orderDetails?.map((detail) => ({
-      orderDetailCode: detail.code || "",
+      orderDetailCode: detail.code || "", // rỗng = detail mới → BE sẽ tạo mới
+      // Per-detail vehicle — BE dùng trường này để biết xe của từng detail
+      licensePlate: detail.vehicle?.licensePlate || "",
+      brandCode: detail.vehicle?.brandCode || "",
+      modelCode: detail.vehicle?.modelCode || "",
+      imageUrl: detail.vehicle?.imageUrl || "",
+      vehicleNote: "",
       employeeIds: (detail.employees || []).map((employee) => employee.id),
-      services: (detail.service || []).map((service) => ({
-        serviceCatalogCode: service.serviceCatalog?.code || "",
-        adjustedPrice: service.adjustedPrice || 0,
-        adjustedPriceFlag: service.adjustedPriceFlag || false,
-        adjustedPriceReason: service.adjustedPriceReason || "",
-        quantity: service.quantity >= 1 ? service.quantity : 1,
-      })),
+      services: (detail.service || [])
+        .filter((service) => service.serviceCatalog?.code) // bỏ service rỗng chưa chọn
+        .map((service) => ({
+          serviceCatalogCode: service.serviceCatalog?.code || "",
+          adjustedPrice: service.adjustedPrice || 0,
+          adjustedPriceFlag: service.adjustedPriceFlag || false,
+          adjustedPriceReason: service.adjustedPriceReason || "",
+          quantity: service.quantity >= 1 ? service.quantity : 1,
+        })),
       products: (detail.products || [])
         .filter((p) => p.productCode)
         .map((p) => ({

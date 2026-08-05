@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useState } from "react";
-import { FileText, QrCode, Trash2 } from "lucide-react";
+import { FileText, QrCode, Trash2, Plus } from "lucide-react";
 import { addToast } from "@heroui/toast";
 import { Button } from "@/components/ui/button";
 import { SidebarInset } from "@/components/ui/sidebar";
@@ -14,7 +14,7 @@ import ServiceForm from "@/shared/components/order/serviceCollapsible/ServiceFor
 import ProductSection from "@/shared/components/order/productCollapsible/ProductSection";
 import InvoiceSummary from "@/shared/components/order/invoiceSummaryCollapsible/InvoiceSummary";
 import VehicleInfoSection from "@/shared/components/order/vehicleInfoCollapsible/VehicleInfoBlock";
-import type { VehicleDTO } from "@/types/OrderResponse";
+import type { ServiceDTO, VehicleDTO } from "@/types/OrderResponse";
 import { useEditInvoice } from "@/shared/hooks/order/useEditOrder";
 import { useProductForm } from "@/shared/hooks/order/useProductForm";
 
@@ -29,14 +29,17 @@ export default function EditInvoiceContainer({ id }: Props) {
     currentTotalPrice,
     setFormData,
     handleCustomerChange,
-    handleVehicleChange,
-    handleServiceChange,
-    handleInfoOrderDetailChange,
-    addService,
-    removeServiceAt,
-    handleAddProduct,
-    handleRemoveProduct,
-    handleProductQuantityChange,
+    // Multi-vehicle handlers
+    addVehicle,
+    removeVehicleAt,
+    handleVehicleChangeAt,
+    handleServiceChangeAt,
+    addServiceAt,
+    removeServiceAtDetail,
+    handleInfoOrderDetailChangeAt,
+    handleAddProductAt,
+    handleRemoveProductAt,
+    handleProductQuantityChangeAt,
     buildEmptyDetail,
     handleUpdateSubmit,
     handleCancel,
@@ -49,15 +52,26 @@ export default function EditInvoiceContainer({ id }: Props) {
     loadingProducts,
   } = useProductForm();
 
-  const [plateBlocked, setPlateBlocked] = useState(false);
+  const [blockedVehicleIndexes, setBlockedVehicleIndexes] = useState<Set<number>>(
+    new Set()
+  );
+
+  const handleVehicleBlockChange = (index: number) => (blocked: boolean) => {
+    setBlockedVehicleIndexes((prev) => {
+      const next = new Set(prev);
+      if (blocked) next.add(index);
+      else next.delete(index);
+      return next;
+    });
+  };
 
   const handleGuardedUpdateSubmit = (e: React.FormEvent) => {
-    if (plateBlocked) {
+    if (blockedVehicleIndexes.size > 0) {
       e.preventDefault();
       addToast({
         title: "Không thể cập nhật hóa đơn",
         description:
-          "Biển số xe đã thuộc về khách hàng khác. Vui lòng liên kết hoặc chuyển quyền sở hữu trước khi tiếp tục.",
+          "Có biển số xe đã thuộc về khách hàng khác. Vui lòng liên kết hoặc chuyển quyền sở hữu trước khi tiếp tục.",
         color: "danger",
       });
       return;
@@ -84,31 +98,95 @@ export default function EditInvoiceContainer({ id }: Props) {
                   onCustomerChange={handleCustomerChange}
                 />
 
-                <VehicleInfoSection
-                  value={formData.orderDetails?.[0]?.vehicle as VehicleDTO}
-                  customer={selectedCustomer || undefined}
-                  onChange={handleVehicleChange}
-                  onBlockChange={setPlateBlocked}
-                />
+                {/* Danh sách xe – loop qua tất cả orderDetails */}
+                {formData.orderDetails?.map((detail, index) => (
+                  <div key={index} className="space-y-4">
+                    {/* Header xe */}
+                    <div className="flex items-center justify-between bg-white rounded-lg border p-4">
+                      <h3 className="text-lg font-semibold text-gray-800">
+                        Xe #{index + 1}
+                      </h3>
+                      {(formData.orderDetails?.length ?? 0) > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeVehicleAt(index)}
+                          className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          Xóa xe
+                        </Button>
+                      )}
+                    </div>
 
-                <ServiceForm
-                  orderDetail={formData.orderDetails?.[0] ?? buildEmptyDetail()}
-                  onServiceChange={handleServiceChange}
-                  onInfoChange={handleInfoOrderDetailChange}
-                  addService={addService}
-                  removeServiceAt={removeServiceAt}
-                  vehicleSize={formData.orderDetails?.[0]?.vehicle?.size ?? ""}
-                />
+                    <VehicleInfoSection
+                      value={detail.vehicle as VehicleDTO}
+                      customer={selectedCustomer || undefined}
+                      onChange={handleVehicleChangeAt(index)}
+                      onBlockChange={handleVehicleBlockChange(index)}
+                    />
 
-                <ProductSection
-                  products={formData.orderDetails?.[0]?.products || []}
-                  allProducts={allProducts}
-                  categories={productCategories}
-                  loadingProducts={loadingProducts}
-                  onAddProduct={handleAddProduct}
-                  onRemoveProduct={handleRemoveProduct}
-                  onQuantityChange={handleProductQuantityChange}
-                />
+                    <ServiceForm
+                      orderDetail={detail}
+                      onServiceChange={(sIndex, updated) =>
+                        handleServiceChangeAt(index, sIndex, updated)
+                      }
+                      onInfoChange={handleInfoOrderDetailChangeAt(index)}
+                      addService={() =>
+                        addServiceAt(index)({
+                          id: 0,
+                          serviceCode: "",
+                          serviceName: "",
+                          serviceTypeCode: "",
+                          adjustedPriceReason: "",
+                          adjustedPrice: 0,
+                          adjustedPriceFlag: false,
+                          quantity: 1,
+                          duration: undefined,
+                          note: undefined,
+                          serviceCatalog: {
+                            code: "",
+                            id: 0,
+                            listedPrice: 0,
+                            size: "",
+                          },
+                        } as ServiceDTO)
+                      }
+                      removeServiceAt={(sIndex) =>
+                        removeServiceAtDetail(index, sIndex)
+                      }
+                      vehicleSize={detail.vehicle?.size ?? ""}
+                    />
+
+                    <ProductSection
+                      products={detail.products || []}
+                      allProducts={allProducts}
+                      categories={productCategories}
+                      loadingProducts={loadingProducts}
+                      onAddProduct={(product) => handleAddProductAt(index, product)}
+                      onRemoveProduct={(pIndex) => handleRemoveProductAt(index, pIndex)}
+                      onQuantityChange={(pIndex, qty) =>
+                        handleProductQuantityChangeAt(index, pIndex, qty)
+                      }
+                    />
+
+                    {index < (formData.orderDetails?.length ?? 0) - 1 && (
+                      <hr className="border-gray-300 my-6" />
+                    )}
+                  </div>
+                ))}
+
+                {/* Nút thêm xe */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addVehicle}
+                  className="w-full py-6 border-dashed border-2"
+                >
+                  <Plus className="h-5 w-5 mr-2" />
+                  Thêm xe
+                </Button>
               </div>
 
               <div className="lg:col-span-1 space-y-6">
