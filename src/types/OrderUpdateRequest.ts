@@ -20,7 +20,12 @@ export interface OrderUpdateRequest {
 }
 
 export interface OrderDetail {
-  orderDetailCode: string;
+  orderDetailCode: string;  // rỗng = detail mới cần tạo
+  licensePlate: string;     // vehicle riêng cho detail này
+  brandCode: string;
+  modelCode: string;
+  imageUrl: string;
+  vehicleNote: string;
   employeeIds: number[];
   services: ServiceUpdate[];
   products?: ProductOrderItem[];
