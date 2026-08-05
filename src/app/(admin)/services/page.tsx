@@ -18,19 +18,27 @@ import { addToast } from "@heroui/toast";
 import { ServiceTableNew } from "./components/ServiceTableNew";
 import { AddServiceDialog } from "./components/AddServiceDialog";
 import { EditServiceDrawer } from "./components/EditServiceDrawer";
-import { CategoryGrid, getCategoryLabel } from "./components/CategoryGrid";
+import { CategoryGrid, CATEGORY_META } from "./components/CategoryGrid";
 import { useServiceCatalog } from "@/services/useServiceCatalog";
+import { useServiceCategory } from "@/services/useServiceCategory";
 import type { ServiceItem } from "@/types/Service";
 
-const ALL_TAB = "Tất cả";
+const ALL_TAB = "ALL";
 const CATEGORIES_VIEW = "__CATEGORIES__";
+
+const FALLBACK_TABS = [
+  { value: ALL_TAB, label: "Tất cả" },
+  ...CATEGORY_META.map((c) => ({ value: c.key, label: c.label })),
+];
 
 export default function ServicesPage() {
   const { getServices, getCategories, createService, updateService, deleteService, toggleActive } =
     useServiceCatalog();
+  const { getAll: getAllCategories } = useServiceCategory();
 
   const [services, setServices] = useState<ServiceItem[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
+  const [categoryTabs, setCategoryTabs] = useState(FALLBACK_TABS);
   const [activeCategory, setActiveCategory] = useState(ALL_TAB);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -60,8 +68,22 @@ export default function ServicesPage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    getAllCategories()
+      .then((items) => {
+        setCategoryTabs([
+          { value: ALL_TAB, label: "Tất cả" },
+          ...items.map((c) => ({ value: c.code, label: c.name })),
+        ]);
+      })
+      .catch(() => {
+        setCategoryTabs(FALLBACK_TABS);
+      });
+  }, [getAllCategories]);
+
   const filtered = services.filter((s) => {
     const matchCat = activeCategory === ALL_TAB || s.category === activeCategory;
+    // activeCategory is either ALL_TAB ("ALL") or a category code (e.g. "WASHING")
     const matchSearch =
       !search ||
       s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -122,8 +144,6 @@ export default function ServicesPage() {
     setActiveCategory(category);
     setView("list");
   };
-
-  const tabs = [ALL_TAB, ...categories];
 
   return (
     <SidebarInset className="relative w-full">
@@ -202,9 +222,9 @@ export default function ServicesPage() {
               </div>
               <Tabs value={activeCategory} onValueChange={setActiveCategory}>
                 <TabsList className="flex-wrap h-auto">
-                  {tabs.map((tab) => (
-                    <TabsTrigger key={tab} value={tab} className="text-xs">
-                      {tab === ALL_TAB ? tab : getCategoryLabel(tab)}
+                  {categoryTabs.map((tab) => (
+                    <TabsTrigger key={tab.value} value={tab.value} className="text-xs">
+                      {tab.label}
                     </TabsTrigger>
                   ))}
                 </TabsList>
