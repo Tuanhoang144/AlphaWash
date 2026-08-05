@@ -21,8 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { ServiceItem } from "@/types/Service";
+import { useServiceCategory } from "@/services/useServiceCategory";
 
-const CATEGORIES: { value: string; label: string }[] = [
+const FALLBACK_CATEGORIES: { value: string; label: string }[] = [
   { value: "WASHING", label: "Rửa xe" },
   { value: "INTERIOR", label: "Nội thất" },
   { value: "POLISHING", label: "Đánh bóng" },
@@ -69,10 +70,25 @@ export function EditServiceDrawer({ open, service, onOpenChange, onSave, onDelet
   const [form, setForm] = useState<Partial<ServiceItem>>({});
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [categories, setCategories] = useState(FALLBACK_CATEGORIES);
+  const { getAll } = useServiceCategory();
 
   useEffect(() => {
     if (service) setForm({ ...service });
   }, [service]);
+
+  useEffect(() => {
+    if (!open) return;
+    getAll(true)
+      .then((data) => {
+        if (data.length > 0) {
+          setCategories(data.map((c) => ({ value: c.code, label: c.name })));
+        }
+      })
+      .catch(() => {
+        // API fail → giữ nguyên fallback
+      });
+  }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = <K extends keyof ServiceItem>(key: K, value: ServiceItem[K]) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -127,7 +143,7 @@ export function EditServiceDrawer({ open, service, onOpenChange, onSave, onDelet
                 <SelectValue placeholder="Chọn danh mục" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((c) => (
+                {categories.map((c) => (
                   <SelectItem key={c.value} value={c.value}>
                     {c.label}
                   </SelectItem>
