@@ -9,6 +9,8 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { ServiceDTO } from "@/types/OrderResponse";
+import type { ServiceCategoryItem } from "@/types/ServiceCategory";
+import { useServiceCategory } from "@/services/useServiceCategory";
 
 const FAVORITES_KEY = "order-service-favorites";
 const RECENT_KEY = "order-service-recent";
@@ -41,6 +43,11 @@ interface ServiceGroup {
   typeName: string;
 }
 
+/** Lấy category code từ service — hỗ trợ field cũ (serviceTypeCode) lẫn field mới BE trả về (category / categoryCode) */
+function getServiceCategoryCode(s: ServiceDTO): string | undefined {
+  return s.serviceTypeCode || s.category || s.categoryCode || undefined;
+}
+
 export default function ServicePickerModal({
   open,
   onClose,
@@ -59,27 +66,44 @@ export default function ServicePickerModal({
   const [recentIds, setRecentIds] = useState<number[]>(() =>
     loadFromStorage(RECENT_KEY, [])
   );
+  const [fetchedCategories, setFetchedCategories] = useState<ServiceCategoryItem[]>([]);
+  const [fetchedCategoryMap, setFetchedCategoryMap] = useState<Record<string, string>>({});
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { getAll: getAllCategories } = useServiceCategory();
 
   useEffect(() => {
     if (!open) return;
     setSearchQuery("");
     setSearchAllCategories(false);
     setTimeout(() => searchInputRef.current?.focus(), 100);
+    // Fetch categories from API each time the dialog opens
+    getAllCategories(true)
+      .then((cats) => {
+        const sorted = [...cats].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        setFetchedCategories(sorted);
+        const map: Record<string, string> = {};
+        sorted.forEach((c) => { map[c.code] = c.name; });
+        setFetchedCategoryMap(map);
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const serviceGroups = useMemo<ServiceGroup[]>(() => {
     const map = new Map<string, string>();
     allServices.forEach((s) => {
-      if (s.serviceTypeCode && !map.has(s.serviceTypeCode)) {
-        map.set(
-          s.serviceTypeCode,
-          serviceTypeNames[s.serviceTypeCode] || s.serviceTypeCode
-        );
+      const code = getServiceCategoryCode(s);
+      if (code && !map.has(code)) {
+        // Priority: prop-supplied name → API-fetched name → raw code
+        const name =
+          serviceTypeNames[code] ||
+          fetchedCategoryMap[code] ||
+          code;
+        map.set(code, name);
       }
     });
     return Array.from(map, ([typeCode, typeName]) => ({ typeCode, typeName }));
-  }, [allServices, serviceTypeNames]);
+  }, [allServices, serviceTypeNames, fetchedCategoryMap]);
 
   const tabs = useMemo(() => {
     const list: { code: string; name: string; icon?: "star" | "clock" }[] = [
@@ -91,11 +115,28 @@ export default function ServicePickerModal({
     if (recentIds.length > 0) {
       list.push({ code: TAB_RECENT, name: "Gần đây", icon: "clock" });
     }
+    // Dùng Set để dedup tuyệt đối theo code
+    const seen = new Set<string>([TAB_ALL, TAB_FAVORITES, TAB_RECENT]);
+
+    // Use API-fetched categories (sorted by sortOrder) as source of truth
+    if (fetchedCategories.length > 0) {
+      fetchedCategories.forEach((c) => {
+        if (!seen.has(c.code)) {
+          seen.add(c.code);
+          list.push({ code: c.code, name: c.name });
+        }
+      });
+    }
+    // Thêm các serviceGroups chưa có trong list (legacy types hoặc khi API chưa load xong)
     serviceGroups.forEach((g) => {
-      list.push({ code: g.typeCode, name: g.typeName });
+      if (!seen.has(g.typeCode)) {
+        seen.add(g.typeCode);
+        list.push({ code: g.typeCode, name: g.typeName });
+      }
     });
+
     return list;
-  }, [serviceGroups, favorites, recentIds]);
+  }, [fetchedCategories, serviceGroups, favorites, recentIds]);
 
   const displayedServices = useMemo(() => {
     let source: ServiceDTO[];
@@ -109,7 +150,7 @@ export default function ServicePickerModal({
         .map((id) => allServices.find((s) => s.id === id))
         .filter(Boolean) as ServiceDTO[];
     } else {
-      source = allServices.filter((s) => s.serviceTypeCode === activeTab);
+      source = allServices.filter((s) => getServiceCategoryCode(s) === activeTab);
     }
 
     if (searchQuery.trim()) {
@@ -206,7 +247,7 @@ export default function ServicePickerModal({
             </label>
           )}
 
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex flex-wrap gap-2 pb-1">
             {tabs.map((tab) => (
               <button
                 key={tab.code}

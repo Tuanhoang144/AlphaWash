@@ -107,7 +107,14 @@ export function CustomerDetailDrawer({
                 <OverviewTab customer={customer} />
               </TabsContent>
               <TabsContent value="vehicles">
-                <VehiclesTab customer={customer} onManageVehicles={() => onEdit(customer)} />
+                <VehiclesTab
+                  customer={customer}
+                  onManageVehicles={() => onEdit(customer)}
+                  onVehicleUpdated={async () => {
+                    const fresh = await getCustomerDetail(customer.id);
+                    if (fresh) setCustomer(fresh);
+                  }}
+                />
               </TabsContent>
               <TabsContent value="invoices">
                 <InvoicesTab customerId={customer.id} />

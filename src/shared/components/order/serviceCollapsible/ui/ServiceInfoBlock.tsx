@@ -20,6 +20,7 @@ interface ServiceInfoBlockProps {
   selectedServiceIds?: number[];
   onValidationChange?: (isValid: boolean) => void;
   serviceTypeNames?: Record<string, string>;
+  refetchServices?: () => void;
 }
 
 export default function ServiceInfoBlock({
@@ -34,6 +35,7 @@ export default function ServiceInfoBlock({
   selectedServiceIds,
   onValidationChange,
   serviceTypeNames,
+  refetchServices,
 }: ServiceInfoBlockProps) {
   const {
     service: managedService,
@@ -132,6 +134,7 @@ export default function ServiceInfoBlock({
           onSetAdjustedPriceReason={setAdjustedPriceReason}
           onSetQuantity={setQuantity}
           serviceTypeNames={serviceTypeNames}
+          refetchServices={refetchServices}
         />
       </CardContent>
     </Card>

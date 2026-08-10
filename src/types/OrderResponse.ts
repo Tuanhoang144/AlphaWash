@@ -49,7 +49,9 @@ export interface ServiceDTO {
   id: number;
   serviceCode: string;
   serviceName: string;
-  serviceTypeCode: string;
+  serviceTypeCode?: string | null;   // null cho service thuộc danh mục mới (enum-based)
+  category?: string;                 // category code mới — field thật BE trả về (service-categories)
+  categoryCode?: string;             // alias dự phòng
   serviceCatalog: ServiceCatalogDTO;
   adjustedPriceReason: string;
   adjustedPrice: number;
@@ -57,6 +59,13 @@ export interface ServiceDTO {
   quantity: number;
   duration?: string;
   note?: string;
+  // Embedded prices từ new system (ServiceItem) — dùng để build synthetic catalogs
+  priceS?: number;
+  priceM?: number;
+  priceL?: number;
+  priceSEDAN?: number;
+  priceSUV?: number;
+  priceOverSize?: number;
 }
 
 export interface OrderProductDTO {

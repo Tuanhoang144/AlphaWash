@@ -1,6 +1,10 @@
 export interface ServiceAll {
-  serviceTypeCode: string;
-  serviceTypeName: string;
+  id?: number;
+  serviceTypeCode?: string | null;   // null cho service thuộc danh mục mới (service-categories)
+  serviceTypeName?: string | null;
+  category?: string;                 // category code mới — field thật BE trả về (service-categories)
+  categoryCode?: string;             // alias dự phòng
+  categoryName?: string;
   serviceCode: string;
   serviceName: string;
   price: number;

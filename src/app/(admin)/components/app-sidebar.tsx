@@ -23,6 +23,7 @@ import {
   ClipboardList,
   AlertTriangle,
   FileText,
+  Car,
 } from "lucide-react"
 
 import dynamic from "next/dynamic"
@@ -140,6 +141,16 @@ const data = {
       url: "/sizeCar",
       icon: ShoppingBag,
       isActive: true,
+    },
+    {
+      title: "Hãng & Dòng xe",
+      url: "/vehicles/brands",
+      icon: Car,
+      isActive: true,
+      items: [
+        { title: "Hãng xe", url: "/vehicles/brands" },
+        { title: "Dòng xe", url: "/vehicles/brands?tab=models" },
+      ],
     },
     {
       title: "Xe Trùng Lặp",

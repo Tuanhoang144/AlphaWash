@@ -37,6 +37,7 @@ interface Props {
   onSetAdjustedPriceReason: (reason: string) => void;
   onSetQuantity: (qty: number) => void;
   serviceTypeNames?: Record<string, string>;
+  refetchServices?: () => void;
 }
 
 export default function ServiceCatalogSelector({
@@ -56,6 +57,7 @@ export default function ServiceCatalogSelector({
   onSetAdjustedPriceReason,
   onSetQuantity,
   serviceTypeNames,
+  refetchServices,
 }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -68,7 +70,10 @@ export default function ServiceCatalogSelector({
           <Button
             type="button"
             variant="outline"
-            onClick={() => setPickerOpen(true)}
+            onClick={() => {
+              refetchServices?.();
+              setPickerOpen(true);
+            }}
             className="w-full h-10 justify-start text-left font-normal"
           >
             <Search className="h-4 w-4 mr-2 text-muted-foreground shrink-0" />

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Search, Loader2 } from "lucide-react";
 import { useServiceCatalog } from "@/services/useServiceCatalog";
+import { useServiceCategory } from "@/services/useServiceCategory";
 import type { ServiceItem } from "@/types/Service";
 import { formatShortVND } from "@/shared/utils/formatMoney";
 
@@ -42,7 +43,9 @@ const ALL_CAT = "Tất cả";
 
 export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, onSelect }: Props) {
   const { getServices, getBonusServices } = useServiceCatalog();
+  const { getAll: getAllCategories } = useServiceCategory();
   const [services, setServices] = useState<ServiceItem[]>([]);
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState(ALL_CAT);
@@ -51,11 +54,28 @@ export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, on
     if (!open) return;
     setLoading(true);
     const fn = bonusOnly ? getBonusServices : getServices;
-    fn().then(setServices).catch(() => setServices([])).finally(() => setLoading(false));
-  }, [open, bonusOnly, getServices, getBonusServices]);
+    // allSettled: category fetch failure must not wipe the service list
+    Promise.allSettled([fn(), getAllCategories(true)])
+      .then(([svcResult, catResult]) => {
+        if (svcResult.status === "fulfilled") {
+          setServices(svcResult.value);
+        } else {
+          setServices([]);
+        }
+        if (catResult.status === "fulfilled") {
+          const map: Record<string, string> = {};
+          catResult.value.forEach((c) => { map[c.code] = c.name; });
+          setCategoryMap(map);
+        }
+        // category fetch failure → keep existing map (raw codes shown as fallback)
+      })
+      .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, bonusOnly]);
 
-  const categories = useMemo(
-    () => [ALL_CAT, ...Array.from(new Set(services.map((s) => s.category).filter(Boolean)))],
+  // Unique category codes present in the loaded services
+  const categoryCodes = useMemo(
+    () => Array.from(new Set(services.map((s) => s.category).filter(Boolean))) as string[],
     [services]
   );
 
@@ -108,7 +128,7 @@ export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, on
 
         {/* Category pills */}
         <div className="flex gap-2 flex-wrap">
-          {categories.map((c) => (
+          {[ALL_CAT, ...categoryCodes].map((c) => (
             <button
               key={c}
               onClick={() => setCategory(c)}
@@ -118,7 +138,7 @@ export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, on
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary"
               }`}
             >
-              {c}
+              {c === ALL_CAT ? ALL_CAT : (categoryMap[c] ?? c)}
             </button>
           ))}
         </div>
@@ -146,7 +166,7 @@ export function ServicePickerDialog({ open, onOpenChange, carSize, bonusOnly, on
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{svc.name}</div>
                     <div className="text-xs text-muted-foreground flex gap-2 mt-0.5">
-                      {svc.category && <span>{svc.category}</span>}
+                      {svc.category && <span>{categoryMap[svc.category] ?? svc.category}</span>}
                       {svc.brand && <span>· {svc.brand}</span>}
                       {svc.typeDetail && <span>· {svc.typeDetail}</span>}
                       {svc.warranty && <span>· BH: {svc.warranty}</span>}
