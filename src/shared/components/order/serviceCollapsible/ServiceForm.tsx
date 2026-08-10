@@ -35,7 +35,7 @@ export default function ServiceForm({
   vehicleSize,
 }: OrderDetailBlockProps) {
   //Load danh sách dịch vụ
-  const { services: allServices, loadingServices, serviceTypeNames } = useServiceForm();
+  const { services: allServices, loadingServices, serviceTypeNames, refetchServices } = useServiceForm();
 
   //Dùng để update employee/status/note trong orderDetail
   const updateInfo = (field: string, value: any) => {
@@ -83,6 +83,7 @@ export default function ServiceForm({
                 allServices={allServices}
                 loadingServices={loadingServices}
                 serviceTypeNames={serviceTypeNames}
+                refetchServices={refetchServices}
                 onServiceChange={(updatedService) =>
                   updateService(index, updatedService)
                 }

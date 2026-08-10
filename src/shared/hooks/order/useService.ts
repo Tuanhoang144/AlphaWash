@@ -24,6 +24,41 @@ function normalizeSize(input?: string) {
   return SIZE_ALIASES[key] ?? input.toUpperCase().trim();
 }
 
+/**
+ * New-system service (từ GET /services) có embedded prices và không có serviceTypeCode.
+ * Detect bằng cách kiểm tra có ít nhất 1 embedded price field.
+ */
+function isNewSystemService(s: ServiceDTO): boolean {
+  return (
+    s.priceS != null ||
+    s.priceM != null ||
+    s.priceL != null ||
+    s.priceSEDAN != null ||
+    s.priceSUV != null ||
+    s.priceOverSize != null
+  );
+}
+
+/** Build synthetic ServiceCatalogDTO[] từ embedded prices của new-system service */
+function buildSyntheticCatalogs(s: ServiceDTO): ServiceCatalogDTO[] {
+  const entries: { size: string; price?: number }[] = [
+    { size: "S",            price: s.priceS },
+    { size: "M",            price: s.priceM },
+    { size: "L",            price: s.priceL },
+    { size: "SEDAN",        price: s.priceSEDAN },
+    { size: "SUV",          price: s.priceSUV },
+    { size: "SUV Full Size",price: s.priceOverSize },
+  ];
+  return entries
+    .filter((e) => e.price != null && e.price > 0)
+    .map((e, i) => ({
+      id: -(i + 1),                    // synthetic negative IDs — tránh xung đột với old system
+      code: `SYNTHETIC_${e.size.replace(/\s+/g, "_")}`,
+      size: e.size,
+      listedPrice: e.price!,
+    }));
+}
+
 /** Tìm catalog khớp kích thước xe */
 function matchCatalogByVehicleSize(
   catalogs: ServiceCatalogDTO[],
@@ -83,6 +118,13 @@ export function useServiceManager(
       return;
     }
 
+    // New-system service: giá embedded trực tiếp → build synthetic catalogs, không cần fetch API
+    if (isNewSystemService(service)) {
+      setCatalogs(buildSyntheticCatalogs(service));
+      return;
+    }
+
+    // Old-system service: fetch từ catalog API
     let mounted = true;
 
     (async () => {

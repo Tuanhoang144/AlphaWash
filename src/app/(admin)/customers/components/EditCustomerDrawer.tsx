@@ -28,6 +28,8 @@ import { VehicleCard } from "./VehicleCard";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { useCustomerService } from "@/services/useCustomerService";
 import { useVehicleService } from "@/services/useVehicleService";
+import { useBrandManager, type BrandResponse } from "@/services/useBrandManager";
+import { useModelManager, type ModelWithoutBrand } from "@/services/useModelManager";
 import { isValidVietnamesePhone } from "@/shared/utils/checkValidate";
 import {
   CUSTOMER_GENDER_LABELS,
@@ -60,21 +62,57 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
   const { updateCustomer, addVehicleToCustomer, updateVehicle, removeVehicle, getCustomerDetail } =
     useCustomerService();
   const { linkCustomerToVehicle, transferVehicleOwnership } = useVehicleService();
+  const { getAllBrands } = useBrandManager();
+  const { getModelsByBrandCode } = useModelManager();
 
   const [form, setForm] = useState(emptyForm());
   const [errors, setErrors] = useState<{ name?: string; phone?: string }>({});
   const [saving, setSaving] = useState(false);
 
+  // Brand/model data
+  const [brands, setBrands] = useState<BrandResponse[]>([]);
+  const [newModels, setNewModels] = useState<ModelWithoutBrand[]>([]);
+  const [editModels, setEditModels] = useState<ModelWithoutBrand[]>([]);
+
+  // Add vehicle state
   const [addingVehicle, setAddingVehicle] = useState(false);
   const [newPlate, setNewPlate] = useState("");
   const [newLinkVehicleId, setNewLinkVehicleId] = useState<string | undefined>(undefined);
   const [newPlateBlocked, setNewPlateBlocked] = useState(false);
+  const [newBrandId, setNewBrandId] = useState<number | undefined>(undefined);
+  const [newModelId, setNewModelId] = useState<number | undefined>(undefined);
   const [savingVehicle, setSavingVehicle] = useState(false);
 
+  // Edit vehicle state
   const [editingVehicle, setEditingVehicle] = useState<VehicleDTO | null>(null);
   const [editPlate, setEditPlate] = useState("");
+  const [editBrandId, setEditBrandId] = useState<number | undefined>(undefined);
+  const [editModelId, setEditModelId] = useState<number | undefined>(undefined);
   const [removeTarget, setRemoveTarget] = useState<VehicleDTO | null>(null);
   const [removing, setRemoving] = useState(false);
+
+  // Load brands once on open
+  useEffect(() => {
+    if (open && brands.length === 0) {
+      getAllBrands().then(setBrands).catch(() => {});
+    }
+  }, [open, getAllBrands, brands.length]);
+
+  const loadModelsFor = async (brandIdOrCode: number | string, target: "new" | "edit") => {
+    let code: string;
+    if (typeof brandIdOrCode === "string") {
+      code = brandIdOrCode;
+    } else {
+      const brand = brands.find((b) => b.id === brandIdOrCode);
+      if (!brand) return;
+      code = brand.code;
+    }
+    try {
+      const data = await getModelsByBrandCode(code);
+      if (target === "new") setNewModels(data);
+      else setEditModels(data);
+    } catch {}
+  };
 
   useEffect(() => {
     if (customer && open) {
@@ -93,7 +131,11 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
       setNewPlate("");
       setNewLinkVehicleId(undefined);
       setNewPlateBlocked(false);
+      setNewBrandId(undefined);
+      setNewModelId(undefined);
       setEditingVehicle(null);
+      setEditBrandId(undefined);
+      setEditModelId(undefined);
     }
   }, [customer, open]);
 
@@ -151,13 +193,20 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
       if (newLinkVehicleId) {
         await linkCustomerToVehicle(newLinkVehicleId, customer.id);
       } else {
-        await addVehicleToCustomer(customer.id, { licensePlate: newPlate.trim() });
+        await addVehicleToCustomer(customer.id, {
+          licensePlate: newPlate.trim(),
+          brandId: newBrandId,
+          modelId: newModelId,
+        });
       }
       addToast({ title: "Thành công", description: "Đã thêm xe cho khách hàng.", color: "success" });
       setAddingVehicle(false);
       setNewPlate("");
       setNewLinkVehicleId(undefined);
       setNewPlateBlocked(false);
+      setNewBrandId(undefined);
+      setNewModelId(undefined);
+      setNewModels([]);
       await refreshCustomer();
     } catch (error: any) {
       addToast({ title: "Lỗi", description: error?.message || "Không thể thêm xe.", color: "danger" });
@@ -186,9 +235,16 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
     if (!customer || !editingVehicle || !editPlate.trim()) return;
     setSavingVehicle(true);
     try {
-      await updateVehicle(customer.id, editingVehicle.id, { licensePlate: editPlate.trim() });
+      await updateVehicle(customer.id, editingVehicle.id, {
+        licensePlate: editPlate.trim(),
+        brandId: editBrandId,
+        modelId: editModelId,
+      });
       addToast({ title: "Thành công", description: "Đã cập nhật xe.", color: "success" });
       setEditingVehicle(null);
+      setEditBrandId(undefined);
+      setEditModelId(undefined);
+      setEditModels([]);
       await refreshCustomer();
     } catch (error: any) {
       addToast({ title: "Lỗi", description: error?.message || "Không thể cập nhật xe.", color: "danger" });
@@ -337,6 +393,47 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
                     onTransferRequested={(vehicleId) => handleTransferToThisCustomer(vehicleId)}
                     onBlockChange={setNewPlateBlocked}
                   />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Hãng xe</Label>
+                      <Select
+                        value={newBrandId ? String(newBrandId) : ""}
+                        onValueChange={(v) => {
+                          const id = Number(v);
+                          setNewBrandId(id);
+                          setNewModelId(undefined);
+                          setNewModels([]);
+                          loadModelsFor(id, "new");
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder="Chọn hãng" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {brands.map((b) => (
+                            <SelectItem key={b.id} value={String(b.id)}>{b.brandName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Dòng xe</Label>
+                      <Select
+                        value={newModelId ? String(newModelId) : ""}
+                        onValueChange={(v) => setNewModelId(Number(v))}
+                        disabled={!newBrandId || newModels.length === 0}
+                      >
+                        <SelectTrigger className="h-8 text-xs">
+                          <SelectValue placeholder={!newBrandId ? "Chọn hãng trước" : "Chọn dòng"} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {newModels.map((m) => (
+                            <SelectItem key={m.id} value={String(m.id)}>{m.modelName}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                   <div className="flex justify-end gap-2">
                     <Button
                       variant="outline"
@@ -345,6 +442,9 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
                         setAddingVehicle(false);
                         setNewPlate("");
                         setNewLinkVehicleId(undefined);
+                        setNewBrandId(undefined);
+                        setNewModelId(undefined);
+                        setNewModels([]);
                       }}
                     >
                       Hủy
@@ -374,8 +474,58 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
                         onPlateConfirmed={() => {}}
                         onTransferRequested={() => {}}
                       />
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="space-y-1">
+                          <Label className="text-xs">Hãng xe</Label>
+                          <Select
+                            value={editBrandId ? String(editBrandId) : ""}
+                            onValueChange={(val) => {
+                              const id = Number(val);
+                              setEditBrandId(id);
+                              setEditModelId(undefined);
+                              setEditModels([]);
+                              loadModelsFor(id, "edit");
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="Chọn hãng" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {brands.map((b) => (
+                                <SelectItem key={b.id} value={String(b.id)}>{b.brandName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs">Dòng xe</Label>
+                          <Select
+                            value={editModelId ? String(editModelId) : ""}
+                            onValueChange={(val) => setEditModelId(Number(val))}
+                            disabled={!editBrandId || editModels.length === 0}
+                          >
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder={!editBrandId ? "Chọn hãng trước" : "Chọn dòng"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {editModels.map((m) => (
+                                <SelectItem key={m.id} value={String(m.id)}>{m.modelName}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingVehicle(null)}>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setEditingVehicle(null);
+                            setEditBrandId(undefined);
+                            setEditModelId(undefined);
+                            setEditModels([]);
+                          }}
+                        >
                           Hủy
                         </Button>
                         <Button size="sm" onClick={handleSaveEditVehicle} disabled={savingVehicle || !editPlate.trim()}>
@@ -391,6 +541,14 @@ export function EditCustomerDrawer({ open, onOpenChange, customer, onUpdated }: 
                       onEdit={(vehicle) => {
                         setEditingVehicle(vehicle);
                         setEditPlate(vehicle.licensePlate);
+                        setEditBrandId(vehicle.brandId || undefined);
+                        setEditModelId(vehicle.modelId || undefined);
+                        setEditModels([]);
+                        if (vehicle.brandCode) {
+                          loadModelsFor(vehicle.brandCode, "edit").then(() => {
+                            if (vehicle.modelId) setEditModelId(vehicle.modelId);
+                          });
+                        }
                       }}
                       onRemove={(vehicle) => setRemoveTarget(vehicle)}
                     />

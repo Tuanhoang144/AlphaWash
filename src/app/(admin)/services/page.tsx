@@ -12,7 +12,7 @@ import { SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { LayoutGrid, List, Plus, Search } from "lucide-react";
+import { LayoutGrid, List, Plus, RefreshCw, Search } from "lucide-react";
 import { addToast } from "@heroui/toast";
 
 import { ServiceTableNew } from "./components/ServiceTableNew";
@@ -21,6 +21,7 @@ import { EditServiceDrawer } from "./components/EditServiceDrawer";
 import { CategoryGrid, CATEGORY_META } from "./components/CategoryGrid";
 import { useServiceCatalog } from "@/services/useServiceCatalog";
 import { useServiceCategory } from "@/services/useServiceCategory";
+import axiosInstance from "@/config/axiosInstance";
 import type { ServiceItem } from "@/types/Service";
 
 const ALL_TAB = "ALL";
@@ -47,6 +48,7 @@ export default function ServicesPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [editService, setEditService] = useState<ServiceItem | null>(null);
   const [editOpen, setEditOpen] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -139,6 +141,21 @@ export default function ServicesPage() {
     }
   };
 
+  const handleBackfillCategory = async () => {
+    setSyncing(true);
+    try {
+      await axiosInstance.post("/services/backfill-category-code");
+      addToast({ title: "Đã đồng bộ danh mục thành công", color: "success" });
+      await load();
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ?? err?.message ?? "Lỗi không xác định";
+      addToast({ title: "Lỗi đồng bộ danh mục", description: msg, color: "danger" });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   // Click a category card → switch to list view filtered by that category
   const handleSelectCategory = (category: string) => {
     setActiveCategory(category);
@@ -192,6 +209,15 @@ export default function ServicesPage() {
                 <LayoutGrid className="h-4 w-4" />
               </Button>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleBackfillCategory}
+              disabled={syncing}
+            >
+              <RefreshCw className={`h-4 w-4 mr-1 ${syncing ? "animate-spin" : ""}`} />
+              Đồng bộ danh mục
+            </Button>
             <Button onClick={() => setAddOpen(true)}>
               <Plus className="h-4 w-4 mr-1" />
               Thêm dịch vụ
