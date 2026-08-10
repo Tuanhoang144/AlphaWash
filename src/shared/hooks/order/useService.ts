@@ -209,35 +209,22 @@ export function useServiceManager(
   // HANDLERS
   // =========================================================================
 
-  // Chọn dịch vụ (dropdown 1)
+  // Chọn dịch vụ (dropdown 1) — nhận object trực tiếp từ picker, không lookup lại bằng id
   const selectService = useCallback(
-    (serviceId: number) => {
-      const found = services.find((s) => s.id === serviceId);
-      if (!found) return;
-
+    (found: ServiceDTO) => {
       setAdjustedPriceTouched(false);
       setPriceValidationError("");
-
-      setService((prev) => ({
-        ...prev,
-        id: found.id,
+      setService({
+        ...found,
         serviceCode: found.serviceCode || (found as any).code,
-        serviceName: found.serviceName,
-        serviceTypeCode: found.serviceTypeCode,
-        // reset catalog + giá khi đổi dịch vụ
-        serviceCatalog: {
-          id: 0,
-          code: "",
-          size: "",
-          listedPrice: 0,
-        },
+        serviceCatalog: { id: 0, code: "", size: "", listedPrice: 0 },
         adjustedPriceFlag: false,
         adjustedPrice: 0,
         adjustedPriceReason: "",
         quantity: 1,
-      }));
+      });
     },
-    [services]
+    []
   );
 
   // Chọn catalog (dropdown 2)
