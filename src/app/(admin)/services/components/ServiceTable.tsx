@@ -43,8 +43,8 @@ export function ServiceTable({ services, onEditService, startIndex = 0 }: Servic
       if (!grouped[key]) {
         grouped[key] = {
           key,
-          serviceTypeName: service.serviceTypeName,
-          serviceTypeCode: service.serviceTypeCode,
+          serviceTypeName: service.serviceTypeName ?? "",
+          serviceTypeCode: service.serviceTypeCode ?? "",
           serviceName: service.serviceName,
           serviceCode: service.serviceCode,
           originalServices: [],
