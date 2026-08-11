@@ -115,10 +115,10 @@ export function ServiceDialog({
       setForm({
         serviceCode: firstService.serviceCode,
         serviceName: firstService.serviceName,
-        duration: firstService.duration ?? "",
+        duration: firstService.duration,
         note: firstService.note || "",
-        serviceTypeName: firstService.serviceTypeName ?? "",
-        serviceTypeCode: firstService.serviceTypeCode ?? "",
+        serviceTypeName: firstService.serviceTypeName,
+        serviceTypeCode: firstService.serviceTypeCode,
         priceS: sizeS ? sizeS.price : 0,
         priceM: sizeM ? sizeM.price : 0,
         priceL: sizeL ? sizeL.price : 0,

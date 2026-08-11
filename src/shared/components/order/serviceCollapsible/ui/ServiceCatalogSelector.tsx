@@ -30,7 +30,7 @@ interface Props {
   loadingCatalogs: boolean;
   priceDiff: number;
   priceValidationError: string;
-  onSelectService: (service: ServiceDTO) => void;
+  onSelectService: (serviceId: number) => void;
   onSelectCatalog: (catalogId: number) => void;
   onToggleAdjustedPrice: (enabled: boolean) => void;
   onSetAdjustedPrice: (price: number) => void;
@@ -92,6 +92,7 @@ export default function ServiceCatalogSelector({
             loadingServices={loadingServices}
             selectedServiceIds={selectedServiceIds ?? []}
             onSelectService={onSelectService}
+            serviceTypeNames={serviceTypeNames}
           />
         </div>
 

@@ -115,7 +115,7 @@ export default function BrandModelSelector({
 
   const selectExistingVehicle = async (existingVehicle: VehicleDTO) => {
     const loadedModels = await loadModels(existingVehicle.brandCode);
-    const model = (loadedModels ?? []).find(
+    const model = loadedModels.find(
       (m: ModelDTO) => m.code === existingVehicle.modelCode
     );
 
