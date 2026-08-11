@@ -118,13 +118,12 @@ export function useServiceManager(
       return;
     }
 
-    // New-system service: giá embedded trực tiếp → build synthetic catalogs, không cần fetch API
-    if (isNewSystemService(service)) {
-      setCatalogs(buildSyntheticCatalogs(service));
+    // New-system service với ID âm → không có catalog entry trong BE, dùng synthetic luôn
+    if (service.id < 0) {
+      setCatalogs(isNewSystemService(service) ? buildSyntheticCatalogs(service) : []);
       return;
     }
 
-    // Old-system service: fetch từ catalog API
     let mounted = true;
 
     (async () => {
@@ -136,10 +135,30 @@ export function useServiceManager(
           ...c,
           listedPrice: c.listedPrice ?? c.price ?? 0,
         }));
-        if (mounted) setCatalogs(normalized);
-      } catch (e) {
-        console.error("[useServiceManager] Error loading service catalogs:", e);
-        if (mounted) setCatalogs([]);
+        if (!mounted) return;
+        if (normalized.length > 0) {
+          setCatalogs(normalized);
+        } else if (isNewSystemService(service)) {
+          // Catalog API trả về rỗng (404 / service chưa có catalog entry):
+          // Fallback sang synthetic catalogs từ embedded prices.
+          // Các code SYNTHETIC_* sẽ bị mapper filter ra, không gửi lên BE.
+          setCatalogs(buildSyntheticCatalogs(service));
+        } else {
+          setCatalogs([]);
+        }
+      } catch (e: any) {
+        // 404 là expected cho new-system services (chưa có catalog entry trong old system)
+        // Dùng warn thay vì error để tránh Next.js dev overlay
+        const status = e?.response?.status ?? e?.status;
+        if (status !== 404) {
+          console.warn("[useServiceManager] Unexpected error loading service catalogs:", e);
+        }
+        if (!mounted) return;
+        if (isNewSystemService(service)) {
+          setCatalogs(buildSyntheticCatalogs(service));
+        } else {
+          setCatalogs([]);
+        }
       } finally {
         if (mounted) setLoadingCatalogs(false);
       }

@@ -8,7 +8,7 @@ export interface OrderUpdateRequest {
   vehicleNote: string;
   date: string;
   checkInTime: string;
-  checkOutTime: string;
+  checkOutTime: string | null;
   paymentType: string;
   paymentStatus: string;
   tip: number;
@@ -44,7 +44,8 @@ export interface ProductOrderItem {
   note?: string;
 }
 export interface ServiceUpdate {
-  serviceCatalogCode: string;
+  serviceCatalogCode?: string | null;  // null cho new-system service (không có catalog entry)
+  serviceItemId?: string;              // ID từ GET /services — bắt buộc khi serviceCatalogCode null
   adjustedPrice: number;
   adjustedPriceFlag: boolean;
   adjustedPriceReason: string;

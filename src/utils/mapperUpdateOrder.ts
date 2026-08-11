@@ -18,7 +18,7 @@ export function mapFullOrderToUpdateRequest(
     vehicleNote: "",
     date: order.date || "",
     checkInTime: order.checkIn || "",
-    checkOutTime: order.checkOut || "",
+    checkOutTime: order.checkOut || null,  // null khi chưa điền — BE LocalTime accept null
     paymentType: order.paymentType || "",
     paymentStatus: order.paymentStatus || "",
     tip: order.tip || 0,
@@ -37,13 +37,29 @@ export function mapFullOrderToUpdateRequest(
       employeeIds: (detail.employees || []).map((employee) => employee.id),
       services: (detail.service || [])
         .filter((service) => service.serviceCatalog?.code) // bỏ service rỗng chưa chọn
-        .map((service) => ({
-          serviceCatalogCode: service.serviceCatalog?.code || "",
-          adjustedPrice: service.adjustedPrice || 0,
-          adjustedPriceFlag: service.adjustedPriceFlag || false,
-          adjustedPriceReason: service.adjustedPriceReason || "",
-          quantity: service.quantity >= 1 ? service.quantity : 1,
-        })),
+        .map((service) => {
+          const isSynthetic = service.serviceCatalog?.code?.startsWith("SYNTHETIC_")
+                         || service.serviceCatalog?.code?.startsWith("SI_");
+          if (isSynthetic) {
+            return {
+              serviceCatalogCode: null,
+              serviceItemId: service.serviceCode?.startsWith?.("SI_")
+                ? service.serviceCode.substring(3)
+                : service.serviceCode,
+              adjustedPrice: service.serviceCatalog?.listedPrice ?? service.adjustedPrice ?? 0,
+              adjustedPriceFlag: true,
+              adjustedPriceReason: service.adjustedPriceReason || "",
+              quantity: service.quantity >= 1 ? service.quantity : 1,
+            };
+          }
+          return {
+            serviceCatalogCode: service.serviceCatalog?.code || "",
+            adjustedPrice: service.adjustedPrice ?? 0,
+            adjustedPriceFlag: service.adjustedPriceFlag || false,
+            adjustedPriceReason: service.adjustedPriceReason || "",
+            quantity: service.quantity >= 1 ? service.quantity : 1,
+          };
+        }),
       products: (detail.products || [])
         .filter((p) => p.productCode)
         .map((p) => ({

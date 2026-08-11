@@ -14,7 +14,7 @@ export function mapFullOrderToRequest(
     vehicleNote: "",
     date: order.date || "",
     checkInTime: order.checkIn || "",
-    checkOutTime: order.checkOut || "",
+    checkOutTime: order.checkOut || null,  // null khi chưa điền — BE LocalTime accept null
     paymentType: order.paymentType || "",
     paymentStatus: order.paymentStatus || "",
     tip: order.tip || 0,
@@ -26,13 +26,36 @@ export function mapFullOrderToRequest(
       employeeIds: (detail.employees || []).map((employee) => employee.id),
       services: (detail.service || [])
         .filter((service) => service.id && service.id !== 0)
-        .map((service) => ({
-          serviceCatalogCode: service.serviceCatalog?.code || "",
-          adjustedPrice: service.adjustedPrice || 0,
-          adjustedPriceFlag: service.adjustedPriceFlag || false,
-          adjustedPriceReason: service.adjustedPriceReason || "",
-          quantity: service.quantity >= 1 ? service.quantity : 1,
-        })),
+        .map((service) => {
+          // SYNTHETIC_ = new-system service chưa submit (FE-only catalog)
+          // SI_ = new-system service đã lưu vào DB và load lại từ BE
+          const isSynthetic = service.serviceCatalog?.code?.startsWith("SYNTHETIC_")
+                           || service.serviceCatalog?.code?.startsWith("SI_");
+          if (isSynthetic) {
+            // New-system service: không có catalog entry trong old system.
+            // BE nhận serviceItemId và tạo stable key "SI_" + serviceItemId.
+            return {
+              serviceCatalogCode: null,
+              // serviceCode = UUID của service_item (cả khi mới chọn lẫn khi load lại từ BE)
+              // Với SI_ codes: serviceCode đã là UUID; với SYNTHETIC_: serviceCode là UUID từ adaptServiceItem
+              serviceItemId: service.serviceCode?.startsWith?.("SI_")
+                ? service.serviceCode.substring(3)   // strip "SI_" prefix nếu serviceCode bị set sai
+                : service.serviceCode,               // thường là UUID string
+              adjustedPrice: service.serviceCatalog?.listedPrice ?? service.adjustedPrice ?? 0,
+              adjustedPriceFlag: true,
+              adjustedPriceReason: service.adjustedPriceReason || "",
+              quantity: service.quantity >= 1 ? service.quantity : 1,
+            };
+          }
+          // Old-system service: dùng catalog code thật
+          return {
+            serviceCatalogCode: service.serviceCatalog?.code || "",
+            adjustedPrice: service.adjustedPrice ?? 0,
+            adjustedPriceFlag: service.adjustedPriceFlag || false,
+            adjustedPriceReason: service.adjustedPriceReason || "",
+            quantity: service.quantity >= 1 ? service.quantity : 1,
+          };
+        }),
       products: (detail.products || [])
         .filter((p) => p.productCode)
         .map((p) => ({

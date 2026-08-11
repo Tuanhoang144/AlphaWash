@@ -32,7 +32,8 @@ export interface OrderDetail {
 }
 
 export interface ServiceAdjust {
-  serviceCatalogCode: string
+  serviceCatalogCode?: string | null  // null cho new-system service (không có catalog entry)
+  serviceItemId?: string              // ID từ GET /services — bắt buộc khi serviceCatalogCode null
   adjustedPrice: number
   adjustedPriceFlag: boolean
   adjustedPriceReason: string

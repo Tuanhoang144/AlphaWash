@@ -5,11 +5,23 @@ import type { ServiceDTO } from "@/types/OrderResponse";
 import type { ServiceItem } from "@/types/Service";
 import { useServiceCatalog } from "@/services/useServiceCatalog";
 
+/**
+ * Tạo ID âm ổn định từ UUID string.
+ * Dùng cho new-system services (ServiceItem có UUID id, không có integer id trong old system).
+ * ID âm → catalog loading effect sẽ dùng synthetic catalogs ngay, không gọi API.
+ */
+function stableNegativeId(uuid: string): number {
+  let hash = 0;
+  for (let i = 0; i < uuid.length; i++) {
+    hash = (Math.imul(31, hash) + uuid.charCodeAt(i)) | 0;
+  }
+  return hash < 0 ? hash : -(hash + 1); // đảm bảo < 0
+}
+
 function adaptServiceItem(item: ServiceItem): ServiceDTO {
-  const parsedId = parseInt(item.id, 10);
   return {
-    id: Number.isFinite(parsedId) ? parsedId : 0,
-    serviceCode: item.id,
+    id: stableNegativeId(item.id),  // ID âm duy nhất mỗi service → effect dùng synthetic branch
+    serviceCode: item.id,           // UUID đầy đủ → dùng làm serviceItemId khi submit
     serviceName: item.name,
     category: item.category,
     adjustedPrice: 0,
