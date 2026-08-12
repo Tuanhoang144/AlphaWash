@@ -3,13 +3,17 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { useQuickInvoiceManager } from "@/services/useQuickInvoiceManager";
 import { useCustomerManager } from "@/services/useCustomerManager";
+import { useServiceCatalog } from "@/services/useServiceCatalog";
 import useApiService from "@/config/useApi";
 import {
   QuickServiceGroup,
   RecentVehicle,
   QuickServiceItem,
+  QuickService,
+  QuickCatalog,
 } from "@/types/QuickInvoice";
 import { CustomerDTO, VehicleDTO } from "@/types/OrderResponse";
+import { ServiceItem } from "@/types/Service";
 import { OrderCreateRequest } from "@/types/OrderCreateRequest";
 
 type Step = "vehicle" | "services";
@@ -33,6 +37,72 @@ const FAVORITES_KEY = "quick-invoice-favorites";
 const RECENT_SERVICES_KEY = "quick-invoice-recent-services";
 const ANALYTICS_KEY = "quick-invoice-analytics";
 const MAX_RECENT_SERVICES = 10;
+
+// Map category code (enum name) → tên tiếng Việt
+const CATEGORY_NAMES: Record<string, string> = {
+  WASHING:   "Rửa xe",
+  INTERIOR:  "Nội thất",
+  POLISHING: "Đánh bóng / Phủ bóng",
+  GLASS:     "Kính xe",
+  PPF:       "PPF",
+  COMBO:     "Combo",
+  OTHER:     "Khác",
+};
+
+// Mapping size key → display size
+const SIZE_PRICE_FIELDS: Array<{ key: keyof ServiceItem; size: string }> = [
+  { key: "priceS",         size: "S"             },
+  { key: "priceM",         size: "M"             },
+  { key: "priceL",         size: "L"             },
+  { key: "priceSEDAN",     size: "SEDAN"         },
+  { key: "priceSUV",       size: "SUV"           },
+  { key: "priceOverSize",  size: "SUV Full Size" },
+];
+
+/** Chuyển ServiceItem[] (new-system) thành QuickServiceGroup[] */
+function adaptServicesToGroups(items: ServiceItem[]): QuickServiceGroup[] {
+  // Group by category
+  const categoryMap = new Map<string, ServiceItem[]>();
+  for (const item of items) {
+    const cat = item.category || "OTHER";
+    if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+    categoryMap.get(cat)!.push(item);
+  }
+
+  const groups: QuickServiceGroup[] = [];
+  for (const [cat, catItems] of categoryMap) {
+    const services: QuickService[] = catItems
+      .map((item): QuickService => {
+        const catalogs: QuickCatalog[] = SIZE_PRICE_FIELDS
+          .filter((sp) => {
+            const v = item[sp.key];
+            return v != null && (v as number) > 0;
+          })
+          .map((sp) => ({
+            catalogCode: item.id,       // UUID — dùng làm key toggle
+            size: sp.size,
+            price: item[sp.key] as number,
+          }));
+
+        return {
+          serviceCode: item.id,         // UUID — dùng làm serviceItemId khi submit
+          serviceName: item.name,
+          duration: "",                 // new-system không có duration
+          catalogs,
+        };
+      })
+      .filter((s) => s.catalogs.length > 0);
+
+    if (services.length > 0) {
+      groups.push({
+        serviceTypeCode: cat,
+        serviceTypeName: CATEGORY_NAMES[cat] ?? cat,
+        services,
+      });
+    }
+  }
+  return groups;
+}
 
 function loadFromStorage<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
@@ -68,8 +138,9 @@ function formatLocalDateTime(date: Date): string {
 }
 
 export function useQuickInvoice() {
-  const { getGroupedServices, getRecentVehicles } = useQuickInvoiceManager();
+  const { getRecentVehicles } = useQuickInvoiceManager();
   const { getCustomersByPhoneOrPlate, createCustomer } = useCustomerManager();
+  const { getServices } = useServiceCatalog();
   const { callApi } = useApiService();
 
   const [step, setStep] = useState<Step>("vehicle");
@@ -78,7 +149,7 @@ export function useQuickInvoice() {
   const [vehicleSize, setVehicleSize] = useState<string>("");
   const [selectedServices, setSelectedServices] = useState<QuickServiceItem[]>([]);
   const [discount, setDiscount] = useState<number>(0);
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Unpaid");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("Cash");
   const [favorites, setFavorites] = useState<string[]>(loadFavorites);
   const [recentServiceCodes, setRecentServiceCodes] = useState<string[]>(loadRecentServices);
   const [recentVehicles, setRecentVehicles] = useState<RecentVehicle[]>([]);
@@ -94,14 +165,14 @@ export function useQuickInvoice() {
   const startTimeRef = useRef<number>(Date.now());
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load initial data
+  // Load initial data — dùng new-system services
   useEffect(() => {
     async function load() {
-      const [services, vehicles] = await Promise.all([
-        getGroupedServices(),
+      const [items, vehicles] = await Promise.all([
+        getServices({ active: true }),
         getRecentVehicles(),
       ]);
-      setServiceGroups(services);
+      setServiceGroups(adaptServicesToGroups(items));
       setRecentVehicles(vehicles);
       setDataLoaded(true);
     }
@@ -139,9 +210,7 @@ export function useQuickInvoice() {
       setVehicle(v);
       setCustomer(c);
       if (!v.size) {
-        console.warn(
-          `Vehicle ${v.licensePlate} has no size from API, defaulting to "M"`
-        );
+        console.warn(`Vehicle ${v.licensePlate} has no size from API, defaulting to "M"`);
       }
       setVehicleSize(v.size || "M");
       setStep("services");
@@ -259,7 +328,7 @@ export function useQuickInvoice() {
       checkInTime: formatLocalTime(now),
       checkOutTime: null,
       paymentType: paymentMethod === "Unpaid" ? "" : paymentMethod,
-      paymentStatus: paymentMethod === "Unpaid" ? "Pending" : "Paid",
+      paymentStatus: "DONE",   // luôn "Đã thanh toán"
       tip: 0,
       vat: 0,
       discount,
@@ -269,13 +338,14 @@ export function useQuickInvoice() {
         {
           employeeIds: [],
           services: selectedServices.map((s) => ({
-            serviceCatalogCode: s.catalogCode,
-            adjustedPrice: 0,
-            adjustedPriceFlag: false,
+            serviceCatalogCode: null,      // new-system service: không có catalog trong old system
+            serviceItemId: s.serviceCode,  // UUID từ ServiceItem.id
+            adjustedPrice: s.price,        // giá theo kích thước xe
+            adjustedPriceFlag: true,
             adjustedPriceReason: "",
             quantity: s.quantity,
           })),
-          status: "PENDING",
+          status: "DONE",
           note: "",
           licensePlate: vehicle.licensePlate,
           brandCode: vehicle.brandCode,
@@ -335,7 +405,7 @@ export function useQuickInvoice() {
         discountAmount,
         total,
         paymentMethod,
-        paymentStatus: paymentMethod === "Unpaid" ? "Chưa thanh toán" : "Đã thanh toán",
+        paymentStatus: "Đã thanh toán",  // luôn đã thanh toán
       });
 
       return orderId;
@@ -353,7 +423,7 @@ export function useQuickInvoice() {
     setVehicleSize("");
     setSelectedServices([]);
     setDiscount(0);
-    setPaymentMethod("Unpaid");
+    setPaymentMethod("Cash");
     setSearchQuery("");
     setSearchResults([]);
     startTimeRef.current = Date.now();
