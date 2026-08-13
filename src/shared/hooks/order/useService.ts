@@ -120,7 +120,21 @@ export function useServiceManager(
 
     // New-system service với ID âm → không có catalog entry trong BE, dùng synthetic luôn
     if (service.id < 0) {
-      setCatalogs(isNewSystemService(service) ? buildSyntheticCatalogs(service) : []);
+      if (isNewSystemService(service)) {
+        // Có embedded prices (service mới chọn từ danh sách) → build synthetic từ prices
+        setCatalogs(buildSyntheticCatalogs(service));
+      } else if (service.serviceCatalog?.listedPrice != null) {
+        // Load từ BE khi edit order: converter đã set serviceCatalog.code = "SI_<uuid>",
+        // listedPrice và size. Build 1 synthetic catalog từ dữ liệu đó để UI hiển thị giá.
+        setCatalogs([{
+          id: -1,
+          code: service.serviceCatalog.code ?? "",
+          size: service.serviceCatalog.size ?? "",
+          listedPrice: service.serviceCatalog.listedPrice,
+        }]);
+      } else {
+        setCatalogs([]);
+      }
       return;
     }
 
@@ -171,9 +185,11 @@ export function useServiceManager(
 
   // ===== AUTO-CHỌN CATALOG TRÙNG KÍCH THƯỚC XE =====
   useEffect(() => {
-    if (!catalogs.length || !vehicleSize) return;
+    if (!catalogs.length) return;
 
-    const matched = matchCatalogByVehicleSize(catalogs, vehicleSize);
+    // Ưu tiên catalog khớp size xe; fallback sang catalog đầu nếu không match
+    // (dùng cho new-system service load từ BE khi edit: chỉ có 1 catalog duy nhất)
+    const matched = matchCatalogByVehicleSize(catalogs, vehicleSize) ?? (catalogs.length === 1 ? catalogs[0] : null);
     if (!matched) return;
 
     setService((prev) => {
